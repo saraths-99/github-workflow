@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "generated-by": "copilot-workflow",
+  "hooks": [
+    {
+      "name": "format-kotlin",
+      "event": "postToolUse",
+      "match": { "tools": ["edit"], "pathGlobs": ["**/*.kt", "**/*.kts"] },
+      "script": { "sh": "scripts/format-kotlin.sh", "ps1": "scripts/format-kotlin.ps1" },
+      "timeoutSeconds": 30
+    },
+    {
+      "name": "block-force-push",
+      "event": "preToolUse",
+      "match": { "tools": ["runCommands"] },
+      "script": { "sh": "scripts/block-force-push.sh", "ps1": "scripts/block-force-push.ps1" },
+      "timeoutSeconds": 30
+    },
+    {
+      "name": "protect-secrets",
+      "event": "preToolUse",
+      "match": { "tools": ["read", "edit", "runCommands"] },
+      "script": { "sh": "scripts/protect-secrets.sh", "ps1": "scripts/protect-secrets.ps1" },
+      "timeoutSeconds": 30
+    },
+    {
+      "name": "guard-context-docs",
+      "event": "preToolUse",
+      "match": {
+        "tools": ["edit", "runCommands"],
+        "pathGlobs": ["project-context.md", "architecture.md"]
+      },
+      "script": {
+        "sh": "scripts/guard-context-docs.sh",
+        "ps1": "scripts/guard-context-docs.ps1"
+      },
+      "timeoutSeconds": 30
+    }
+  ]
+}

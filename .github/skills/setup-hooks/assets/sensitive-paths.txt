@@ -1,0 +1,13 @@
+# generated-by: copilot-workflow
+# Baseline (never removed by setup-hooks) + entries seeded from this repo's signing configs and
+# .gitignore (see references/seeding-rules.md). Add your own with a comment saying why.
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pem
+**/*.key
+local.properties
+.env
+.env.*
+secrets.properties
+.logs/*/raw/**

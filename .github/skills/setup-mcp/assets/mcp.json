@@ -1,0 +1,16 @@
+{
+  "_comment": "generated-by: copilot-workflow. Same three servers as .github/mcp/jetbrains-mcp.example.json, for the Copilot CLI agent mode. No token here — Jira/Confluence typically prompt for OAuth sign-in at runtime; Bitbucket tools need the same Basic-auth token as JetBrains mode once you have one, added to your own local CLI config, never to this file.",
+  "mcpServers": {
+    "atlassian-rovo": {
+      "url": "https://mcp.atlassian.com/v1/sse"
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-mcp"]
+    },
+    "repowise": {
+      "command": "repowise",
+      "args": ["mcp"]
+    }
+  }
+}

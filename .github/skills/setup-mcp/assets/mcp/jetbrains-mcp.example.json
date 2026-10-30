@@ -1,0 +1,19 @@
+{
+  "_comment": "generated-by: copilot-workflow. Reference snippet only — Copilot does not load this file. Copy its contents into your own JetBrains mcp.json (chat tools menu > Edit mcp.json) and fill in <YOUR_ATLASSIAN_EMAIL>/<YOUR_ATLASSIAN_API_TOKEN>. Never commit your filled-in mcp.json.",
+  "mcpServers": {
+    "atlassian-rovo": {
+      "url": "https://mcp.atlassian.com/v1/sse",
+      "headers": {
+        "Authorization": "Basic <BASE64_OF_YOUR_ATLASSIAN_EMAIL:YOUR_ATLASSIAN_API_TOKEN>"
+      }
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-mcp"]
+    },
+    "repowise": {
+      "command": "repowise",
+      "args": ["mcp"]
+    }
+  }
+}
