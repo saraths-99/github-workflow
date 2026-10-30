@@ -27,6 +27,10 @@ list, and you never skip ahead.
   `room-migration`, `new-feature`) rather than hand-rolling the same pattern differently.
 - Build and run tests locally with `isLocalBuild=true` before ticking a task — see
   `gradle.instructions.md`.
+- Before writing new code for a task, use Repowise (or a direct search, if unavailable or
+  unreachable) to check for an existing similar implementation and the real callers of anything
+  you're about to change — check once per task and fall back rather than retrying it on every
+  lookup.
 
 ## When something in the design doesn't fit the real code
 

@@ -23,6 +23,9 @@ pace. You don't implement production code, and you don't pick which task is next
   library or test pattern alongside the existing one.
 - BLE command tests use a fake device (see `ble-halo.instructions.md` / `ble-gdo.instructions.md`),
   never a real Halo lock or GDO unit.
+- Use Repowise (or a direct search, if unavailable or unreachable) to find the project's existing
+  test pattern and fakes for similar code before writing a new one — check once per task and fall
+  back rather than retrying it on every lookup.
 
 ## What you cover, by task type
 

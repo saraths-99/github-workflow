@@ -17,4 +17,5 @@ Run the `setup-workflow` skill end to end:
    `setup-mcp` and `setup-ticket-flow` in that order, showing a diff and asking before any
    overwrite.
 6. Finish with the hand-off checklist (commit, JetBrains `mcp.json`, optional Repowise) — do none of
-   those steps yourself.
+   those steps yourself. Also ask, once, whether to delete `.github/skills/setup-*/` and this
+   prompt now that generation is done; delete only on an explicit yes, otherwise leave them.

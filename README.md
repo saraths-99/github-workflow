@@ -71,7 +71,7 @@ This orchestrates the generation process through a series of developer-approved 
 
 6. **Sequential Generation:** Writes configuration layers (Instructions → Agents → Skills → Hooks → MCP → Ticket Flow).
 
-7. **Handoff:** Provides final manual steps, such as committing files and injecting Atlassian tokens into the MCP configuration.
+7. **Handoff:** Provides final manual steps, such as committing files and injecting Atlassian tokens into the MCP configuration, and asks once whether to delete the `setup-*` skills now that generation is done (kept by default — deleting them means a later re-run needs `bootstrap.sh` run again first).
 
 ## 3. Post-Deployment Architecture
 

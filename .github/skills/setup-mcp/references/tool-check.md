@@ -25,7 +25,11 @@ workflow's three servers.
 - No API key, no network call for its core analysis — if it's not responding, it's very likely
   just not installed or not indexed yet for this workspace, not a config problem. See the
   `uv tool install repowise && repowise init --yes --no-prose` steps in the top-level README.
-- Its absence is never a blocker for the rest of setup — note it and move on.
+- **Check it per repo, not once for the whole workspace.** In a multi-repo setup (see `repos` in
+  the settings block), Repowise can be indexed for the app repo but not a secondary SDK/firmware
+  repo, or vice versa — a single pass/fail isn't safe to assume applies to every repo this app's
+  agents will touch. List which of the open repos it's actually reachable/indexed for in the brief.
+- Its absence for any repo is never a blocker for the rest of setup — note it per repo and move on.
 
 ## What to put in the brief
 

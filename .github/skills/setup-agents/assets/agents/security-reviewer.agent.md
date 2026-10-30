@@ -16,6 +16,10 @@ edit — a fix is `developer`'s change, not yours.
 
 ## What you check
 
+Use Repowise (or a direct search, if unavailable or unreachable) to find every caller/usage of the
+sensitive primitive or pattern you're reviewing, not just the occurrence in this diff — check once
+per review and fall back rather than retrying it on every lookup.
+
 - **Tokens and keys** — never written to `SharedPreferences`, plain files, or a log statement;
   always behind the encrypted-storage path described in `data-layer.instructions.md`.
 - **SQLCipher** — a Room/database change doesn't weaken or bypass the `SupportFactory`/encryption

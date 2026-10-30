@@ -1,21 +1,20 @@
 # Agentic AI-SDLC workflow — implementation reference
 
-Internal design reference for this builder repo. Describes what the generated workflow actually
-implements: the setup wizard, the daily ticket pipeline, the log-analysis loop, the safety
-mechanisms wrapping all of it, and — in §11 — exactly where every file lives, both in this builder
-repo and in a generated app repo. Each skill's own `SKILL.md` is the authoritative source — this
-document is a synthesis for a single-page view, not a replacement.
+Design reference for the **generated** Agentic AI-SDLC workflow — what actually runs inside an app
+repo once setup has produced it: the one-time setup wizard as experienced there, the daily ticket
+pipeline, the log-analysis loop, the safety mechanisms wrapping all of it, and — in §11 — exactly
+where every one of those files lives in that app repo. Each skill's own `SKILL.md` is the
+authoritative source for its own behavior — this document is a synthesis for a single-page view,
+not a replacement.
 
 ## 1. System map
 
 | Place | Holds |
 |---|---|
-| **Builder repo** (this repo) | The `setup-*` skills and their blueprints — the source for everything below |
 | **App repo** | Generated instructions, agents, skills, prompts, hooks, MCP config; the ticket specs |
 | **Developer machine** | Filled-in `mcp.json` with a real Atlassian token; optional Repowise index |
 
-Nothing in this repo runs against product code directly. `bootstrap.sh`/`bootstrap.ps1` copies the
-`setup-*` skills into an app repo; `/setup-workflow`, run there, generates everything else.
+`/setup-workflow`, run once inside the app repo, generates everything else listed below.
 
 ## 2. Setup phase (once per repo)
 
@@ -34,71 +33,52 @@ flowchart TD
     J -- changes requested --> I
     J -- approved --> K["Generate, fixed order:<br/>instructions -> agents -> skills -> hooks -> mcp -> ticket-flow"]
     K --> L[Verify: diff + approve each overwrite]
-    L --> M([Hand off: commit, MCP token, Repowise])
+    L --> M[Hand off: commit, MCP token, Repowise]
+    M --> N{Delete setup-*/ skills<br/>and this prompt now?}
+    N -- yes --> O([Done — setup machinery removed])
+    N -- no / no answer --> P([Done — setup-*/ kept for next re-run])
 ```
 
 ## 3. Daily ticket workflow (spec-driven development)
 
-Three phases happen in sequence per ticket: **detect & spec**, **implement & test** (looped per
-task), **review & ship**. Nothing in phase 2 starts before `tasks.md` is approved in phase 1;
-nothing in phase 3 starts before every task is ticked in phase 2.
+The shape of it, start to finish. The developer approves every step along the way — nothing moves
+to the next box without an explicit yes — and a failed check always loops back to the box before
+it, rather than skipping forward.
 
 ```mermaid
 flowchart TD
-    A([/ticket-start ticket]) --> B0{Ticket's project key<br/>matches a configured<br/>jira_projects entry?}
-    B0 -- no --> FC[Stop, ask developer]
-    B0 -- yes --> B{Issue type in that<br/>project's bug_issue_types?}
-    B -- yes, unanalyzed --> C[log-analyser loop, see §4]
-    C --> D[log-analysis.md]
-    B -- yes, already analyzed --> D
-    D --> FA[Reuse feature folder<br/>from log-analysis.md]
-    B -- no --> FB[Ask developer<br/>which feature folder]
-    FA --> E[ticket-analyst: requirements.md]
-    FB --> E
-    E --> F{Approved?}
-    F -- no --> E
-    F -- yes --> G[architect: design.md]
-    G --> H{Approved?}
-    H -- no --> G
-    H -- yes --> I[architect: tasks.md]
-    I --> J{Approved?}
-    J -- no --> I
-    J -- yes --> K[Create feature branches]
-    K --> L[developer: implement next task]
-    L --> DM{Design mismatch<br/>vs. design.md?}
-    DM -- yes --> DR[architect updates<br/>design.md + tasks.md]
-    DR --> DAP{Approved?}
-    DAP -- no --> DR
-    DAP -- yes --> L
-    DM -- no --> M[test-writer: write test]
-    M --> N{Passes + meets<br/>acceptance criteria?}
-    N -- no --> L
-    N -- yes --> O[Tick task]
-    O --> P{All tasks ticked?}
-    P -- no --> L
-    P -- yes --> Q[code-reviewer reviews diff]
-    Q --> R{Touches sensitive area?}
-    R -- yes --> S[security-reviewer reviews diff]
-    R -- no --> T
-    S --> T{Open comments?}
-    T -- yes --> L
-    T -- no --> U[Local build + tests]
-    U --> V[Ask once: show PR plan]
-    V --> W[Push + open PR per repo, merge order]
-    W --> X{Pipelines on<br/>for this repo?}
-    X -- yes --> Y[Wait for Pipelines pass]
-    X -- no --> Z[Note: no pipeline ran]
-    Y --> AA([Move ticket to In Review])
-    Z --> AA
+    A([Start a ticket]) --> B{Is it a bug?}
+    B -- yes --> C[Look at the logs,<br/>find the likely cause]
+    B -- no --> D
+    C --> D[Write what's needed<br/>Requirements]
+    D --> E[Design the fix,<br/>break it into tasks]
+    E --> F[Build it, one task<br/>at a time, with tests]
+    F --> G[Review the code]
+    G --> H[Push the code]
+    H --> I{Can we reach<br/>Bitbucket?}
+    I -- yes --> J[Open the PR for you,<br/>wait for CI to pass]
+    I -- no --> K[Hand you the PR text<br/>to paste in yourself]
+    J --> L([Mark ticket In Review])
+    K --> L
 ```
+
+That `I` step is a real, current gap worth naming plainly: opening a PR and checking CI both need
+Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an
+admin turning on the Bitbucket tools — nothing this workflow controls. Without it, this workflow
+never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
+`ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
 
 ## 4. Log-analysis loop (bug tickets only)
 
 ```mermaid
 flowchart TD
-    A([Intake: read ticket + comments,<br/>pin issue time]) --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
+    A([Intake: read ticket + every<br/>comment, pin issue time]) --> AF{Existing specs/*/<br/>feature folder fits?}
+    AF -- no --> AFX([Stop: ask developer —<br/>never default to a new folder])
+    AF -- yes --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
     X --> B[Trim: logcat_trim.py]
-    B --> C[Digest: logcat_digest.py]
+    B --> BW{Trimmed to ~0 lines?}
+    BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
+    BW -- no --> C[Digest: logcat_digest.py]
     C --> D[Link: group + match log-signatures.md]
     D --> E[Map: Repowise class/module lookup]
     E --> F[Rank: root-cause hypotheses]
@@ -109,13 +89,10 @@ flowchart TD
     G -- no, pass = 3 --> H
 ```
 
-Three scripts in this loop are plain Python, no AI, no network:
-[`logcat_extract.py`](../.github/skills/setup-agents/assets/log-analyser/scripts/logcat_extract.py)
-normalizes the raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted
-and, if it holds more than one text log, merged in chronological order) into the single file
-[`logcat_trim.py`](../.github/skills/setup-agents/assets/log-analyser/scripts/logcat_trim.py) expects,
-and [`logcat_digest.py`](../.github/skills/setup-agents/assets/log-analyser/scripts/logcat_digest.py)
-groups that trimmed log's warnings and errors by signature.
+Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.py` normalizes the
+raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted and, if it
+holds more than one text log, merged in chronological order) into the single file `logcat_trim.py`
+expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by signature.
 
 ## 5. Agents
 
@@ -137,9 +114,8 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 
 | Layer | Skills |
 |---|---|
-| **Builder** (run once, at setup) | `setup-workflow`, `setup-context-docs`, `setup-instructions`, `setup-agents`, `setup-skills`, `setup-hooks`, `setup-mcp`, `setup-ticket-flow` |
-| **Project — orchestration** | `ticket-start`, `ticket-ship` |
-| **Project — implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests` |
+| **Orchestration** | `ticket-start`, `ticket-ship` |
+| **Implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests` |
 
 `new-ble-command` and `room-migration` are only generated when BLE or Room is actually detected in
 the app repo; the rest are always generated.
@@ -155,8 +131,8 @@ the app repo; the rest are always generated.
 
 Protocol: each script reads one JSON object on stdin (`event`, `tool`, `paths`, `command`, `text`)
 and writes one JSON decision (`allow` / `deny` / `ask`) to stdout. A non-zero exit or a 30-second
-timeout both fall back — a crash denies the action, a timeout silently allows it (see
-[`hook-protocol.md`](../.github/skills/setup-hooks/references/hook-protocol.md) and open item 4 in §10).
+timeout both fall back — a crash denies the action, a timeout silently allows it (open item 4 in
+§10).
 
 ## 8. MCP servers
 
@@ -207,72 +183,12 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
 
 ## 11. Folder structure
 
-Where every file lives, in the builder repo and in a generated app repo, and which of those paths
-are a real GitHub Copilot standard versus a convention this workflow invented for itself.
+Where every file lives in a generated app repo, and which of those paths are a real GitHub Copilot
+standard versus a convention this workflow invented for itself.
 
-### 11.1 Builder repo (this repo)
+### 11.1 App repo, after `/setup-workflow`'s first run
 
-```
-github-workflow/
-├── README.md
-├── bootstrap.sh / bootstrap.ps1
-├── docs/
-│   └── workflow-design.md            (this file — design reference + folder structure)
-├── tests/
-│   └── static_checks.py
-└── .github/
-    ├── copilot-instructions.md       rules for working on this builder repo itself
-    ├── agents/                       (placeholder — optional org-level agent, not built)
-    ├── prompts/setup-workflow.prompt.md
-    └── skills/
-        ├── setup-workflow/           entry point — the wizard
-        │   ├── SKILL.md
-        │   └── references/  (detection-rules.md, question-bank.md)
-        ├── setup-context-docs/
-        │   ├── SKILL.md
-        │   ├── references/field-sources.md
-        │   └── assets/  (project-context-template.md, architecture-template.md)
-        ├── setup-instructions/
-        │   ├── SKILL.md
-        │   ├── references/detection-map.md
-        │   └── assets/  (copilot-instructions-template.md + 8 *.instructions.md)
-        ├── setup-agents/
-        │   ├── SKILL.md
-        │   ├── references/tool-lists.md
-        │   └── assets/
-        │       ├── agents/        (7 × *.agent.md)
-        │       ├── prompts/log-analyser.prompt.md
-        │       └── log-analyser/  (logcat_extract.py, logcat_trim.py, logcat_digest.py, log-signatures-template.md)
-        ├── setup-skills/
-        │   ├── SKILL.md
-        │   ├── references/detection-map.md
-        │   └── assets/
-        │       ├── skills/   (new-feature, new-screen, new-ble-command, new-api-call, room-migration, write-tests)
-        │       └── prompts/  (6 matching .prompt.md)
-        ├── setup-hooks/
-        │   ├── SKILL.md
-        │   ├── references/  (hook-protocol.md, seeding-rules.md)
-        │   └── assets/  (guards.json, sensitive-paths.txt, scripts/ × 4 hooks × .sh+.ps1)
-        ├── setup-mcp/
-        │   ├── SKILL.md
-        │   ├── references/tool-check.md
-        │   └── assets/  (mcp.json, mcp/jetbrains-mcp.example.json)
-        └── setup-ticket-flow/
-            ├── SKILL.md
-            ├── references/pipelines-detection.md
-            └── assets/
-                ├── skills/ticket-start, skills/ticket-ship
-                ├── prompts/ (2 matching .prompt.md)
-                └── spec-templates/ (requirements-template.md, design-template.md, tasks-template.md)
-```
-
-Every blueprint lives under its owning `setup-*` skill's own `assets/`. Nothing is shared across
-skill folders — a cross-cutting concern gets a `references/*.md` file inside whichever skill owns
-it most, linked to from the others, rather than a top-level shared folder (see §11.4).
-
-### 11.2 Generated app repo (after `/setup-workflow`'s first run)
-
-Assumes the full target stack (both BLE stacks, Room, AppSync all detected — see §11.2.1 for what's
+Assumes the full target stack (both BLE stacks, Room, AppSync all detected — see §11.1.1 for what's
 conditional).
 
 ```
@@ -286,11 +202,11 @@ conditional).
 │   └── .templates/
 │       ├── requirements-template.md
 │       ├── design-template.md
-│       └── tasks-template.md          scaffolds only — see §11.4 for the -template.md convention
-├── .logs/                             created lazily, git-ignored — see §11.3
+│       └── tasks-template.md          scaffolds only — see §11.3 for the -template.md convention
+├── .logs/                             created lazily, git-ignored — see §11.2
 └── .github/
     ├── copilot-instructions.md        settings block + module map + key rules + links
-    ├── instructions/                  8 files, conditional — see §11.2.1
+    ├── instructions/                  8 files, conditional — see §11.1.1
     │   ├── kotlin.instructions.md
     │   ├── xml-ui.instructions.md
     │   ├── koin-di.instructions.md
@@ -315,15 +231,15 @@ conditional).
     ├── skills/
     │   ├── new-feature/SKILL.md
     │   ├── new-screen/SKILL.md
-    │   ├── new-ble-command/SKILL.md   conditional — see §11.2.1
+    │   ├── new-ble-command/SKILL.md   conditional — see §11.1.1
     │   ├── new-api-call/SKILL.md
-    │   ├── room-migration/SKILL.md    conditional — see §11.2.1
+    │   ├── room-migration/SKILL.md    conditional — see §11.1.1
     │   ├── write-tests/SKILL.md
     │   ├── ticket-start/SKILL.md
     │   ├── ticket-ship/SKILL.md
-    │   └── setup-*/                   retained — see §11.2.2
+    │   └── setup-*/                   retained by default, deletable on request — see §11.1.2
     ├── prompts/
-    │   ├── setup-workflow.prompt.md   kept — the re-run entry point
+    │   ├── setup-workflow.prompt.md   kept by default, same as setup-*/ — the re-run entry point
     │   ├── log-analyser.prompt.md
     │   ├── new-feature.prompt.md
     │   ├── new-screen.prompt.md
@@ -341,7 +257,7 @@ conditional).
     └── mcp.json
 ```
 
-#### 11.2.1 Conditional pieces
+#### 11.1.1 Conditional pieces
 
 Gated on what `setup-workflow`'s Read step actually detects — absent entirely for a repo that
 doesn't match the signal, never generated as an empty placeholder:
@@ -356,15 +272,16 @@ doesn't match the signal, never generated as an empty placeholder:
 Everything else (`kotlin.instructions.md`, `testing.instructions.md`, `gradle.instructions.md`,
 all 7 agents, `new-feature`, `write-tests`, `ticket-start`, `ticket-ship`) is always generated.
 
-#### 11.2.2 `.github/skills/setup-*/` is retained, not deleted
+#### 11.1.2 `.github/skills/setup-*/` is retained by default, deletable on request
 
-No `SKILL.md` deletes the `setup-*` skills after generation. This is deliberate: `setup-workflow`
-is re-run-safe (it reads the settings block and re-detects the stack), so a later re-run — new BLE
-stack added, architecture changed — needs those skills still present. The original design doc's own
-app-repo tree omits them (focused on the generated output, not the machinery that produced it), but
-nothing in this workflow currently cleans them up. Decide explicitly if that should change.
+No `SKILL.md` deletes the `setup-*` skills automatically — but `setup-workflow`'s own step 7 (Hand
+off) now asks, once, whether to delete them (and `.github/prompts/setup-workflow.prompt.md`) now
+that generation is done, explaining the trade-off: the daily commands never read anything under
+`setup-*/` again (they're independent copies elsewhere under `.github/`), but keeping it is what
+makes `/setup-workflow` re-runnable later without first re-running the setup tool's own bootstrap
+step. It deletes only on an explicit yes; absent one, everything is left in place.
 
-### 11.3 Per-ticket runtime additions
+### 11.2 Per-ticket runtime additions
 
 Not present until a ticket is actually worked; one set per ticket, inside its feature folder.
 
@@ -382,7 +299,7 @@ specs/<feature>/<ticket-id>/
 └── digest.md             error groups with counts and first/last times
 ```
 
-### 11.4 Naming conventions: specification compliance
+### 11.3 Naming conventions: specification compliance
 
 Every path under `.github/` conforms to a documented GitHub Copilot customization path, verified
 against the [customization cheat sheet](https://docs.github.com/en/copilot/reference/customization-cheat-sheet).
@@ -398,16 +315,15 @@ assigns it no behavior.
 | `.github/agents/*.md` | Location per specification; `.agent.md` suffix is a project convention | The specification requires only that the file reside in `.github/agents/`; the `.agent.md` suffix is applied by this workflow for readability and is not required by GitHub Copilot |
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
-| `~/.copilot/skills/` | GitHub Copilot specification (user scope) | A per-user, home-directory skill location; `bootstrap.sh` does not write to it |
+| `~/.copilot/skills/` | GitHub Copilot specification (user scope) | A per-user, home-directory skill location; this workflow does not write to it |
 | `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `ticket-analyst`, `architect`, and `log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes blueprint files from any glob that scans `specs/**/requirements.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
-| `*-template.md` elsewhere (`copilot-instructions-template.md`, `project-context-template.md`, …) | Project-specific convention | Applied for the same reason, consistently, across every generated-file blueprint in this builder repo |
+| `*-template.md` elsewhere (`copilot-instructions-template.md`, `project-context-template.md`, …) | Project-specific convention | Applied for the same reason, consistently, across every file this workflow generates |
 | `generated-by: copilot-workflow` marker | Project-specific convention | Distinguishes files written by `setup-workflow` from developer-authored files on a re-run |
-| `bug_issue_types` settings-block field | Project-specific convention | Not a GitHub Copilot concept; part of this workflow's own re-run contract |
+| `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; part of this workflow's own re-run contract |
 
 **Implication.** A path classified as GitHub Copilot specification is governed by GitHub's
 published behavior and remains valid for as long as that specification does. A path classified as a
-project-specific convention carries no external enforcement — it functions only because every skill
-in this builder repo has been written to honor it consistently. Any change to the `specs/` layout
-or the `-template.md` convention must therefore be mirrored across every skill that reads or writes
-it.
+project-specific convention carries no external enforcement — it functions only because every
+agent and skill that reads or writes it has been written to honor it consistently. Any change to
+the `specs/` layout or the `-template.md` convention must therefore be mirrored across all of them.

@@ -28,3 +28,18 @@ Copilot has no per-command allowlist in a tool list — "can run commands" is al
 `code-reviewer` isn't the backstop here (log-analyser's phase is before any code diff exists); the
 backstop is the developer reviewing `log-analysis.md` and the redacted Jira comment it posts, per
 the Report step in the log-analysis loop.
+
+## Every `repowise` grant needs its own usage + fallback line
+
+Granting `repowise` in an agent's `mcp:` list isn't self-explanatory — Copilot's tool list has no
+way to express "try this, then fall back," so that behavior has to be written into the agent's own
+body, the same way `log-analyser`'s run-commands scope is. Every agent above that lists `Repowise`
+must state, in its own prose, both what it uses Repowise for and what to do when it's unavailable
+(always: fall back to a direct file read/search for that lookup, never block or retry). Don't grant
+`repowise` to a new agent's blueprint without adding that line — an unused grant with no fallback
+instruction is worse than not granting it, since it leaves the agent's actual behavior when
+Repowise is missing undefined rather than explicit.
+
+Within one run, check Repowise once and remember the result — if a call fails or times out, don't
+keep retrying it on every subsequent lookup in that same task; fall back to direct reads for the
+rest of it.

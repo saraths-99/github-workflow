@@ -115,6 +115,17 @@ Tell the developer what's left for them to do by hand, and do not attempt any of
   Atlassian token.
 - If they want Repowise, install and index it separately (this wizard never installs tools).
 
+**Ask, once, whether to delete the setup machinery now that generation is done** —
+`.github/skills/setup-*/` and `.github/prompts/setup-workflow.prompt.md`. Explain both sides before
+they decide: keeping them costs nothing at runtime (the daily commands — `ticket-start`,
+`ticket-ship`, the project skills, `log-analyser` — are independent copies under `.github/agents/`,
+`.github/skills/<name>/` and `.github/log-analyser/`, and never read anything under `setup-*/`
+again), but *is* what makes `/setup-workflow` re-runnable later for a new BLE stack, an added Jira
+project, or an architecture change; deleting them means a later re-run needs `bootstrap.sh` run
+again from the builder repo first, to restore them. **Delete only on an explicit yes** — if the
+developer doesn't answer, or says no, leave them in place; never delete as a default or because
+"it's probably fine."
+
 ## Safety rules for this skill
 
 - Never write a file outside the fixed order in step 5, and never write anything before the brief
@@ -122,5 +133,8 @@ Tell the developer what's left for them to do by hand, and do not attempt any of
 - Never touch `.agents/`, `.claude/`, `.android-studio/` or `AGENTS.md` in the app repo.
 - Never fill in a Jira project key, its bug issue type(s), base branch, token, or any other value
   the developer hasn't given you or that isn't in the settings block — leave it `TBD` and ask.
+- Never delete `.github/skills/setup-*/` or `.github/prompts/setup-workflow.prompt.md` without the
+  developer's explicit yes in step 7 — not as a default, not because generation succeeded cleanly,
+  and not on a re-run either.
 - If a hand-off skill in step 5 fails validation, stop the chain at that step; do not run later
   skills against a broken earlier one.

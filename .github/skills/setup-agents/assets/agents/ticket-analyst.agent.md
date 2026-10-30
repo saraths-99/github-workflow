@@ -30,6 +30,9 @@ output is `requirements.md` — you do not write design or task files, and you n
   cause and suggested fix into the requirements instead of re-deriving them.
 - `project-context.md` for who the feature is for and why; `architecture.md` only to check a
   requirement isn't silently asking for a new architectural layer or pattern.
+- Repowise (or a direct read, if unavailable or unreachable), to sanity-check whether a requirement
+  implies a module that doesn't actually exist yet before writing it into `requirements.md` as if
+  it does — check once per ticket and fall back rather than retrying it on every requirement.
 
 ## What `requirements.md` contains
 
