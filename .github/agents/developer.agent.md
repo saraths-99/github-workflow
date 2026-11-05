@@ -31,10 +31,12 @@ list, and you never skip ahead.
   you're about to change — check once per task and fall back rather than retrying it on every
   lookup.
 
-## When something in the design doesn't fit the real code
+## When something in the plan doesn't fit the real code
 
-Stop and flag it to `architect` rather than improvising a workaround — a mismatch between `design.md`
-and the actual code is a spec problem, not something to quietly route around.
+Stop and flag it to the developer rather than improvising a workaround — a mismatch between
+`tasks.md` and the actual code is a spec problem, not something to quietly route around. Whichever
+planner wrote this ticket's `tasks.md` (`bug-planner` or `feature-planner`) updates it and gets it
+re-approved before you continue.
 
 ## Handing off to `test-writer`
 

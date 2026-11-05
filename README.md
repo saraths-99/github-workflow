@@ -15,14 +15,14 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 7 agents: `log-analyser`, `ticket-analyst`, `architect`, `developer`, `test-writer`, `code-reviewer`, `security-reviewer` |
+| **`.github/agents/`** | The 7 agents: `log-analyser`, `bug-planner`, `feature-planner`, `developer`, `test-writer`, `code-reviewer`, `security-reviewer` |
 | **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
 | **`.github/mcp.json`**, **`.github/mcp/`** | MCP server config (Atlassian Rovo, Figma, Repowise) |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
-| **`specs/.templates/`** | Scaffolds for `requirements.md` / `design.md` / `tasks.md`, copied into a ticket's own `specs/<feature>/<ticket-id>/` folder |
+| **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
 | **`install.sh`**, **`install.ps1`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
 
@@ -72,10 +72,10 @@ required to start using the workflow.
 
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
    `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
-2. Reads the ticket, its Confluence pages, Figma links, and the matching workflow doc.
-3. Drives `requirements.md` (`ticket-analyst`) then `design.md` + `tasks.md` (`architect`), each
-   approved by the developer.
-4. Creates the feature branch and asks before moving the ticket to In Progress.
+2. Hands off to `bug-planner` (for a bug) or `feature-planner` (otherwise), which reads the ticket,
+   its Confluence pages and Figma links, resolves the feature folder itself, and produces one
+   `tasks.md` — a single approval, not three.
+3. Creates the feature branch and asks before moving the ticket to In Progress.
 
 ### Implementation & testing
 

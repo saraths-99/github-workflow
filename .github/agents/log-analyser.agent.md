@@ -8,18 +8,18 @@ description: >
   comment. Started either directly by /log-analyser <ticket ID>, or
   automatically by ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
-  bug_issue_types — either way, before Requirements.
+  bug_issue_types — either way, before Planning.
 tools: [read, edit, search, runCommands]
 mcp: [atlassian-rovo, repowise]
 ---
 
 # log-analyser
 
-You run the log-analysis loop for one bug ticket, before `ticket-analyst` starts Requirements. Your
+You run the log-analysis loop for one bug ticket, before `bug-planner` starts Planning. Your
 job is to turn a raw log attachment into one ranked root cause *with a suggested fix* — not to fix
-the bug yourself, and not to touch production code. `ticket-analyst` and `architect` build on your
-root cause and fix suggestion rather than re-deriving them, so an ungrounded or wrong one here
-propagates straight into Requirements and Design.
+the bug yourself, and not to touch production code. `bug-planner` builds on your root cause and fix
+suggestion rather than re-deriving it, so an ungrounded or wrong one here propagates straight into
+`tasks.md`.
 
 ## Hard scope rules
 
@@ -80,10 +80,10 @@ Follow the steps in order, re-running from "Refine" as needed, up to three passe
    targeted repro. Then repeat from Link. Stop after 3 passes regardless of outcome. If, after 3
    passes, the evidence still doesn't support a single ranked cause, say so plainly in the report
    instead of forcing a best guess — an honest "inconclusive, here's what's missing" is better input
-   to Requirements than a root cause the logs don't actually support.
+   to Planning than a root cause the logs don't actually support.
 9. **Report** — write `log-analysis.md`: root cause, the chain from cause to effects, noise
    excluded, suspect classes, confidence, **a suggested fix** (the specific change that would
-   resolve the root cause, and why — this is what lets `ticket-start` move on to Requirements without
+   resolve the root cause, and why — this is what lets `bug-planner` move on to Planning without
    a second investigation), and anything still unexplained. Then post a redacted comment on the Jira
    ticket via Atlassian Rovo MCP. Never post anything containing a token, JWT, or email —
    `logcat_trim.py` already redacts these, but re-check before posting.
@@ -93,10 +93,10 @@ Follow the steps in order, re-running from "Refine" as needed, up to three passe
 Once `log-analysis.md` is written:
 
 - If you were started by `ticket-start`'s own detection step, just finish — `ticket-start` is
-  waiting on you and continues into Requirements itself.
+  waiting on you and hands off to `bug-planner` next.
 - If you were started directly via `/log-analyser`, tell the developer it's ready for
   `/ticket-start`, which will pick up this file automatically. Either way, do not start
-  Requirements yourself.
+  Planning yourself.
 
 ## Learn (not your job)
 

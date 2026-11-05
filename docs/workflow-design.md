@@ -34,9 +34,8 @@ flowchart TD
     A([Start a ticket]) --> B{Is it a bug?}
     B -- yes --> C[Look at the logs,<br/>find the likely cause]
     B -- no --> D
-    C --> D[Write what's needed<br/>Requirements]
-    D --> E[Design the fix,<br/>break it into tasks]
-    E --> F[Build it, one task<br/>at a time, with tests]
+    C --> D[Plan: tasks.md —<br/>what, why, approach, steps]
+    D --> F[Build it, one task<br/>at a time, with tests]
     F --> G[Review the code]
     G --> H[Push the code]
     H --> I{Can we reach<br/>Bitbucket?}
@@ -45,6 +44,15 @@ flowchart TD
     J --> L([Mark ticket In Review])
     K --> L
 ```
+
+The Plan box is one agent, one file, one approval: `bug-planner` for a bug ticket (after the
+log-analysis loop), `feature-planner` otherwise. Earlier versions of this workflow split Plan into
+three separate files and three separate approvals (requirements, then design, then tasks) written
+by two different agents — that meant asking the developer to approve three times, and a duplicate
+ask for the feature folder name along the way (one agent resolved it, the next one re-confirmed
+it). `tasks.md` now carries what the old `requirements.md` and `design.md` covered — what the ticket
+is for, acceptance criteria, approach/risks — as sections ahead of the task checklist, in the single
+file `code-reviewer` and `test-writer` check against.
 
 That "Can we reach Bitbucket" step is a real, current gap worth naming plainly: opening a PR and checking CI both need
 Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an
@@ -85,8 +93,8 @@ expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by
 | Agent | Job | Tools | MCP | Hard scope rule |
 |---|---|---|---|---|
 | `log-analyser` | Root-causes a bug ticket's logs with a suggested fix | read, edit, search, runCommands (scripts only) | atlassian-rovo, repowise | Writes only `log-analysis.md`; runs only the three log scripts, in order |
-| `ticket-analyst` | Writes `requirements.md` | read, edit, search | atlassian-rovo, figma, repowise | Writes only `requirements.md` |
-| `architect` | Writes `design.md`, `tasks.md` | read, edit, search | repowise | Writes only those two files; no new architectural layer |
+| `bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md` | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; reuses `log-analyser`'s feature folder, never asks again |
+| `feature-planner` | Writes `tasks.md` for a feature ticket | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; the sole place a feature ticket's folder is resolved |
 | `developer` | Implements `tasks.md` | read, edit, search, runCommands | repowise | One task at a time, in order, only via the named skill |
 | `test-writer` | Tests each task | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
 | `code-reviewer` | Reviews diff vs. spec | read, search | repowise | Read-only; checks the specs-only rule on every diff |
@@ -161,8 +169,8 @@ protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
 Found by audit, not yet closed — listed here so they stay visible rather than living only in chat:
 
 1. **Test/spec gaming under pressure** — nothing stops `test-writer` from weakening an assertion,
-   or `architect`'s "plan changed" re-approval path from being used to dodge a hard bug rather than
-   fix it.
+   or the "plan changed" re-approval path (`bug-planner`/`feature-planner`) from being used to dodge
+   a hard bug rather than fix it.
 2. **UI error/loading/empty states** — `new-screen` and `xml-ui.instructions.md` stop at wiring;
    nothing requires a screen to handle or test a failure/loading/empty state.
 3. **No retry cap for `developer`/`test-writer`** — unlike `log-analyser`'s 3-pass cap, nothing
@@ -173,7 +181,7 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
 6. **Ticket reclassified after `ticket-start` runs** — issue type is read once; a later
    feature→bug (or reverse) reclassification isn't re-checked.
 7. **Technically-passing-but-wrong-approach implementations** — `code-reviewer` checks criteria are
-   met, not that the approach matches `design.md`'s intent.
+   met, not that the approach matches `tasks.md`'s Approach section's intent.
 8. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
 9. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
 
@@ -195,9 +203,7 @@ versus a convention this workflow invented for itself.
 ├── .gitignore                         .logs/ ignored
 ├── specs/
 │   └── .templates/
-│       ├── requirements-template.md
-│       ├── design-template.md
-│       └── tasks-template.md          scaffolds only — see §10.3 for the -template.md convention
+│       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention
 ├── .logs/                             created lazily, git-ignored — see §10.2
 └── .github/
     ├── copilot-instructions.md        settings block + module map + key rules + links
@@ -212,8 +218,8 @@ versus a convention this workflow invented for itself.
     │   └── gradle.instructions.md
     ├── agents/
     │   ├── log-analyser.agent.md
-    │   ├── ticket-analyst.agent.md
-    │   ├── architect.agent.md
+    │   ├── bug-planner.agent.md
+    │   ├── feature-planner.agent.md
     │   ├── developer.agent.md
     │   ├── test-writer.agent.md
     │   ├── code-reviewer.agent.md
@@ -260,9 +266,7 @@ Not present until a ticket is actually worked; one set per ticket, inside its fe
 ```
 specs/<feature>/<ticket-id>/
 ├── log-analysis.md      bug tickets only — written by log-analyser
-├── requirements.md      written by ticket-analyst
-├── design.md             written by architect
-└── tasks.md              written by architect
+└── tasks.md              written by bug-planner (bug) or feature-planner (feature)
 
 .logs/<ticket-id>/
 ├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads
@@ -288,8 +292,8 @@ behavior.
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
 | `~/.copilot/skills/` | GitHub Copilot specification (user scope) | A per-user, home-directory skill location; this workflow does not write to it |
-| `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `ticket-analyst`, `architect`, and `log-analyser` |
-| `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes blueprint files from any glob that scans `specs/**/requirements.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
+| `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `bug-planner`, `feature-planner`, and `log-analyser` |
+| `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `ticket-start` at the start of every ticket |
 
 **Implication.** A path classified as GitHub Copilot specification is governed by GitHub's

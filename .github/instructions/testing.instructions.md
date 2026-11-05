@@ -13,5 +13,5 @@ applyTo: "**/test/**,**/androidTest/**"
   `ble-halo.instructions.md` / `ble-gdo.instructions.md`.
 - Tests live alongside the existing test folders for that module — don't create a new top-level
   test source set.
-- `code-reviewer` checks every acceptance criterion in the ticket's `requirements.md` against the
+- `code-reviewer` checks every acceptance criterion in the ticket's `tasks.md` against the
   tests added, not just against the production code.

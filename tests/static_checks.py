@@ -146,12 +146,12 @@ def _hooks_check():
     return (not problems), ("; ".join(problems) if problems else f"{len(data.get('hooks', []))} hooks ok")
 
 
-@check("spec templates exist for all three files")
+@check("the tasks spec template exists")
 def _spec_templates_check():
     tmpl_dir = ROOT / "specs/.templates"
-    required = ["requirements-template.md", "design-template.md", "tasks-template.md"]
+    required = ["tasks-template.md"]
     missing = [name for name in required if not (tmpl_dir / name).exists()]
-    return (not missing), (f"missing: {missing}" if missing else "all 3 present")
+    return (not missing), (f"missing: {missing}" if missing else "present")
 
 
 @check("both MCP files are valid and contain no token")

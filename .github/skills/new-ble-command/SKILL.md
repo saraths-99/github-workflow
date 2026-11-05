@@ -9,13 +9,13 @@ description: >
 # new-ble-command
 
 Used by `developer` (directly, or via `new-feature`) for a task that adds or changes a BLE command.
-The Halo and GDO stacks are never mixed — pick the one the task's `design.md` entry names.
+The Halo and GDO stacks are never mixed — pick the one the task's `tasks.md` entry names.
 
 ## Steps
 
-1. Confirm from `design.md` which stack (Halo or GDO) the command belongs to, and read that stack's
-   instruction file — `ble-halo.instructions.md` or `ble-gdo.instructions.md` — before writing
-   anything.
+1. Confirm from `tasks.md` (its Approach section or the task block) which stack (Halo or GDO) the
+   command belongs to, and read that stack's instruction file — `ble-halo.instructions.md` or
+   `ble-gdo.instructions.md` — before writing anything.
 2. Add the command through the stack's existing command queue — never a direct GATT write.
 3. Add an explicit timeout and map every failure path into `Result<T, ModuleError>` — no bare GATT
    callback surfacing past this layer.

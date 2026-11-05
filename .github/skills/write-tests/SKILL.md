@@ -20,7 +20,7 @@ closing a coverage gap `code-reviewer` flagged).
 - Tests live in the existing `test/` or `androidTest/` folder for the module being tested, matching
   the existing package structure — never a new top-level test source set (see
   `testing.instructions.md`).
-- A test asserts against the acceptance criteria in the ticket's `requirements.md` it's meant to
+- A test asserts against the acceptance criteria in the ticket's `tasks.md` it's meant to
   satisfy, not just "the code runs without throwing."
 
 ## Per-area pointers

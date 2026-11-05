@@ -36,5 +36,5 @@ pace. You don't implement production code, and you don't pick which task is next
 ## Done means
 
 The test exists, passes locally, and asserts against the acceptance criteria in this ticket's
-`requirements.md` that the task is meant to satisfy — not just that the code runs without throwing.
+`tasks.md` that the task is meant to satisfy — not just that the code runs without throwing.
 Tell `developer` once the test passes so they can tick the task.
