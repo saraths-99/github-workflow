@@ -5,14 +5,16 @@ log-analysis loop, the safety mechanisms wrapping all of it, and — in §11 —
 of those files lives. Each skill's own `SKILL.md` is the authoritative source for its own
 behavior — this document is a synthesis for a single-page view, not a replacement.
 
-This workflow is checked directly into this app repo. There is no separate generator and no
-regeneration step: an agent, skill, instruction, hook or prompt is changed the same way as any other
-file here — edit it, commit it.
+This workflow's files are edited directly, in place — there's no wizard, no templating, no
+detection logic. The one remaining moving part is `install.sh`/`install.ps1` (see
+[README.md §2](../README.md#2-one-time-setup)): a plain file sync, run from inside the actual app
+repo, that pulls the latest agents/skills/instructions/hooks/prompts/mcp config from this repo and
+overwrites them there — a one-way copy, not a generator run against detected app-repo state.
 
 ## 1. One-time manual fill-ins
 
-Three things can't be read off the code or guessed, so they're filled in once by hand rather than
-generated (see [README.md §2](../README.md#2-one-time-setup)):
+Three things can't be read off the code or guessed, so `install.sh`/`install.ps1` never overwrite
+them once they exist — they're filled in once by hand instead:
 
 - `copilot-instructions.md`'s settings block (`jira_projects`, `base_branch`), module map, and key
   rules.

@@ -1,8 +1,10 @@
 # Agentic AI-SDLC Workflow
 
-This repo *is* the Copilot customization for this Android app — agents, skills, path instructions,
-hooks, prompts and MCP config, checked in and used as-is. There is no generator: a change here is a
-change to the live workflow, in the same place and the same commit as everything else in this repo.
+This repo holds the Copilot customization for this Android app — agents, skills, path
+instructions, hooks, prompts and MCP config, checked in and used as-is. There is no generator
+wizard: a change here is a direct edit to the live workflow files, same as any other change. The
+only other moving part is [`install.sh`](install.sh)/[`install.ps1`](install.ps1), which copies
+these files into the actual app repo (see §2) and re-syncs them after a later update here.
 
 For the full design reference — flowcharts, the agent/skill/hook tables, risk log, and exactly
 where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.md).
@@ -22,12 +24,33 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffolds for `requirements.md` / `design.md` / `tasks.md`, copied into a ticket's own `specs/<feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
+| **`install.sh`**, **`install.ps1`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
 
 ## 2. One-time setup
 
-Nothing to install or copy — open this repo in an IDE with GitHub Copilot (JetBrains or VS Code)
-and the agents, skills and prompts are already there. Two things still need filling in by hand,
-since no tool can read them off the code or guess them:
+Run this from inside the Android app repo you want the workflow in:
+
+```bash
+# macOS / Linux
+curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.sh | bash
+```
+
+```powershell
+# Windows
+irm https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.ps1 | iex
+```
+
+This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
+mcp config, log-analyser scripts), `specs/.templates/`, and `docs/workflow-design.md` +
+`docs/field-sources.md` into the app repo. Run it again any time this repo changes, to pick up the
+update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
+but never touches `copilot-instructions.md`, `project-context.md`, `architecture.md`,
+`hooks/sensitive-paths.txt` or `log-analyser/log-signatures.md` if they already exist, since those
+hold the app repo's own project data. Everything it touches lands in a normal git working tree, so
+`git status`/`git diff` shows exactly what changed and it's trivially reversible.
+
+Then, in the app repo, open it in an IDE with GitHub Copilot (JetBrains or VS Code). Two things
+still need filling in by hand, since no tool can read them off the code or guess them:
 
 1. **`.github/copilot-instructions.md`'s settings block** — your real Jira project key(s),
    `bug_issue_types`, and `base_branch`. Also fill in its module map and key-rules bullets.
