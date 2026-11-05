@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
-"""Static checks for the builder repo's generated-file blueprints.
+"""Static checks for this repo's Copilot workflow files.
 
-Implements the "Static checks" row from the workflow's own section 7 (Quality and acceptance),
-run here against this builder repo's setup-*/assets/ blueprints directly -- there is no fixture
-app repo yet (see the top-level README: phase 9's fixtures and lifecycle evals are still open),
-so this validates the files setup-workflow *would* generate, not a generated repo.
-
-Two items from that list aren't checked here, because they only make sense once setup-workflow has
-actually run against a real app repo with real code and a pre-existing context doc:
+Validates the checked-in .github/ structure directly (there is no generator step anymore — see
+docs/workflow-design.md). Two checks from the workflow's own quality list aren't covered here,
+because they only make sense against real app code:
   - "every class, function and module named in a file exists in the code"
-  - "existing context docs are byte-for-byte unchanged"
-Both are covered by written rules (setup-context-docs/SKILL.md's "never touch an existing doc";
-architect's/developer's blueprints grounding claims in the real code) and are meant to be verified
-by the lifecycle evals, not by this script.
+  - "project-context.md / architecture.md are byte-for-byte unchanged across a review"
+Both are covered by written rules (each agent's own blueprint says never to touch those two docs)
+rather than by this script.
 
 Usage:
     python3 tests/static_checks.py
 Exits 0 if every check passes, 1 otherwise, printing a pass/fail line per check.
 """
 import json
-import os
 import re
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,10 +82,10 @@ def parse_frontmatter(text):
 
 @check("agents have a description and a body under 30,000 characters")
 def _agents_check():
-    agents_dir = ROOT / ".github/skills/setup-agents/assets/agents"
+    agents_dir = ROOT / ".github/agents"
     files = sorted(agents_dir.glob("*.agent.md"))
     if not files:
-        return False, "no agent blueprints found"
+        return False, "no agents found"
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))
@@ -126,10 +118,10 @@ def _skill_naming_check():
 
 @check("instructions have an applyTo")
 def _instructions_check():
-    inst_dir = ROOT / ".github/skills/setup-instructions/assets"
+    inst_dir = ROOT / ".github/instructions"
     files = sorted(inst_dir.glob("*.instructions.md"))
     if not files:
-        return False, "no instruction blueprints found"
+        return False, "no instruction files found"
     problems = []
     for f in files:
         fields, _ = parse_frontmatter(f.read_text(encoding="utf-8"))
@@ -140,7 +132,7 @@ def _instructions_check():
 
 @check("hooks have version: 1 and real event names")
 def _hooks_check():
-    guards_path = ROOT / ".github/skills/setup-hooks/assets/guards.json"
+    guards_path = ROOT / ".github/hooks/guards.json"
     if not guards_path.exists():
         return False, "guards.json not found"
     data = json.loads(guards_path.read_text(encoding="utf-8"))
@@ -156,7 +148,7 @@ def _hooks_check():
 
 @check("spec templates exist for all three files")
 def _spec_templates_check():
-    tmpl_dir = ROOT / ".github/skills/setup-ticket-flow/assets/spec-templates"
+    tmpl_dir = ROOT / "specs/.templates"
     required = ["requirements-template.md", "design-template.md", "tasks-template.md"]
     missing = [name for name in required if not (tmpl_dir / name).exists()]
     return (not missing), (f"missing: {missing}" if missing else "all 3 present")
@@ -165,8 +157,8 @@ def _spec_templates_check():
 @check("both MCP files are valid and contain no token")
 def _mcp_files_check():
     files = [
-        ROOT / ".github/skills/setup-mcp/assets/mcp.json",
-        ROOT / ".github/skills/setup-mcp/assets/mcp/jetbrains-mcp.example.json",
+        ROOT / ".github/mcp.json",
+        ROOT / ".github/mcp/jetbrains-mcp.example.json",
     ]
     problems = []
     secret_key_re = re.compile(r"(?i)(token|secret|api[_-]?key)")
@@ -200,7 +192,7 @@ def _mcp_files_check():
 
 @check("sensitive-paths.txt exists and lists the sensitive paths")
 def _sensitive_paths_check():
-    f = ROOT / ".github/skills/setup-hooks/assets/sensitive-paths.txt"
+    f = ROOT / ".github/hooks/sensitive-paths.txt"
     if not f.exists():
         return False, "file not found"
     lines = [l.strip() for l in f.read_text(encoding="utf-8").splitlines()]
@@ -208,43 +200,25 @@ def _sensitive_paths_check():
     return (len(entries) >= 5), f"{len(entries)} entries"
 
 
-@check("bootstrap copies only the setup-* skills and the /setup-workflow prompt, writes nothing under ~/.copilot/")
-def _bootstrap_scope_check():
-    with tempfile.TemporaryDirectory() as tmp:
-        app_repo = Path(tmp) / "app-repo"
-        fake_home = Path(tmp) / "fake-home"
-        app_repo.mkdir()
-        fake_home.mkdir()
-
-        env = dict(os.environ)
-        env["HOME"] = str(fake_home)
-
-        proc = subprocess.run(
-            [str(ROOT / "bootstrap.sh"), str(app_repo)],
-            env=env, capture_output=True, text=True,
-        )
-        if proc.returncode != 0:
-            return False, f"bootstrap.sh exited {proc.returncode}: {proc.stderr.strip()}"
-
-        problems = []
-        skills_dir = app_repo / ".github/skills"
-        for entry in skills_dir.iterdir():
-            if not entry.name.startswith("setup-"):
-                problems.append(f"unexpected skill copied: {entry.name}")
-
-        prompts_dir = app_repo / ".github/prompts"
-        prompt_files = [p.name for p in prompts_dir.iterdir()] if prompts_dir.exists() else []
-        if prompt_files != ["setup-workflow.prompt.md"]:
-            problems.append(f"unexpected prompts copied: {prompt_files}")
-
-        if (fake_home / ".copilot").exists():
-            problems.append("wrote under ~/.copilot/")
-
-        for forbidden in (".agents", ".claude", ".android-studio", "AGENTS.md"):
-            if (app_repo / forbidden).exists():
-                problems.append(f"wrote to forbidden path: {forbidden}")
-
-        return (not problems), ("; ".join(problems) if problems else "bootstrap scope ok")
+@check("no leftover generator/bootstrap references")
+def _no_generator_leftovers_check():
+    needles = ["setup-workflow", "setup-agents", "setup-instructions", "setup-hooks", "setup-mcp",
+               "setup-skills", "setup-ticket-flow", "setup-context-docs", "generated-by", "bootstrap.sh"]
+    problems = []
+    for base in (".github", "specs", "project-context.md", "architecture.md"):
+        p = ROOT / base
+        paths = [p] if p.is_file() else (list(p.rglob("*")) if p.is_dir() else [])
+        for f in paths:
+            if not f.is_file():
+                continue
+            try:
+                text = f.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            for needle in needles:
+                if needle in text:
+                    problems.append(f"{f.relative_to(ROOT)}: contains '{needle}'")
+    return (not problems), ("; ".join(problems) if problems else "clean")
 
 
 def main():

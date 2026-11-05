@@ -1,0 +1,19 @@
+# Baseline entries + entries seeded from this repo's signing configs and .gitignore.
+#
+# When adding more:
+# - From signingConfigs { ... } blocks: add the exact storeFile path (not a wildcard).
+# - From .gitignore: only credential-shaped entries (local.properties, .env*, *.jks/*.keystore/
+#   *.p12/*.pem/*.key, secrets.properties) — not build output or IDE files.
+# - Never add a path just because it was mentioned as "sensitive" in passing — a vague entry either
+#   matches nothing or matches too much. Add your own with a comment saying why.
+# - .logs/*/raw/** must always stay — raw log captures (see .github/log-analyser/).
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pem
+**/*.key
+local.properties
+.env
+.env.*
+secrets.properties
+.logs/*/raw/**
