@@ -15,3 +15,12 @@ applyTo: "**/commonsdk/**/halo/**,**/spectrumsdk/**"
   storage rule and the `protect-secrets` hook, which also blocks these in shell commands and PR text.
 - New commands get a fake-device test (see `testing.instructions.md`) — a real Halo lock is never
   required to exercise the command's logic.
+- The Halo stack spans several `LockModelNumber` values, not one device — including HaloKeypad,
+  HaloTouchscreen, HaloSelect, HaloSelectPlus, HaloPuck ("Powerbolt 255"), HaloFingerprint ("Halo
+  Touch"), Aura, and AuraReach. Capability is modeled per lock class via composable interfaces
+  (`AccessCodeAccessible`, `FingerprintAccessible`, `ScreenSecurable`, `WifiProvisionable`,
+  `OpStatusControllable` — see `LockAlaCarteInterfaces.kt`), not a single model flag: e.g.
+  `HaloFingerprintLock` carries fingerprint records only (no access-code records), and
+  `AuraReachLock` is not `WifiProvisionable` (Bluetooth/Matter only). A new command must branch on
+  the relevant `is <Interface>` check rather than assuming every `SpectrumLock` supports it, and its
+  fake-device test should cover a model that lacks the interface where that distinction matters.

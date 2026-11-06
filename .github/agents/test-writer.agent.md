@@ -30,7 +30,8 @@ pace. You don't implement production code, and you don't pick which task is next
 
 - A new screen → a ViewModel test (see the `new-screen` project skill).
 - A new BLE command → a fake-device test covering the happy path, a timeout, and an error mapping.
-- A new API call → a mocked-response test for the repository method.
+- A new API call → a mocked-response test for the repository method, covering a failure response
+  mapped into `Result`, not just the happy path.
 - A Room/entity change → a migration test.
 
 ## Done means

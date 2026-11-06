@@ -2,9 +2,10 @@
 name: ticket-ship
 description: >
   /ticket-ship. Checks every task is ticked, runs code-reviewer and
-  security-reviewer plus the local build and tests, then asks once and
-  commits, pushes and opens the Bitbucket PR. Checks the Pipelines run where
-  Pipelines is on, and moves the ticket to In Review.
+  security-reviewer/error-handling-reviewer where flagged, plus the local
+  build and tests, then asks once and commits, pushes and opens the
+  Bitbucket PR. Checks the Pipelines run where Pipelines is on, and moves
+  the ticket to In Review.
 ---
 
 # ticket-ship
@@ -17,7 +18,8 @@ yourself.
 1. Confirm every task in `tasks.md` is ticked. If one isn't, stop and say which — don't ship a
    partial ticket.
 2. Run `code-reviewer` against the full diff; run `security-reviewer` too if `code-reviewer` flagged
-   a sensitive area. Both must pass with no open comments.
+   a sensitive area, and `error-handling-reviewer` too if it flagged a layer where functions can
+   fail. All must pass with no open comments.
 3. Build and run tests locally with `isLocalBuild=true`.
 4. **Ask the developer once**, showing: the files that will be pushed, and the PR title and
    description. Do nothing in steps 5–7 until they say yes.

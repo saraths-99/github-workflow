@@ -15,7 +15,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 7 agents: `log-analyser`, `bug-planner`, `feature-planner`, `developer`, `test-writer`, `code-reviewer`, `security-reviewer` |
+| **`.github/agents/`** | The 8 agents: `log-analyser`, `bug-planner`, `feature-planner`, `developer`, `test-writer`, `code-reviewer`, `security-reviewer`, `error-handling-reviewer` |
 | **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
@@ -88,7 +88,8 @@ the per-layer detail; `/new-feature` orchestrates all of them for a task that sp
 **Command:** `/ticket-ship`
 
 1. Confirms every task is ticked.
-2. Runs `code-reviewer` (and `security-reviewer` for sensitive-area diffs) against the spec.
+2. Runs `code-reviewer` (and `security-reviewer`/`error-handling-reviewer` for flagged diffs) against
+   the spec.
 3. Builds and tests locally.
 4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and
    moves the ticket to In Review.

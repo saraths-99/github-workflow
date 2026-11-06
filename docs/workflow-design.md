@@ -99,14 +99,16 @@ expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by
 | `test-writer` | Tests each task | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
 | `code-reviewer` | Reviews diff vs. spec | read, search | repowise | Read-only; checks the specs-only rule on every diff |
 | `security-reviewer` | Reviews sensitive-area diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
+| `error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
 
 Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `edit` outright); the
 *written* half — "only these files," "only these commands" — lives in each agent's own blueprint.
 `code-reviewer` is the backstop that actually checks the written half was followed.
 
 - **Why reviewers get no edit tool.** Removing `edit` from the tool list is the one scope rule
-  Copilot *can* enforce mechanically — so both `code-reviewer` and `security-reviewer` have it
-  removed outright, instead of relying on a written instruction alone.
+  Copilot *can* enforce mechanically — so `code-reviewer`, `security-reviewer`, and
+  `error-handling-reviewer` all have it removed outright, instead of relying on a written
+  instruction alone.
 - **Why `log-analyser`'s run-commands scope is written, not mechanical.** Copilot has no
   per-command allowlist in a tool list — "can run commands" is all-or-nothing. So `log-analyser`'s
   blueprint states explicitly that it may only invoke the three named scripts; `code-reviewer` isn't
@@ -223,7 +225,8 @@ versus a convention this workflow invented for itself.
     │   ├── developer.agent.md
     │   ├── test-writer.agent.md
     │   ├── code-reviewer.agent.md
-    │   └── security-reviewer.agent.md
+    │   ├── security-reviewer.agent.md
+    │   └── error-handling-reviewer.agent.md
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py

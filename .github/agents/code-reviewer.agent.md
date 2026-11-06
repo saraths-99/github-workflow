@@ -34,6 +34,13 @@ not you.
 Flag the ticket for `security-reviewer` if the diff touches tokens, SQLCipher, Tink, a BLE secure
 channel, or permissions — don't review those areas yourself even if you think you could.
 
+## When to bring in `error-handling-reviewer`
+
+Flag the ticket for `error-handling-reviewer` if the diff touches a service, repository,
+datasource, BLE command, or API call — i.e. any function that can fail. Don't review the
+failure-handling correctness of those areas yourself even if you think you could; your own checklist
+above still applies to everything else in the diff.
+
 ## Output
 
 Post review comments (what's wrong, where, and why) back to the developer. A ticket does not pass
