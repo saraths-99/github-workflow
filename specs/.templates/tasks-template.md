@@ -58,7 +58,7 @@ below filled out.
 
 <!-- ... one block per task ... -->
 
-- [ ] **Review — code-reviewer, and security-reviewer if flagged**
+- [ ] **Review — code-reviewer, and security-reviewer/error-handling-reviewer if flagged**
       Against: every acceptance criterion above, and every ticked task
 
 ---

@@ -96,7 +96,16 @@ expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by
 | `bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md` | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; reuses `log-analyser`'s feature folder, never asks again |
 | `feature-planner` | Writes `tasks.md` for a feature ticket | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; the sole place a feature ticket's folder is resolved |
 | `developer` | Implements `tasks.md` | read, edit, search, runCommands | repowise | One task at a time, in order, only via the named skill |
-| `test-writer` | Tests each task | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
+| `test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search | repowise | Pure router — no `edit`/`runCommands` itself; writes nothing |
+| `unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
+| `ble-protocol-test-writer` | Fake-device BLE command tests | read, edit, search, runCommands | repowise | Edits only test files; never a real lock/GDO unit |
+| `androidtest-writer` | Instrumented UI tests | read, edit, search, runCommands | repowise | Edits only `**/androidTest/**` |
+| `compatibility-test-writer` | Lock-model capability-matrix tests | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
+| `security-test-writer` | Tests for security-sensitive logic | read, edit, search, runCommands | repowise | Edits only test files; only runs when flagged by `code-reviewer` |
+| `interop-test-writer` | Hardware-in-the-loop interop test plan | read, edit, search | repowise | Plan only — writes `test-plans/interop.md`, never code |
+| `ota-test-writer` | Firmware OTA test plan | read, edit, search | repowise | Plan only — writes `test-plans/ota.md`, never code |
+| `performance-test-writer` | Performance/battery test plan | read, edit, search | repowise | Plan only — writes `test-plans/performance.md`, never code |
+| `chaos-test-writer` | Resilience/fault-injection test plan | read, edit, search | repowise | Plan only — writes `test-plans/chaos.md`, never code |
 | `code-reviewer` | Reviews diff vs. spec | read, search | repowise | Read-only; checks the specs-only rule on every diff |
 | `security-reviewer` | Reviews sensitive-area diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
 | `error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
@@ -109,6 +118,13 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
   Copilot *can* enforce mechanically — so `code-reviewer`, `security-reviewer`, and
   `error-handling-reviewer` all have it removed outright, instead of relying on a written
   instruction alone.
+- **Why `test-writer` itself has no `edit` tool.** It's a pure router now — the nine specialized
+  writers it hands off to do the actual writing, so `test-writer` needs nothing more than `read` and
+  `search` to decide where a task's tests belong.
+- **Why four of the nine test-writer sub-agents have no `runCommands` tool.** `interop-test-writer`,
+  `ota-test-writer`, `performance-test-writer`, and `chaos-test-writer` can't execute anything — no
+  fake stands in honestly for a real lock, a firmware rig, or a battery-drain bench — so they write a
+  markdown test plan under `edit` and nothing more; there's nothing for `runCommands` to run.
 - **Why `log-analyser`'s run-commands scope is written, not mechanical.** Copilot has no
   per-command allowlist in a tool list — "can run commands" is all-or-nothing. So `log-analyser`'s
   blueprint states explicitly that it may only invoke the three named scripts; `code-reviewer` isn't
@@ -186,6 +202,10 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
    met, not that the approach matches `tasks.md`'s Approach section's intent.
 8. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
 9. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
+10. **Plan-only test categories have no execution gate** — `interop-test-writer`, `ota-test-writer`,
+    `performance-test-writer`, and `chaos-test-writer` only guarantee a plan file exists and is
+    current; nothing in this workflow checks that a human actually ran it against real hardware
+    before the ticket ships, or records the result anywhere `ticket-ship` can see.
 
 ## 10. Folder structure
 
@@ -223,7 +243,16 @@ versus a convention this workflow invented for itself.
     │   ├── bug-planner.agent.md
     │   ├── feature-planner.agent.md
     │   ├── developer.agent.md
-    │   ├── test-writer.agent.md
+    │   ├── test-writer.agent.md             router only — see below
+    │   ├── unit-test-writer.agent.md
+    │   ├── ble-protocol-test-writer.agent.md
+    │   ├── androidtest-writer.agent.md
+    │   ├── compatibility-test-writer.agent.md
+    │   ├── security-test-writer.agent.md
+    │   ├── interop-test-writer.agent.md     plan only
+    │   ├── ota-test-writer.agent.md         plan only
+    │   ├── performance-test-writer.agent.md plan only
+    │   ├── chaos-test-writer.agent.md       plan only
     │   ├── code-reviewer.agent.md
     │   ├── security-reviewer.agent.md
     │   └── error-handling-reviewer.agent.md
@@ -269,7 +298,12 @@ Not present until a ticket is actually worked; one set per ticket, inside its fe
 ```
 specs/<feature>/<ticket-id>/
 ├── log-analysis.md      bug tickets only — written by log-analyser
-└── tasks.md              written by bug-planner (bug) or feature-planner (feature)
+├── tasks.md              written by bug-planner (bug) or feature-planner (feature)
+└── test-plans/           only if a plan-only test-writer sub-agent ran for this ticket
+    ├── interop.md         written by interop-test-writer
+    ├── ota.md             written by ota-test-writer
+    ├── performance.md     written by performance-test-writer
+    └── chaos.md           written by chaos-test-writer
 
 .logs/<ticket-id>/
 ├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads

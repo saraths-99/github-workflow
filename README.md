@@ -15,7 +15,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 8 agents: `log-analyser`, `bug-planner`, `feature-planner`, `developer`, `test-writer`, `code-reviewer`, `security-reviewer`, `error-handling-reviewer` |
+| **`.github/agents/`** | The 17 agents: planning/build (`log-analyser`, `bug-planner`, `feature-planner`, `developer`), review (`code-reviewer`, `security-reviewer`, `error-handling-reviewer`), and testing — `test-writer` routing to 9 specialized writers (`unit-test-writer`, `ble-protocol-test-writer`, `androidtest-writer`, `compatibility-test-writer`, `security-test-writer`, `interop-test-writer`, `ota-test-writer`, `performance-test-writer`, `chaos-test-writer`) |
 | **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
