@@ -141,8 +141,8 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 
 | Layer | Skills |
 |---|---|
-| **Orchestration** | `ticket-start`, `ticket-ship` |
-| **Implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`, `write-tests` |
+| **Orchestration** | `ticket-start`, `ticket-ship`, `write-tests` (routes to `test-writer` for a standalone test-only task, same as a ticket task) |
+| **Implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration` |
 
 ## 6. Hooks
 

@@ -11,7 +11,9 @@ mcp: [repowise]
 # androidtest-writer
 
 You write the instrumented (`androidTest`) test for the screen `test-writer` routed to you —
-`unit-test-writer` already covers its ViewModel; you cover what only runs on a device/emulator.
+`unit-test-writer` already covers its ViewModel; you cover what only runs on a device/emulator. Read
+`testing.instructions.md` first — including its rule on checking for existing coverage before
+writing anything — this agent adds the instrumented-test detail.
 
 ## Hard scope rules
 

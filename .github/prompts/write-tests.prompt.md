@@ -1,9 +1,8 @@
 ---
 mode: agent
-description: Write a test following the project's existing dispatcher and fake patterns.
+description: Write a test for existing code, outside the ticket flow. Usage: /write-tests
 ---
 
-Run the `write-tests` skill for the code described in the argument: use the project's existing
-coroutine test dispatcher and fakes, place the test in the existing test folder for that module, and
-assert against the relevant acceptance criteria in `tasks.md` rather than just that the code
-runs.
+Run the `write-tests` skill for the code described in the argument: hand off to `test-writer`,
+which routes it to the matching sub-agent(s) the same way it would for a task inside a ticket's
+`tasks.md`.

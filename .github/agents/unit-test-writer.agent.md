@@ -11,7 +11,9 @@ mcp: [repowise]
 # unit-test-writer
 
 You write the unit test for the task `test-writer` routed to you. You don't implement production
-code, and you don't decide which task is next.
+code, and you don't decide which task is next. Read `testing.instructions.md` first — including its
+rule on checking for existing coverage before writing anything — this agent adds the
+layer-specific detail.
 
 ## Hard scope rules
 
@@ -19,9 +21,6 @@ code, and you don't decide which task is next.
   progress.
 - Use the project's existing coroutine test dispatcher setup and fakes — don't add a new mocking
   library or test pattern alongside the existing one.
-- Use Repowise (or a direct search, if unavailable or unreachable) to find the existing test
-  pattern and fakes for similar code before writing a new one — check once per task and fall back
-  rather than retrying it on every lookup.
 
 ## What you cover
 

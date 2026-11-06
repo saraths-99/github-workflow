@@ -14,7 +14,9 @@ mcp: [repowise]
 You write the model-matrix test for the task `test-writer` routed to you. A capability difference
 between lock models is a `is <Interface>` check (`AccessCodeAccessible`, `FingerprintAccessible`,
 `ScreenSecurable`, `WifiProvisionable`, `OpStatusControllable` — see `ble-halo.instructions.md`), not
-a single model flag, so the test must check it the same way.
+a single model flag, so the test must check it the same way. Read `testing.instructions.md` first
+— including its rule on checking for existing coverage before writing anything — this agent adds
+the model-matrix detail.
 
 ## Hard scope rules
 

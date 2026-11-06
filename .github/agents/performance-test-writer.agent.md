@@ -18,6 +18,9 @@ with a device (or a device lab) to execute and record numbers against.
 ## Hard scope rules
 
 - Edit only `specs/<feature>/<ticket ID>/test-plans/performance.md` — never production or test code.
+- If that file already exists for this ticket, update only the scenarios this diff affects — don't
+  regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
+  change accurately.
 - State a concrete threshold per scenario (e.g. "background scan battery draw over 1 hour stays
   within X% of the pre-change baseline") — a plan with no number isn't checkable.
 

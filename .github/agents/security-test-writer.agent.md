@@ -12,7 +12,8 @@ mcp: [repowise]
 
 You write the test for the security-sensitive logic `test-writer` routed to you. You write the
 test; `security-reviewer` reviews the production code and this test for correctness — you aren't a
-substitute for that review.
+substitute for that review. Read `testing.instructions.md` first — including its rule on checking
+for existing coverage before writing anything — this agent adds the security-specific detail.
 
 ## Hard scope rules
 

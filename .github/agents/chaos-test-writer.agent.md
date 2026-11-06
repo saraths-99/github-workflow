@@ -19,6 +19,9 @@ deliberately breaking something mid-flow.
 ## Hard scope rules
 
 - Edit only `specs/<feature>/<ticket ID>/test-plans/chaos.md` — never production or test code.
+- If that file already exists for this ticket, update only the scenarios this diff affects — don't
+  regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
+  change accurately.
 - Each scenario names the exact fault to inject and the exact point in the flow to inject it at —
   not "test resilience" as a vague instruction.
 

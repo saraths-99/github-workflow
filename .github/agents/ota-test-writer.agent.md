@@ -17,6 +17,9 @@ real update to execute and sign off on.
 ## Hard scope rules
 
 - Edit only `specs/<feature>/<ticket ID>/test-plans/ota.md` — never production or test code.
+- If that file already exists for this ticket, update only the scenarios this diff affects — don't
+  regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
+  change accurately.
 - Name the specific OTA path this change touches (TI, Nordic, or Darwin/mcumgr) — don't write a
   generic plan that doesn't say which implementation applies.
 

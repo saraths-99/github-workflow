@@ -1,32 +1,20 @@
 ---
 name: write-tests
 description: >
-  The project's test patterns: coroutine test dispatchers and the existing
-  fakes, in the existing test folders. Used directly for a task that is
-  test-only, or as the shared convention the narrower skills' test steps
-  follow.
+  /write-tests. Entry point for a standalone test-only task outside the
+  ticket flow (e.g. closing a coverage gap code-reviewer flagged). Hands
+  off to test-writer, which routes it to the matching sub-agent(s) exactly
+  as it does for a task inside tasks.md.
 ---
 
 # write-tests
 
-Used by `test-writer` for any test, and directly by `developer` for a task that's test-only (e.g.
-closing a coverage gap `code-reviewer` flagged).
+Used directly by a developer for a test-only task that isn't part of an in-progress ticket's
+`tasks.md`. You don't write anything yourself and you don't decide which sub-agent applies — hand
+off to `test-writer` with a description of the code to test, the same way `developer` does for a
+task inside a ticket. `test-writer` runs its routing table either way, so a standalone task and a
+ticket task reach the same sub-agents through the same path.
 
-## Conventions
-
-- Use the project's existing coroutine test dispatcher setup — don't add a second one alongside it.
-- Use the existing fakes for BLE devices, network responses, and Room — don't add a new mocking
-  library if an existing fake already covers the case.
-- Tests live in the existing `test/` or `androidTest/` folder for the module being tested, matching
-  the existing package structure — never a new top-level test source set (see
-  `testing.instructions.md`).
-- A test asserts against the acceptance criteria in the ticket's `tasks.md` it's meant to
-  satisfy, not just "the code runs without throwing."
-
-## Per-area pointers
-
-- ViewModel/screen tests — see `new-screen`.
-- BLE command tests (fake device, never a real lock/GDO unit) — see `new-ble-command`.
-- API call tests (mocked network, never a real endpoint) — see `new-api-call`.
-- Room migration tests (run the real `Migration` against the previous schema) — see
-  `room-migration`.
+See `testing.instructions.md` for the project's test conventions (existing-coverage check,
+dispatcher/fakes reuse, folder location, per-area pointers) — every sub-agent `test-writer` might
+route to already follows those, so this skill adds nothing on top.

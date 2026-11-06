@@ -17,6 +17,9 @@ person running real hardware to execute and sign off on.
 ## Hard scope rules
 
 - Edit only `specs/<feature>/<ticket ID>/test-plans/interop.md` — never production or test code.
+- If that file already exists for this ticket, update only the scenarios this diff affects — don't
+  regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
+  change accurately.
 - Ground every scenario in the real diff — don't pad the plan with scenarios this change couldn't
   possibly affect.
 

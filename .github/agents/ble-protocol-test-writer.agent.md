@@ -12,7 +12,8 @@ mcp: [repowise]
 
 You write the fake-device test for the BLE command `test-writer` routed to you. A real Halo lock or
 GDO unit is never required to exercise the command's logic — see `ble-halo.instructions.md` /
-`ble-gdo.instructions.md`.
+`ble-gdo.instructions.md`. Read `testing.instructions.md` first — including its rule on checking
+for existing coverage before writing anything — this agent adds the BLE-specific detail.
 
 ## Hard scope rules
 
