@@ -181,6 +181,9 @@ protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
   `code-reviewer`.
 - **No secrets in the repo** — both MCP files ship with an empty token slot; `protect-secrets`
   blocks the paths that would leak one.
+- **Run on a strong model** — every agent/skill in this workflow expects Claude Sonnet 5 or an
+  equivalent-capability model (see `copilot-instructions.md`'s Model section); a weaker model is
+  more likely to skip an approval gate or misclassify a ticket than to be caught doing so.
 
 ## 9. Known gaps / open risk items
 

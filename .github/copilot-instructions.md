@@ -4,6 +4,14 @@ project-context.md, or a path instruction file under .github/instructions/.
 -->
 # Copilot instructions for this repo
 
+## Model
+
+Run every agent and skill in this workflow (`ticket-start` and everything it hands off to) on
+**Claude Sonnet 5, or a model of equivalent reasoning capability** — not a faster/cheaper tier.
+The hard scope rules, approval gates, and ticket-type detection throughout this workflow assume
+strong instruction-following; a weaker model is more likely to skip an approval gate or
+misclassify a ticket. Pin the model per agent if your tooling supports it.
+
 ```yaml
 jira_projects:
   - key: <FILL IN: your Jira project key>
