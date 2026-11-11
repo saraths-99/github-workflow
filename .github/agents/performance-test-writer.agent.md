@@ -5,8 +5,9 @@ description: >
   scanning, the geofencing service, or other background work — a checklist
   for manual/device-lab measurement, not runnable code. Routed to by
   test-writer.
-tools: [read, edit, search]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # performance-test-writer
@@ -34,4 +35,4 @@ with a device (or a device lab) to execute and record numbers against.
 ## Done means
 
 The plan file exists, is current for this diff, and states a measurable threshold per scenario, not
-just "it feels fine." Report back to `test-writer`.
+just "it feels fine." Report back to `qatalyst-test-writer`.

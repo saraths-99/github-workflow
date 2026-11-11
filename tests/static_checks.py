@@ -80,12 +80,15 @@ def parse_frontmatter(text):
     return fields, body
 
 
-@check("agents have a description and a body under 30,000 characters")
+@check("agents follow Copilot frontmatter and have a body under 30,000 characters")
 def _agents_check():
     agents_dir = ROOT / ".github/agents"
     files = sorted(agents_dir.glob("*.agent.md"))
     if not files:
         return False, "no agents found"
+    mcp_config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
+    server_names = set(mcp_config.get("mcpServers", {}))
+    built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo"}
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))
@@ -93,6 +96,27 @@ def _agents_check():
             problems.append(f"{f.name}: missing description")
         elif len(body) >= 30_000:
             problems.append(f"{f.name}: body is {len(body)} chars (>= 30,000)")
+        if fields.get("target") != "github-copilot":
+            problems.append(f"{f.name}: target must be github-copilot")
+        if fields.get("user-invocable") != "false":
+            problems.append(f"{f.name}: workflow worker must be hidden from the picker")
+        if "mcp" in fields:
+            problems.append(f"{f.name}: use MCP namespaces in tools, not mcp frontmatter")
+        name = fields.get("name")
+        stem = f.name[: -len(".agent.md")]
+        if name != stem:
+            problems.append(f"{f.name}: name '{name}' != filename '{stem}'")
+        if name and not NAME_RE.match(name):
+            problems.append(f"{f.name}: name '{name}' fails naming rule (lowercase-kebab)")
+        tools = re.findall(r"['\"]([^'\"]+)['\"]", fields.get("tools", ""))
+        if not tools:
+            problems.append(f"{f.name}: tools must be a non-empty quoted list")
+        for tool in tools:
+            if tool in built_in_tools:
+                continue
+            if tool.endswith("/*") and tool[:-2] in server_names:
+                continue
+            problems.append(f"{f.name}: unsupported or unconfigured tool '{tool}'")
     return (not problems), ("; ".join(problems) if problems else f"{len(files)} agents ok")
 
 
@@ -154,9 +178,10 @@ def _spec_templates_check():
     return (not missing), (f"missing: {missing}" if missing else "present")
 
 
-@check("both MCP files are valid and contain no token")
+@check("MCP configuration files are valid and contain no token")
 def _mcp_files_check():
     files = [
+        ROOT / ".mcp.json",
         ROOT / ".github/mcp.json",
         ROOT / ".github/mcp/jetbrains-mcp.example.json",
     ]
@@ -187,7 +212,7 @@ def _mcp_files_check():
         walk(data, "", file_problems)
         problems.extend(f"{f}: {p}" for p in file_problems)
 
-    return (not problems), ("; ".join(problems) if problems else "both files valid, no tokens")
+    return (not problems), ("; ".join(problems) if problems else "all files valid, no tokens")
 
 
 @check("sensitive-paths.txt exists and lists the sensitive paths")

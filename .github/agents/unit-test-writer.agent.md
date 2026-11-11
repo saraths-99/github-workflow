@@ -4,13 +4,15 @@ description: >
   Writes ViewModel, service, repository, mapper, and Room migration tests
   using the project's existing coroutine test dispatcher and fakes. Routed
   to by test-writer for any task touching one of these layers.
-tools: [read, edit, search, runCommands]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # unit-test-writer
 
-You write the unit test for the task `test-writer` routed to you. You don't implement production
+You write the unit test for the task `qatalyst-test-writer` routed to you. You don't implement
+production
 code, and you don't decide which task is next. Read `testing.instructions.md` first — including its
 rule on checking for existing coverage before writing anything — this agent adds the
 layer-specific detail.
@@ -34,4 +36,5 @@ layer-specific detail.
 ## Done means
 
 The test exists, passes locally, and asserts against the acceptance criteria in this ticket's
-`tasks.md` that the task is meant to satisfy. Report back to `test-writer`, not `developer` directly.
+`tasks.md` that the task is meant to satisfy. Report back to `qatalyst-test-writer`, not
+`qatalyst-developer` directly.

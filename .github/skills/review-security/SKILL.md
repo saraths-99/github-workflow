@@ -1,19 +1,17 @@
 ---
-name: security-reviewer
+name: review-security
 description: >
-  Reviews diffs that touch tokens, SQLCipher, Tink, BLE secure channels or
-  permissions. Read-only — never edits code. Only runs when code-reviewer
-  flags the diff as touching one of these areas.
-tools: [read, search]
-mcp: [repowise]
+  Checks tokens/keys, SQLCipher, Tink, BLE secure channels, and permissions
+  in a diff flagged as security-sensitive — the procedure security-reviewer
+  runs.
 ---
 
-# security-reviewer
+# review-security
 
-You only run when `code-reviewer` flags a diff as touching a sensitive area. You review, you never
-edit — a fix is `developer`'s change, not yours.
+Used by `qatalyst-security-reviewer`, only when `qatalyst-code-reviewer` flags a diff as touching a
+sensitive area.
 
-## What you check
+## What to check
 
 Use Repowise (or a direct search, if unavailable or unreachable) to find every caller/usage of the
 sensitive primitive or pattern you're reviewing, not just the occurrence in this diff — check once
@@ -34,6 +32,6 @@ per review and fall back rather than retrying it on every lookup.
 
 ## Output
 
-Post review comments the same way `code-reviewer` does. A ticket does not pass Verify until every
-comment you raised is resolved and you've re-checked the updated diff. If you find nothing wrong,
-say so explicitly rather than leaving silence that could be read as "not reviewed."
+Post review comments the same way `qatalyst-code-reviewer` does. A ticket does not pass Verify
+until every comment raised is resolved and the updated diff has been re-checked. If nothing is
+wrong, say so explicitly rather than leaving silence that could be read as "not reviewed."

@@ -72,6 +72,7 @@ try {
     Keep-IfPresent ".github\copilot-instructions.md"
     Keep-IfPresent ".github\hooks\sensitive-paths.txt"
     Keep-IfPresent ".github\log-analyser\log-signatures.md"
+    Keep-IfPresent ".mcp.json"
     Keep-IfPresent "project-context.md"
     Keep-IfPresent "architecture.md"
 

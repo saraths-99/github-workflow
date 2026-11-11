@@ -4,8 +4,9 @@ description: >
   Writes/updates the firmware OTA update test plan for a change under the
   OTAU modules (TI, Nordic, Darwin/mcumgr) — a checklist for manual QA on
   real hardware, not runnable code. Routed to by test-writer.
-tools: [read, edit, search]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # ota-test-writer
@@ -33,4 +34,4 @@ real update to execute and sign off on.
 ## Done means
 
 The plan file exists, is current for this diff, and is specific enough that someone who didn't
-write the change could execute it. Report back to `test-writer`.
+write the change could execute it. Report back to `qatalyst-test-writer`.

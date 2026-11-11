@@ -8,7 +8,8 @@ description: >
 
 # new-api-call
 
-Used by `developer` (directly, or via `new-feature`) for a task that adds or changes a network
+Used by `qatalyst-developer` (directly, or via `new-feature`) for a task that adds or changes a
+network
 call. Read `data-layer.instructions.md` first for the shared rules (Result returns, explicit
 mapping, no leaking DTOs past the repository boundary) — this skill adds the per-style detail.
 
@@ -18,7 +19,8 @@ mapping, no leaking DTOs past the repository boundary) — this skill adds the p
 2. Add a mapper from DTO to the domain model — never return the DTO itself from the repository.
 3. Add the repository method, returning `Result<T, ModuleError>`, using the existing Retrofit
    service interface and its existing auth interceptor — never a new, separate HTTP client.
-4. Hand off to `test-writer` for a mocked-response test of the repository method, covering a
+4. Hand off to `qatalyst-test-writer` for a mocked-response test of the repository method, covering
+   a
    failure response mapped into `Result`, not just the happy path.
 
 ## AppSync
@@ -28,7 +30,8 @@ mapping, no leaking DTOs past the repository boundary) — this skill adds the p
 2. Map the response into the domain model, same rule as REST: no leaking the generated type past
    the repository.
 3. Return `Result<T, ModuleError>` from the repository method, same as REST.
-4. Hand off to `test-writer` for a mocked test of the subscription/query/mutation path, covering a
+4. Hand off to `qatalyst-test-writer` for a mocked test of the subscription/query/mutation path,
+   covering a
    failure response mapped into `Result`, not just the happy path.
 
 ## Done means

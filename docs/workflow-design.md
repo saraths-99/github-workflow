@@ -45,14 +45,16 @@ flowchart TD
     K --> L
 ```
 
-The Plan box is one agent, one file, one approval: `bug-planner` for a bug ticket (after the
-log-analysis loop), `feature-planner` otherwise. Earlier versions of this workflow split Plan into
+The Plan box is one agent, one file, one approval: `qatalyst-bug-planner` for a bug ticket (after
+the
+log-analysis loop), `qatalyst-feature-planner` otherwise. Earlier versions of this workflow split
+Plan into
 three separate files and three separate approvals (requirements, then design, then tasks) written
 by two different agents — that meant asking the developer to approve three times, and a duplicate
 ask for the feature folder name along the way (one agent resolved it, the next one re-confirmed
 it). `tasks.md` now carries what the old `requirements.md` and `design.md` covered — what the ticket
 is for, acceptance criteria, approach/risks — as sections ahead of the task checklist, in the single
-file `code-reviewer` and `test-writer` check against.
+file `qatalyst-code-reviewer` and `qatalyst-test-writer` check against.
 
 That "Can we reach Bitbucket" step is a real, current gap worth naming plainly: opening a PR and checking CI both need
 Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an
@@ -76,9 +78,9 @@ flowchart TD
     E --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
     G -- yes --> H([Report: log-analysis.md<br/>+ suggested fix + Jira comment])
-    G -- no, pass < 3 --> I[Refine: widen window /<br/>restore noise tag / read code]
+    G -- no, pass < 5 --> I[Refine: widen window /<br/>restore noise tag / read code]
     I --> B
-    G -- no, pass = 3 --> H
+    G -- no, pass = 5 --> H
 ```
 
 Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.py` normalizes the
@@ -90,48 +92,65 @@ expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by
 
 ## 4. Agents
 
-| Agent | Job | Tools | MCP | Hard scope rule |
-|---|---|---|---|---|
-| `log-analyser` | Root-causes a bug ticket's logs with a suggested fix | read, edit, search, runCommands (scripts only) | atlassian-rovo, repowise | Writes only `log-analysis.md`; runs only the three log scripts, in order |
-| `bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md` | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; reuses `log-analyser`'s feature folder, never asks again |
-| `feature-planner` | Writes `tasks.md` for a feature ticket | read, edit, search | atlassian-rovo, figma, repowise | Writes only `tasks.md`; the sole place a feature ticket's folder is resolved |
-| `developer` | Implements `tasks.md` | read, edit, search, runCommands | repowise | One task at a time, in order, only via the named skill |
-| `test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search | repowise | Pure router — no `edit`/`runCommands` itself; writes nothing |
-| `unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
-| `ble-protocol-test-writer` | Fake-device BLE command tests | read, edit, search, runCommands | repowise | Edits only test files; never a real lock/GDO unit |
-| `androidtest-writer` | Instrumented UI tests | read, edit, search, runCommands | repowise | Edits only `**/androidTest/**` |
-| `compatibility-test-writer` | Lock-model capability-matrix tests | read, edit, search, runCommands | repowise | Edits only test files for the in-progress task |
-| `security-test-writer` | Tests for security-sensitive logic | read, edit, search, runCommands | repowise | Edits only test files; only runs when flagged by `code-reviewer` |
-| `interop-test-writer` | Hardware-in-the-loop interop test plan | read, edit, search | repowise | Plan only — writes `test-plans/interop.md`, never code |
-| `ota-test-writer` | Firmware OTA test plan | read, edit, search | repowise | Plan only — writes `test-plans/ota.md`, never code |
-| `performance-test-writer` | Performance/battery test plan | read, edit, search | repowise | Plan only — writes `test-plans/performance.md`, never code |
-| `chaos-test-writer` | Resilience/fault-injection test plan | read, edit, search | repowise | Plan only — writes `test-plans/chaos.md`, never code |
-| `code-reviewer` | Reviews diff vs. spec | read, search | repowise | Read-only; checks the specs-only rule on every diff |
-| `security-reviewer` | Reviews sensitive-area diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
-| `error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs | read, search | repowise | Read-only; only runs when flagged by `code-reviewer` |
+Every workspace agent uses the VS Code Copilot custom-agent schema: `.agent.md` under
+`.github/agents/`, `target: github-copilot`, supported tool aliases (`execute`, not
+`runCommands`), and configured MCP namespaces in `tools` (for example `repowise/*`). These agents
+are workflow workers, so `user-invocable: false` hides them from the picker while keeping
+model-driven delegation enabled. Agents that delegate include the `agent` tool; agents that use a
+repo skill list it in `skills`. The portable server definitions live in the workspace-root
+`.mcp.json`.
+
+**Naming migration (in progress).** Agent files are being renamed to a `qatalyst-` prefix, with
+each agent's body trimmed to role, hard scope rules, handoffs and tools, and its step-by-step
+procedure moved into a matching skill. `qatalyst-bug-planner`, `qatalyst-feature-planner`,
+`qatalyst-developer`, `qatalyst-test-writer`, `qatalyst-code-reviewer`,
+`qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`, and `qatalyst-log-analyser` have
+been converted; the nine specialized test-writer sub-agents (`unit-test-writer` through
+`chaos-test-writer`) have not yet and keep their unprefixed names until that batch runs.
+
+| Agent | Job | Copilot tools | Hard scope rule |
+|---|---|---|---|
+| `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; loop lives in the `analyse-logs` skill | read, edit, search, execute, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
+| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`; reuses `qatalyst-log-analyser`'s feature folder, never asks again |
+| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`; the sole place a feature ticket's folder is resolved |
+| `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
+| `qatalyst-test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search, agent, repowise/* | Pure router — no `edit`/`execute` itself; writes nothing |
+| `unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
+| `ble-protocol-test-writer` | Fake-device BLE command tests | read, edit, search, execute, repowise/* | Edits only test files; never a real lock/GDO unit |
+| `androidtest-writer` | Instrumented UI tests | read, edit, search, execute, repowise/* | Edits only `**/androidTest/**` |
+| `compatibility-test-writer` | Lock-model capability-matrix tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
+| `security-test-writer` | Tests for security-sensitive logic | read, edit, search, execute, repowise/* | Edits only test files; only runs when flagged by `qatalyst-code-reviewer` |
+| `interop-test-writer` | Hardware-in-the-loop interop test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/interop.md`, never code |
+| `ota-test-writer` | Firmware OTA test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/ota.md`, never code |
+| `performance-test-writer` | Performance/battery test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/performance.md`, never code |
+| `chaos-test-writer` | Resilience/fault-injection test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/chaos.md`, never code |
+| `qatalyst-code-reviewer` | Reviews diff vs. spec; checklist lives in the `review-diff` skill | read, search, agent, repowise/* | Read-only; checks the specs-only rule on every diff |
+| `qatalyst-security-reviewer` | Reviews sensitive-area diffs; checklist lives in the `review-security` skill | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
+| `qatalyst-error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs; checklist lives in the `review-error-handling` skill | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
 
 Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `edit` outright); the
 *written* half — "only these files," "only these commands" — lives in each agent's own blueprint.
-`code-reviewer` is the backstop that actually checks the written half was followed.
+`qatalyst-code-reviewer` is the backstop that actually checks the written half was followed.
 
 - **Why reviewers get no edit tool.** Removing `edit` from the tool list is the one scope rule
-  Copilot *can* enforce mechanically — so `code-reviewer`, `security-reviewer`, and
-  `error-handling-reviewer` all have it removed outright, instead of relying on a written
-  instruction alone.
-- **Why `test-writer` itself has no `edit` tool.** It's a pure router now — the nine specialized
-  writers it hands off to do the actual writing, so `test-writer` needs nothing more than `read` and
-  `search` to decide where a task's tests belong.
-- **Why four of the nine test-writer sub-agents have no `runCommands` tool.** `interop-test-writer`,
+  Copilot *can* enforce mechanically — so `qatalyst-code-reviewer`, `qatalyst-security-reviewer`,
+  and `qatalyst-error-handling-reviewer` all have it removed outright, instead of relying on a
+  written instruction alone.
+- **Why `qatalyst-test-writer` itself has no `edit` tool.** It's a pure router now — the nine
+  specialized writers it hands off to do the actual writing, so `qatalyst-test-writer` needs
+  nothing more than `read` and `search` to decide where a task's tests belong.
+- **Why four of the nine test-writer sub-agents have no `execute` tool.** `interop-test-writer`,
   `ota-test-writer`, `performance-test-writer`, and `chaos-test-writer` can't execute anything — no
   fake stands in honestly for a real lock, a firmware rig, or a battery-drain bench — so they write a
-  markdown test plan under `edit` and nothing more; there's nothing for `runCommands` to run.
-- **Why `log-analyser`'s run-commands scope is written, not mechanical.** Copilot has no
-  per-command allowlist in a tool list — "can run commands" is all-or-nothing. So `log-analyser`'s
-  blueprint states explicitly that it may only invoke the three named scripts; `code-reviewer` isn't
-  the backstop here (its phase is before any code diff exists) — the backstop is the developer
-  reviewing `log-analysis.md` and the redacted Jira comment it posts.
-- **Every `repowise` grant needs its own usage + fallback line.** Granting `repowise` in an agent's
-  `mcp:` list isn't self-explanatory — Copilot's tool list has no way to express "try this, then
+  markdown test plan under `edit` and nothing more; there's nothing for `execute` to run.
+- **Why `qatalyst-log-analyser`'s command scope is written, not mechanical.** Copilot has no
+  per-command allowlist in a tool list — "can run commands" is all-or-nothing. So
+  `qatalyst-log-analyser`'s blueprint states explicitly that it may only invoke the three named
+  scripts; `qatalyst-code-reviewer` isn't the backstop here (its phase is before any code diff
+  exists) — the backstop is the developer reviewing `log-analysis.md` and the redacted Jira comment
+  it posts.
+- **Every `repowise` grant needs its own usage + fallback line.** Granting `repowise/*` in an agent's
+  `tools` list isn't self-explanatory — Copilot's tool list has no way to express "try this, then
   fall back," so that behavior is written into the agent's own body: what it uses Repowise for, and
   what to do when it's unavailable (always: fall back to a direct file read/search for that lookup,
   never block or retry). Within one run, check Repowise once and remember the result — don't keep
@@ -141,10 +160,17 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 
 | Layer | Skills |
 |---|---|
-| **Orchestration** | `ticket-start`, `ticket-ship`, `write-tests` (routes to `test-writer` for a standalone test-only task, same as a ticket task) |
+| **Orchestration** | `ticket-start`, `ticket-ship`, `write-tests` (routes to `qatalyst-test-writer` for a standalone test-only task, same as a ticket task) |
 | **Implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration` |
+| **Agent-support** (not slash commands — delegated to by the agent they back) | `plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`), `review-diff` (`qatalyst-code-reviewer`), `review-security` (`qatalyst-security-reviewer`), `review-error-handling` (`qatalyst-error-handling-reviewer`), `analyse-logs` (`qatalyst-log-analyser`) |
 
 ## 6. Hooks
+
+The checked-in `guards.json` array and its `{event, tool, paths, command, text}` stdin contract
+are the workflow's existing custom guard runner, not VS Code Copilot's native hook format. Changing
+agent frontmatter does not activate these guards in a Copilot session. Before relying on them in
+VS Code, migrate them to the native `.github/hooks/*.json` command-hook schema and validate the
+Copilot event payloads and permission decisions.
 
 | Hook | Event | Denies / does |
 |---|---|---|
@@ -170,15 +196,15 @@ protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
 
 - **Developer approves every gate** — each spec file, every task, and the commit/push/PR step all
   wait for an explicit yes.
-- **Spec before code** — no feature branch exists until `tasks.md` is approved; `developer` can't
-  start a task the spec doesn't list.
+- **Spec before code** — no feature branch exists until `tasks.md` is approved; `qatalyst-developer`
+  can't start a task the spec doesn't list.
 - **Context docs are read, not guessed** — `project-context.md`/`architecture.md` are drafted once
   from the real code, cited line-by-line, never regenerated once written.
 - **Redact before sharing** — raw logs stay in a git-ignored `.logs/` folder; everything else sees
   only trimmed/digested/redacted output.
 - **Mechanical enforcement where possible, written rules elsewhere** — reviewers lose the `edit`
   tool outright; path-scoping ("specs only," "scripts only") is a written rule, checked by
-  `code-reviewer`.
+  `qatalyst-code-reviewer`.
 - **No secrets in the repo** — both MCP files ship with an empty token slot; `protect-secrets`
   blocks the paths that would leak one.
 - **Run on a strong model** — every agent/skill in this workflow expects Claude Sonnet 5 or an
@@ -189,19 +215,23 @@ protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
 
 Found by audit, not yet closed — listed here so they stay visible rather than living only in chat:
 
-1. **Test/spec gaming under pressure** — nothing stops `test-writer` from weakening an assertion,
-   or the "plan changed" re-approval path (`bug-planner`/`feature-planner`) from being used to dodge
+1. **Test/spec gaming under pressure** — nothing stops `qatalyst-test-writer` from weakening an
+   assertion,
+   or the "plan changed" re-approval path (`qatalyst-bug-planner`/`qatalyst-feature-planner`) from
+   being used to dodge
    a hard bug rather than fix it.
 2. **UI error/loading/empty states** — `new-screen` and `xml-ui.instructions.md` stop at wiring;
    nothing requires a screen to handle or test a failure/loading/empty state.
-3. **No retry cap for `developer`/`test-writer`** — unlike `log-analyser`'s 3-pass cap, nothing
+3. **No retry cap for `qatalyst-developer`/`qatalyst-test-writer`** — unlike
+   `qatalyst-log-analyser`'s 5-pass cap, nothing
    says "stop and report" after N failed attempts at a task.
 4. **Silent hook degradation** — a timed-out guard "falls back to normal permissions" with no
    requirement that the agent notice or disclose it.
 5. **"Resolved" is undefined** for review comments — unclear if a developer override counts.
 6. **Ticket reclassified after `ticket-start` runs** — issue type is read once; a later
    feature→bug (or reverse) reclassification isn't re-checked.
-7. **Technically-passing-but-wrong-approach implementations** — `code-reviewer` checks criteria are
+7. **Technically-passing-but-wrong-approach implementations** — `qatalyst-code-reviewer` checks
+   criteria are
    met, not that the approach matches `tasks.md`'s Approach section's intent.
 8. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
 9. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
@@ -219,6 +249,7 @@ versus a convention this workflow invented for itself.
 
 ```
 <app-repo>/
+├── .mcp.json                         portable workspace MCP servers for Copilot
 ├── project-context.md                 filled in by hand once; never regenerated
 ├── architecture.md                    same
 ├── workflow.prompt.md                 pre-existing team doc, if any — linked, not written here
@@ -242,11 +273,11 @@ versus a convention this workflow invented for itself.
     │   ├── testing.instructions.md
     │   └── gradle.instructions.md
     ├── agents/
-    │   ├── log-analyser.agent.md
-    │   ├── bug-planner.agent.md
-    │   ├── feature-planner.agent.md
-    │   ├── developer.agent.md
-    │   ├── test-writer.agent.md             router only — see below
+    │   ├── qatalyst-log-analyser.agent.md
+    │   ├── qatalyst-bug-planner.agent.md
+    │   ├── qatalyst-feature-planner.agent.md
+    │   ├── qatalyst-developer.agent.md
+    │   ├── qatalyst-test-writer.agent.md     router only — see below
     │   ├── unit-test-writer.agent.md
     │   ├── ble-protocol-test-writer.agent.md
     │   ├── androidtest-writer.agent.md
@@ -256,9 +287,9 @@ versus a convention this workflow invented for itself.
     │   ├── ota-test-writer.agent.md         plan only
     │   ├── performance-test-writer.agent.md plan only
     │   ├── chaos-test-writer.agent.md       plan only
-    │   ├── code-reviewer.agent.md
-    │   ├── security-reviewer.agent.md
-    │   └── error-handling-reviewer.agent.md
+    │   ├── qatalyst-code-reviewer.agent.md
+    │   ├── qatalyst-security-reviewer.agent.md
+    │   └── qatalyst-error-handling-reviewer.agent.md
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py
@@ -270,6 +301,11 @@ versus a convention this workflow invented for itself.
     │   ├── new-ble-command/SKILL.md
     │   ├── new-api-call/SKILL.md
     │   ├── room-migration/SKILL.md
+    │   ├── plan-ticket/SKILL.md              agent-support, not a slash command
+    │   ├── review-diff/SKILL.md              agent-support, not a slash command
+    │   ├── review-security/SKILL.md          agent-support, not a slash command
+    │   ├── review-error-handling/SKILL.md    agent-support, not a slash command
+    │   ├── analyse-logs/SKILL.md             agent-support, not a slash command
     │   ├── write-tests/SKILL.md
     │   ├── ticket-start/SKILL.md
     │   └── ticket-ship/
@@ -300,8 +336,8 @@ Not present until a ticket is actually worked; one set per ticket, inside its fe
 
 ```
 specs/<feature>/<ticket-id>/
-├── log-analysis.md      bug tickets only — written by log-analyser
-├── tasks.md              written by bug-planner (bug) or feature-planner (feature)
+├── log-analysis.md      bug tickets only — written by qatalyst-log-analyser
+├── tasks.md              written by qatalyst-bug-planner (bug) or qatalyst-feature-planner (feature)
 └── test-plans/           only if a plan-only test-writer sub-agent ran for this ticket
     ├── interop.md         written by interop-test-writer
     ├── ota.md             written by ota-test-writer
@@ -311,7 +347,7 @@ specs/<feature>/<ticket-id>/
 .logs/<ticket-id>/
 ├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads
 │   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
-├── trimmed.log           redacted + windowed — what log-analyser actually reads
+├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 └── digest.md             error groups with counts and first/last times
 ```
 
@@ -332,7 +368,7 @@ behavior.
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
 | `~/.copilot/skills/` | GitHub Copilot specification (user scope) | A per-user, home-directory skill location; this workflow does not write to it |
-| `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `bug-planner`, `feature-planner`, and `log-analyser` |
+| `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `ticket-start` at the start of every ticket |
 

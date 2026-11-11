@@ -9,7 +9,8 @@ description: >
 
 # new-feature
 
-Used by `developer` for a `tasks.md` task that spans the full stack — not just one layer. This
+Used by `qatalyst-developer` for a `tasks.md` task that spans the full stack — not just one layer.
+This
 skill is an orchestrator: it decides which narrower skills a task needs and calls them in the right
 order, rather than writing a Fragment-to-database stack by hand.
 
@@ -24,7 +25,8 @@ order, rather than writing a Fragment-to-database stack by hand.
 6. Wire the pieces together: register the ViewModel/repository/service in Koin's `AppModule.kt`
    (see `koin-di.instructions.md`), and add the nav destination if step 2 ran (see
    `xml-ui.instructions.md`).
-7. Hand off to `test-writer` for anything the narrower skills didn't already cover end-to-end.
+7. Hand off to `qatalyst-test-writer` for anything the narrower skills didn't already cover
+   end-to-end.
 
 ## Rules
 

@@ -15,11 +15,12 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 17 agents: planning/build (`log-analyser`, `bug-planner`, `feature-planner`, `developer`), review (`code-reviewer`, `security-reviewer`, `error-handling-reviewer`), and testing — `test-writer` routing to 9 specialized writers (`unit-test-writer`, `ble-protocol-test-writer`, `androidtest-writer`, `compatibility-test-writer`, `security-test-writer`, `interop-test-writer`, `ota-test-writer`, `performance-test-writer`, `chaos-test-writer`) |
+| **`.github/agents/`** | The 17 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer`), review (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`unit-test-writer`, `ble-protocol-test-writer`, `androidtest-writer`, `compatibility-test-writer`, `security-test-writer`, `interop-test-writer`, `ota-test-writer`, `performance-test-writer`, `chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
 | **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`, `write-tests`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
 | **`.github/mcp.json`**, **`.github/mcp/`** | MCP server config (Atlassian Rovo, Figma, Repowise) |
+| **`.mcp.json`** | Portable workspace MCP server config used by VS Code Copilot custom agents |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<feature>/<ticket-id>/` folder |
@@ -41,10 +42,11 @@ irm https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.ps
 ```
 
 This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
-mcp config, log-analyser scripts), `specs/.templates/`, and `docs/workflow-design.md` +
+CLI/JetBrains MCP config, log-analyser scripts), `.mcp.json` if the app repo doesn't already have
+one, `specs/.templates/`, and `docs/workflow-design.md` +
 `docs/field-sources.md` into the app repo. Run it again any time this repo changes, to pick up the
 update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
-but never touches `copilot-instructions.md`, `project-context.md`, `architecture.md`,
+but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md`, `architecture.md`,
 `hooks/sensitive-paths.txt` or `log-analyser/log-signatures.md` if they already exist, since those
 hold the app repo's own project data. Everything it touches lands in a normal git working tree, so
 `git status`/`git diff` shows exactly what changed and it's trivially reversible.
@@ -57,9 +59,12 @@ still need filling in by hand, since no tool can read them off the code or guess
 2. **`project-context.md` / `architecture.md`** — draft these once from the real code (see
    [`docs/field-sources.md`](docs/field-sources.md) for what counts as solid evidence per field),
    get a developer to confirm the draft, then never regenerate them — edit by hand as facts change.
-3. **MCP tokens** — copy `.github/mcp/jetbrains-mcp.example.json` into your own JetBrains
-   `mcp.json` (or fill in the CLI's local config for `.github/mcp.json`) with your own Atlassian API
-   token. Never commit a filled-in token.
+3. **MCP setup** — VS Code Copilot uses the workspace-root `.mcp.json`; enable the workspace MCP
+   config option if your VS Code version requires it, then sign in to the servers as prompted. If
+   your app repo already had `.mcp.json`, merge the `atlassian-rovo`, `figma`, and `repowise`
+   servers into it. JetBrains users can copy `.github/mcp/jetbrains-mcp.example.json` into their
+   local JetBrains `mcp.json`. CLI users configure `.github/mcp.json` locally. Bitbucket PR tools
+   may need a separate local API-token configuration. Never commit a filled-in token or credential.
 
 Optional integrations (Atlassian Rovo MCP, Figma MCP, Repowise) enhance the agents but aren't
 required to start using the workflow.
@@ -72,14 +77,16 @@ required to start using the workflow.
 
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
    `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
-2. Hands off to `bug-planner` (for a bug) or `feature-planner` (otherwise), which reads the ticket,
+2. Hands off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise), which
+   reads the ticket,
    its Confluence pages and Figma links, resolves the feature folder itself, and produces one
    `tasks.md` — a single approval, not three.
 3. Creates the feature branch and asks before moving the ticket to In Progress.
 
 ### Implementation & testing
 
-Developers work `tasks.md` one task at a time. `developer` implements; `test-writer` covers it with
+Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; `qatalyst-test-writer`
+covers it with
 tests. Project skills (`/new-screen`, `/new-ble-command`, `/new-api-call`, `/room-migration`) handle
 the per-layer detail; `/new-feature` orchestrates all of them for a task that spans the stack.
 
@@ -88,7 +95,8 @@ the per-layer detail; `/new-feature` orchestrates all of them for a task that sp
 **Command:** `/ticket-ship`
 
 1. Confirms every task is ticked.
-2. Runs `code-reviewer` (and `security-reviewer`/`error-handling-reviewer` for flagged diffs) against
+2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
+   for flagged diffs) against
    the spec.
 3. Builds and tests locally.
 4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and

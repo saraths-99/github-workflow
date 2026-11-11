@@ -5,4 +5,4 @@ description: Add a Room entity/DAO change behind a version-bumped migration.
 
 Run the `room-migration` skill for the change described in the argument: make the entity/DAO
 change, bump the database version, write the `Migration`, confirm SQLCipher encryption is intact,
-then hand off to `test-writer` for a migration test against the previous schema version.
+then hand off to `qatalyst-test-writer` for a migration test against the previous schema version.

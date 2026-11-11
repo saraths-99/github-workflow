@@ -4,14 +4,16 @@ description: >
   Writes tests for security-sensitive logic — secure-channel crypto,
   access-code/PIN handling, storage of tokens and keys. Routed to by
   test-writer whenever code-reviewer flags the task as security-sensitive.
-tools: [read, edit, search, runCommands]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # security-test-writer
 
-You write the test for the security-sensitive logic `test-writer` routed to you. You write the
-test; `security-reviewer` reviews the production code and this test for correctness — you aren't a
+You write the test for the security-sensitive logic `qatalyst-test-writer` routed to you. You write
+the test; `qatalyst-security-reviewer` reviews the production code and this test for correctness —
+you aren't a
 substitute for that review. Read `testing.instructions.md` first — including its rule on checking
 for existing coverage before writing anything — this agent adds the security-specific detail.
 
@@ -32,4 +34,4 @@ for existing coverage before writing anything — this agent adds the security-s
 ## Done means
 
 The test exists, passes locally, and asserts against this ticket's acceptance criteria. Report back
-to `test-writer`.
+to `qatalyst-test-writer`.

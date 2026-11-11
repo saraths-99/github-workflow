@@ -7,7 +7,8 @@ description: >
 
 # room-migration
 
-Used by `developer` (directly, or via `new-feature`) for a task that changes a Room entity, DAO, or
+Used by `qatalyst-developer` (directly, or via `new-feature`) for a task that changes a Room
+entity, DAO, or
 the database schema.
 
 ## Steps
@@ -18,7 +19,8 @@ the database schema.
    multiple schema changes into one migration unless the task explicitly covers both.
 4. Confirm the migration preserves the existing SQLCipher `SupportFactory` setup — a migration must
    never run against, or produce, an unencrypted database (see `data-layer.instructions.md`).
-5. Hand off to `test-writer` for a migration test that runs the real `Migration` against a database
+5. Hand off to `qatalyst-test-writer` for a migration test that runs the real `Migration` against a
+   database
    created at the previous version, not just a schema diff assertion.
 
 ## Done means

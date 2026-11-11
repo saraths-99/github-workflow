@@ -5,13 +5,15 @@ description: >
   (LockModelNumber and the ala-carte capability interfaces). Routed to by
   test-writer for any task touching model-specific logic or adding support
   for a new model.
-tools: [read, edit, search, runCommands]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # compatibility-test-writer
 
-You write the model-matrix test for the task `test-writer` routed to you. A capability difference
+You write the model-matrix test for the task `qatalyst-test-writer` routed to you. A capability
+difference
 between lock models is a `is <Interface>` check (`AccessCodeAccessible`, `FingerprintAccessible`,
 `ScreenSecurable`, `WifiProvisionable`, `OpStatusControllable` — see `ble-halo.instructions.md`), not
 a single model flag, so the test must check it the same way. Read `testing.instructions.md` first
@@ -34,4 +36,4 @@ the model-matrix detail.
 ## Done means
 
 The test exists, passes locally, and asserts against this ticket's acceptance criteria. Report back
-to `test-writer`.
+to `qatalyst-test-writer`.

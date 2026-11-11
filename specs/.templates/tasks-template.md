@@ -62,5 +62,6 @@ below filled out.
       Against: every acceptance criterion above, and every ticked task
 
 ---
-*This file is re-approved if the plan changes mid-ticket — see `bug-planner`'s / `feature-planner`'s
+*This file is re-approved if the plan changes mid-ticket — see `qatalyst-bug-planner`'s /
+`qatalyst-feature-planner`'s
 own rule on that.*

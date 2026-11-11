@@ -15,7 +15,7 @@
 #   - Never overwrites the *project data* files if they already exist: copilot-instructions.md
 #     (your settings block, module map, key rules), hooks/sensitive-paths.txt and
 #     log-analyser/log-signatures.md (both grow over time), project-context.md, architecture.md,
-#     and anything under specs/ (ticket data).
+#     .mcp.json (which may contain other project servers), and anything under specs/ (ticket data).
 #   - Leaves everything git-tracked in the target repo, so `git status`/`git diff` shows exactly
 #     what changed and the run is trivially reversible.
 set -euo pipefail
@@ -77,6 +77,7 @@ echo "Preserving project data (only added if missing) ..."
 keep_if_present .github/copilot-instructions.md
 keep_if_present .github/hooks/sensitive-paths.txt
 keep_if_present .github/log-analyser/log-signatures.md
+keep_if_present .mcp.json
 keep_if_present project-context.md
 keep_if_present architecture.md
 

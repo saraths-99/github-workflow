@@ -5,8 +5,9 @@ description: >
   handling, sync, or a multi-step flow (add-lock, Wi-Fi provisioning) — a
   checklist for manual fault-injection testing, not runnable code. Routed
   to by test-writer.
-tools: [read, edit, search]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # chaos-test-writer
@@ -35,4 +36,4 @@ deliberately breaking something mid-flow.
 ## Done means
 
 The plan file exists, is current for this diff, and each scenario states the expected recovered
-state, not just that something was tried. Report back to `test-writer`.
+state, not just that something was tried. Report back to `qatalyst-test-writer`.

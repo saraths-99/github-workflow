@@ -4,13 +4,15 @@ description: >
   Writes instrumented UI tests for a new or changed screen — navigation,
   permission prompts, and config-change survival. Routed to by test-writer
   for any task touching a Fragment, layout, or nav destination.
-tools: [read, edit, search, runCommands]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # androidtest-writer
 
-You write the instrumented (`androidTest`) test for the screen `test-writer` routed to you —
+You write the instrumented (`androidTest`) test for the screen `qatalyst-test-writer` routed to
+you —
 `unit-test-writer` already covers its ViewModel; you cover what only runs on a device/emulator. Read
 `testing.instructions.md` first — including its rule on checking for existing coverage before
 writing anything — this agent adds the instrumented-test detail.
@@ -32,4 +34,4 @@ writing anything — this agent adds the instrumented-test detail.
 ## Done means
 
 The test exists, passes on a local emulator/device, and asserts against this ticket's acceptance
-criteria. Report back to `test-writer`.
+criteria. Report back to `qatalyst-test-writer`.

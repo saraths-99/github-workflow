@@ -17,8 +17,10 @@ yourself.
 
 1. Confirm every task in `tasks.md` is ticked. If one isn't, stop and say which — don't ship a
    partial ticket.
-2. Run `code-reviewer` against the full diff; run `security-reviewer` too if `code-reviewer` flagged
-   a sensitive area, and `error-handling-reviewer` too if it flagged a layer where functions can
+2. Run `qatalyst-code-reviewer` against the full diff; run `qatalyst-security-reviewer` too if
+   `qatalyst-code-reviewer` flagged
+   a sensitive area, and `qatalyst-error-handling-reviewer` too if it flagged a layer where
+   functions can
    fail. All must pass with no open comments.
 3. Build and run tests locally with `isLocalBuild=true`.
 4. **Ask the developer once**, showing: the files that will be pushed, and the PR title and

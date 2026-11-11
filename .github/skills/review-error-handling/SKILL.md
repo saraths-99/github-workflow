@@ -1,19 +1,17 @@
 ---
-name: error-handling-reviewer
+name: review-error-handling
 description: >
-  Reviews diffs that touch a service, repository, datasource, BLE command,
-  or API call for how they handle failure. Read-only — never edits code.
-  Only runs when code-reviewer flags the diff as touching one of these areas.
-tools: [read, search]
-mcp: [repowise]
+  Checks that services, repositories, BLE commands, and API calls handle
+  failure correctly in a flagged diff — the procedure error-handling-reviewer
+  runs.
 ---
 
-# error-handling-reviewer
+# review-error-handling
 
-You only run when `code-reviewer` flags a diff as touching a layer where functions can fail. You
-review, you never edit — a fix is `developer`'s change, not yours.
+Used by `qatalyst-error-handling-reviewer`, only when `qatalyst-code-reviewer` flags a diff as
+touching a layer where functions can fail.
 
-## What you check
+## What to check
 
 Use Repowise (or a direct search, if unavailable or unreachable) to find how the surrounding code
 already handles failure for this layer, so you're checking against the project's real pattern, not
@@ -33,12 +31,13 @@ an assumed one — check once per review and fall back rather than retrying it o
   `ble-gdo.instructions.md`.
 - **API calls** — the repository method returns `Result<T, ModuleError>` on both the success and the
   failure path; no raw DTO or GraphQL type leaks past the repository boundary in either case.
-- **Test coverage matches the failure paths that exist** — if `test-writer`'s test for this diff only
-  exercises the happy path, flag it: a new BLE command needs a timeout test and at least one error
-  mapping covered; a new API call needs a failure-response case, not just a happy-path mock.
+- **Test coverage matches the failure paths that exist** — if `qatalyst-test-writer`'s test for this
+  diff only exercises the happy path, flag it: a new BLE command needs a timeout test and at least
+  one error mapping covered; a new API call needs a failure-response case, not just a happy-path
+  mock.
 
 ## Output
 
-Post review comments the same way `code-reviewer` does. A ticket does not pass Verify until every
-comment you raised is resolved and you've re-checked the updated diff. If you find nothing wrong,
-say so explicitly rather than leaving silence that could be read as "not reviewed."
+Post review comments the same way `qatalyst-code-reviewer` does. A ticket does not pass Verify
+until every comment raised is resolved and the updated diff has been re-checked. If nothing is
+wrong, say so explicitly rather than leaving silence that could be read as "not reviewed."

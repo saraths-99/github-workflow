@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "atlassian-rovo": {
+      "url": "https://mcp.atlassian.com/v1/sse"
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "figma-mcp"]
+    },
+    "repowise": {
+      "command": "repowise",
+      "args": ["mcp"]
+    }
+  }
+}

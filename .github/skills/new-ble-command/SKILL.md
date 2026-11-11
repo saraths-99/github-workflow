@@ -8,7 +8,8 @@ description: >
 
 # new-ble-command
 
-Used by `developer` (directly, or via `new-feature`) for a task that adds or changes a BLE command.
+Used by `qatalyst-developer` (directly, or via `new-feature`) for a task that adds or changes a BLE
+command.
 The Halo and GDO stacks are never mixed — pick the one the task's `tasks.md` entry names.
 
 ## Steps
@@ -21,7 +22,8 @@ The Halo and GDO stacks are never mixed — pick the one the task's `tasks.md` e
    callback surfacing past this layer.
 4. Confirm no key material, token, or raw payload is written to a log statement anywhere in the new
    code.
-5. Hand off to `test-writer` for a fake-device test covering the happy path, the timeout, and at
+5. Hand off to `qatalyst-test-writer` for a fake-device test covering the happy path, the timeout,
+   and at
    least one error mapping — never require a real Halo lock or GDO unit to exercise the new code.
 
 ## Done means

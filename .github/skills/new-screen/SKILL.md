@@ -8,7 +8,8 @@ description: >
 
 # new-screen
 
-Used by `developer` (directly, or via `new-feature`) for a task that adds or changes one screen.
+Used by `qatalyst-developer` (directly, or via `new-feature`) for a task that adds or changes one
+screen.
 
 ## Steps
 
@@ -19,7 +20,8 @@ Used by `developer` (directly, or via `new-feature`) for a task that adds or cha
    `koin-di.instructions.md`), scoped `factory`.
 4. Add the nav destination to the existing graph hosted by `HomeActivity`, with Safe Args for any
    arguments — no manual `Bundle` construction.
-5. Hand off to `test-writer` for the ViewModel test, using the project's existing test dispatcher
+5. Hand off to `qatalyst-test-writer` for the ViewModel test, using the project's existing test
+   dispatcher
    and fakes (see `testing.instructions.md`).
 
 ## Done means

@@ -1,12 +1,13 @@
 <!--
 "Known cause chains" starts with one worked example and otherwise stays empty until the developer
-adds a confirmed chain after a fix lands (see log-analyser.agent.md's "Learn" note) -- never
+adds a confirmed chain after a fix lands (see qatalyst-log-analyser.agent.md's "Learn" note) -- never
 pre-filled with a guess. "Tag -> module map" below is FILL IN: a one-time scan of this repo's
 Log.d/Log.w/Log.e call sites, kept up to date by hand as new tags are added.
 -->
 # Log signatures
 
-Known cause chains, known noise tags, and the tag-to-module map `log-analyser` uses in its Link and
+Known cause chains, known noise tags, and the tag-to-module map `qatalyst-log-analyser` uses in its
+Link and
 Map steps.
 
 ## Known cause chains

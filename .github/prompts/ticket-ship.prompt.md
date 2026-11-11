@@ -6,7 +6,8 @@ description: Ship a finished ticket — review, build, one PR per repo in merge 
 Run the `ticket-ship` skill:
 
 1. Confirm every `tasks.md` task is ticked.
-2. Run `code-reviewer` (and `security-reviewer`/`error-handling-reviewer` if flagged) and the local
+2. Run `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
+   if flagged) and the local
    build/tests.
 3. Show the planned PRs and merge order, and ask once before pushing anything.
 4. On confirmation, push and open one cross-linked PR per repo, in merge order.

@@ -4,8 +4,9 @@ description: >
   Writes/updates the hardware-in-the-loop interoperability test plan for a
   BLE command, secure-channel, or lock-model change — a checklist for
   manual QA against real locks, not runnable code. Routed to by test-writer.
-tools: [read, edit, search]
-mcp: [repowise]
+tools: ['read', 'edit', 'search', 'repowise/*']
+target: github-copilot
+user-invocable: false
 ---
 
 # interop-test-writer
@@ -36,5 +37,6 @@ person running real hardware to execute and sign off on.
 ## Done means
 
 The plan file exists, is current for this diff, and is specific enough that someone who didn't
-write the change could execute it. Report back to `test-writer` — you do not mark the task done
+write the change could execute it. Report back to `qatalyst-test-writer` — you do not mark the task
+done
 yourself.
