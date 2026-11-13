@@ -6,7 +6,8 @@
 # Or, with a local checkout of this repo:
 #   \path\to\github-workflow\install.ps1 [-Target <target-repo-path>]   # defaults to the current directory
 #
-# See install.sh for exactly what gets synced vs. preserved.
+# See install.sh for exactly what gets synced vs. preserved. Writes .github\workflow-sync.md every
+# run (version, commit, timestamp) -- see this repo's CHANGELOG.md for what changed since.
 
 param(
     [string]$Target = (Get-Location).Path
@@ -30,6 +31,10 @@ try {
     Write-Host "Downloading $RepoUrl@$Branch ..."
     $Src = Join-Path $Tmp "src"
     git clone --depth 1 --branch $Branch --quiet $RepoUrl $Src
+
+    $WorkflowVersion = if (Test-Path (Join-Path $Src "VERSION")) { (Get-Content (Join-Path $Src "VERSION") -Raw).Trim() } else { "unknown" }
+    $WorkflowCommit = git -C $Src rev-parse HEAD
+    Write-Host "Workflow version $WorkflowVersion (commit $WorkflowCommit)"
 
     function Sync-Dir($RelPath) {
         $destPath = Join-Path $Target $RelPath
@@ -82,6 +87,21 @@ try {
     } else {
         Set-Content $gitignore ".logs/"
     }
+
+    $syncedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    $syncRecord = @"
+# Workflow sync record
+
+Do not edit by hand — every run of install.sh/install.ps1 overwrites this file.
+
+- Source: $RepoUrl@$Branch
+- Version: $WorkflowVersion
+- Commit: $WorkflowCommit
+- Synced at: $syncedAt
+
+See this repo's CHANGELOG.md for what changed since a prior sync.
+"@
+    Set-Content (Join-Path $Target ".github\workflow-sync.md") $syncRecord
 
     Write-Host ""
     Write-Host "Done. Review with 'git status' / 'git diff' in $Target, then commit."

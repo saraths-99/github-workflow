@@ -26,6 +26,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
 | **`install.sh`**, **`install.ps1`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
+| **`VERSION`**, **`CHANGELOG.md`** | This workflow's own version and change history — bumped and entered for every change that lands here; `install.sh`/`install.ps1` read both at sync time (see §2) |
 
 ## 2. One-time setup
 
@@ -50,6 +51,10 @@ but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md
 `hooks/sensitive-paths.txt` or `log-analyser/log-signatures.md` if they already exist, since those
 hold the app repo's own project data. Everything it touches lands in a normal git working tree, so
 `git status`/`git diff` shows exactly what changed and it's trivially reversible.
+
+Every run also writes `.github/workflow-sync.md` into the app repo, recording which version and
+commit of this workflow it just synced from, and when. Check that file to see what an app repo is
+currently running, and this repo's [`CHANGELOG.md`](CHANGELOG.md) to see what changed since.
 
 Then, in the app repo, open it in an IDE with GitHub Copilot (JetBrains or VS Code). Two things
 still need filling in by hand, since no tool can read them off the code or guess them:

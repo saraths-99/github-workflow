@@ -266,6 +266,7 @@ versus a convention this workflow invented for itself.
 │       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention
 ├── .logs/                             created lazily, git-ignored — see §10.2
 └── .github/
+    ├── workflow-sync.md               written every install.sh/install.ps1 run — version, commit, timestamp; never hand-edited
     ├── copilot-instructions.md        settings block + module map + key rules + links
     ├── instructions/
     │   ├── kotlin.instructions.md
@@ -360,10 +361,11 @@ specs/<bug|feature>/<ticket-id>/
 ### 10.3 Naming conventions: specification compliance
 
 Every path under `.github/` conforms to a documented GitHub Copilot customization path, verified
-against the [customization cheat sheet](https://docs.github.com/en/copilot/reference/customization-cheat-sheet).
-Every path outside `.github/` — `specs/`, the `-template.md` suffix — is a project-specific
-convention introduced by this workflow; GitHub Copilot has no knowledge of it and assigns it no
-behavior.
+against the [customization cheat sheet](https://docs.github.com/en/copilot/reference/customization-cheat-sheet),
+with one exception: `.github/workflow-sync.md`, a project-specific convention this workflow writes
+there purely because `.github/` is where the rest of its files already live. Every path outside
+`.github/` — `specs/`, the `-template.md` suffix — is also a project-specific convention introduced
+by this workflow; GitHub Copilot has no knowledge of any of these and assigns them no behavior.
 
 | Path / suffix | Classification | Notes |
 |---|---|---|
@@ -373,6 +375,7 @@ behavior.
 | `.github/agents/*.md` | Location per specification; `.agent.md` suffix is a project convention | The specification requires only that the file reside in `.github/agents/`; the `.agent.md` suffix is applied by this workflow for readability and is not required by GitHub Copilot |
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
+| `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh`/`install.ps1` run, never hand-edited |
 | `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `qatalyst-ticket-start` at the start of every ticket |

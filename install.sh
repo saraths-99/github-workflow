@@ -18,6 +18,9 @@
 #     .mcp.json (which may contain other project servers), and anything under specs/ (ticket data).
 #   - Leaves everything git-tracked in the target repo, so `git status`/`git diff` shows exactly
 #     what changed and the run is trivially reversible.
+#   - Writes .github/workflow-sync.md every run, recording the synced version, commit SHA, and
+#     timestamp -- check this file to see what an app repo is currently running, and this repo's
+#     CHANGELOG.md to see what changed since.
 set -euo pipefail
 
 REPO_URL="https://github.com/saraths-99/github-workflow.git"
@@ -37,6 +40,10 @@ trap 'rm -rf "$TMP"' EXIT
 echo "Downloading $REPO_URL@$BRANCH ..."
 git clone --depth 1 --branch "$BRANCH" --quiet "$REPO_URL" "$TMP/src"
 SRC="$TMP/src"
+
+WORKFLOW_VERSION="$(cat "$SRC/VERSION" 2>/dev/null || echo "unknown")"
+WORKFLOW_COMMIT="$(git -C "$SRC" rev-parse HEAD 2>/dev/null || echo "unknown")"
+echo "Workflow version $WORKFLOW_VERSION (commit $WORKFLOW_COMMIT)"
 
 sync_dir() {
   # Replaces $TARGET/$1 wholesale with $SRC/$1.
@@ -85,6 +92,19 @@ if [ -f "$TARGET/.gitignore" ]; then
 else
   echo '.logs/' > "$TARGET/.gitignore"
 fi
+
+cat > "$TARGET/.github/workflow-sync.md" <<EOF
+# Workflow sync record
+
+Do not edit by hand — every run of install.sh/install.ps1 overwrites this file.
+
+- Source: $REPO_URL@$BRANCH
+- Version: $WORKFLOW_VERSION
+- Commit: $WORKFLOW_COMMIT
+- Synced at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+See this repo's CHANGELOG.md for what changed since a prior sync.
+EOF
 
 echo
 echo "Done. Review with 'git status' / 'git diff' in $TARGET, then commit."
