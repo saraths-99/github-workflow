@@ -22,9 +22,8 @@ order, rather than writing a Fragment-to-database stack by hand.
 3. If it needs a new network or AppSync call, call `new-api-call`.
 4. If it needs a new BLE command, call `new-ble-command`.
 5. If it needs a database change, call `room-migration`.
-6. Wire the pieces together: register the ViewModel/repository/service in Koin's `AppModule.kt`
-   (see `koin-di.instructions.md`), and add the nav destination if step 2 ran (see
-   `xml-ui.instructions.md`).
+6. Wire the pieces together using the `koin-wiring` skill, and add the nav destination if step 2
+   ran (see `xml-ui.instructions.md`).
 7. Hand off to `qatalyst-test-writer` for anything the narrower skills didn't already cover
    end-to-end.
 

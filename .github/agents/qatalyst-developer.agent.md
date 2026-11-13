@@ -7,7 +7,7 @@ description: >
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['new-feature', 'new-screen', 'new-ble-command', 'new-api-call', 'room-migration']
+skills: ['new-feature', 'new-screen', 'new-ble-command', 'new-api-call', 'room-migration', 'koin-wiring', 'repowise-lookup']
 ---
 
 # qatalyst-developer
@@ -28,10 +28,8 @@ list, and you never skip ahead.
   `room-migration`, `new-feature`) rather than hand-rolling the same pattern differently.
 - Build and run tests locally with `isLocalBuild=true` before ticking a task — see
   `gradle.instructions.md`.
-- Before writing new code for a task, use Repowise (or a direct search, if unavailable or
-  unreachable) to check for an existing similar implementation and the real callers of anything
-  you're about to change — check once per task and fall back rather than retrying it on every
-  lookup.
+- Before writing new code for a task, use `repowise-lookup` to check for an existing similar
+  implementation and the real callers of anything you're about to change.
 
 ## When something in the plan doesn't fit the real code
 

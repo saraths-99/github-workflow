@@ -16,8 +16,7 @@ screen.
 1. Add the Fragment, extending the shared `BaseFragment` — never `Fragment` directly (see
    `xml-ui.instructions.md`).
 2. Add its XML layout under `res/layout/` with View Binding — no Compose, no Data Binding.
-3. Add the ViewModel and register it in that module's Koin `AppModule.kt` (see
-   `koin-di.instructions.md`), scoped `factory`.
+3. Add the ViewModel and register it using the `koin-wiring` skill.
 4. Add the nav destination to the existing graph hosted by `HomeActivity`, with Safe Args for any
    arguments — no manual `Bundle` construction.
 5. Hand off to `qatalyst-test-writer` for the ViewModel test, using the project's existing test

@@ -1,7 +1,8 @@
 # Pipelines detection
 
-`ticket-ship` must not assume Bitbucket Pipelines exists for this repo. Check in this exact order
-and stop at the first signal that answers the question:
+`ticket-ship` must not assume Bitbucket Pipelines exists for a repo — run this check independently
+for each repo a ticket touches; one repo having Pipelines on says nothing about another. Check in
+this exact order and stop at the first signal that answers the question:
 
 1. **The repo's `pipelines_config` setting**, read via Atlassian Rovo MCP (or the Bitbucket REST
    API if Rovo MCP doesn't expose it) — this is the authoritative, direct answer: Pipelines is

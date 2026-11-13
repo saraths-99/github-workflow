@@ -1,5 +1,5 @@
 <!--
-Filled in by bug-planner or feature-planner, inside specs/<feature>/<ticket ID>/tasks.md. This is
+Filled in by bug-planner or feature-planner, inside specs/<bug|feature>/<ticket ID>/tasks.md. This is
 the ticket's only spec file -- what it's for, the approach, and the ordered steps, in one place.
 Size this to the ticket: a one-line fix gets a short Context and a single task, not every section
 below filled out.

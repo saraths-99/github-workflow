@@ -11,10 +11,9 @@ Run the `ticket-start` skill for the ticket ID given as an argument:
    `qatalyst-log-analyser` first and wait for it to finish — don't require a separate manual step for
    this.
 2. Hand off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise) — it
-   reads the ticket, its
-   Confluence/Figma links and the matching workflow doc, resolves the feature folder itself
-   (reusing `qatalyst-log-analyser`'s for a bug), and produces one approved `tasks.md`. Wait for
-   approval.
+   reads the ticket, its Confluence/Figma links and the matching workflow doc, writes to the
+   deterministic `specs/<bug|feature>/<ticket ID>/tasks.md` path (same path `qatalyst-log-analyser`
+   already used, for a bug), and produces one approved `tasks.md`. Wait for approval.
 3. Create the feature branch once `tasks.md` is approved.
 4. Ask before moving the ticket to In Progress.
 

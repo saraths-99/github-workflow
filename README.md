@@ -19,11 +19,11 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`, `write-tests`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
-| **`.github/mcp.json`**, **`.github/mcp/`** | MCP server config (Atlassian Rovo, Figma, Repowise) |
-| **`.mcp.json`** | Portable workspace MCP server config used by VS Code Copilot custom agents |
+| **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`) |
+| **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
-| **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<feature>/<ticket-id>/` folder |
+| **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
 | **`install.sh`**, **`install.ps1`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
 
@@ -42,8 +42,8 @@ irm https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.ps
 ```
 
 This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
-CLI/JetBrains MCP config, log-analyser scripts), `.mcp.json` if the app repo doesn't already have
-one, `specs/.templates/`, and `docs/workflow-design.md` +
+the JetBrains MCP reference snippet, log-analyser scripts), `.mcp.json` if the app repo doesn't
+already have one, `specs/.templates/`, and `docs/workflow-design.md` +
 `docs/field-sources.md` into the app repo. Run it again any time this repo changes, to pick up the
 update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
 but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md`, `architecture.md`,
@@ -59,12 +59,13 @@ still need filling in by hand, since no tool can read them off the code or guess
 2. **`project-context.md` / `architecture.md`** — draft these once from the real code (see
    [`docs/field-sources.md`](docs/field-sources.md) for what counts as solid evidence per field),
    get a developer to confirm the draft, then never regenerate them — edit by hand as facts change.
-3. **MCP setup** — VS Code Copilot uses the workspace-root `.mcp.json`; enable the workspace MCP
-   config option if your VS Code version requires it, then sign in to the servers as prompted. If
-   your app repo already had `.mcp.json`, merge the `atlassian-rovo`, `figma`, and `repowise`
-   servers into it. JetBrains users can copy `.github/mcp/jetbrains-mcp.example.json` into their
-   local JetBrains `mcp.json`. CLI users configure `.github/mcp.json` locally. Bitbucket PR tools
-   may need a separate local API-token configuration. Never commit a filled-in token or credential.
+3. **MCP setup** — both VS Code Copilot and the Copilot CLI read the workspace-root `.mcp.json`
+   directly; enable the workspace MCP config option if your VS Code version requires it, then sign
+   in to the servers as prompted. If your app repo already had `.mcp.json`, merge the
+   `atlassian-rovo`, `figma`, and `repowise` servers into it. JetBrains has its own separate
+   `mcp.json` location (not this repo), so copy `.github/mcp/jetbrains-mcp.example.json` into it
+   instead. Bitbucket PR tools may need a separate local API-token configuration. Never commit a
+   filled-in token or credential.
 
 Optional integrations (Atlassian Rovo MCP, Figma MCP, Repowise) enhance the agents but aren't
 required to start using the workflow.
@@ -78,9 +79,9 @@ required to start using the workflow.
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
    `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
 2. Hands off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise), which
-   reads the ticket,
-   its Confluence pages and Figma links, resolves the feature folder itself, and produces one
-   `tasks.md` — a single approval, not three.
+   reads the ticket, its Confluence pages and Figma links, writes to the deterministic
+   `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
+   not three.
 3. Creates the feature branch and asks before moving the ticket to In Progress.
 
 ### Implementation & testing

@@ -9,7 +9,7 @@ description: >
 tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['plan-ticket']
+skills: ['plan-ticket', 'jira-ticket-intake', 'repowise-lookup']
 ---
 
 # qatalyst-bug-planner
@@ -23,10 +23,10 @@ between them yourself — that's the developer's call at the approval gate, not 
 
 ## Hard scope rules
 
-- You may write **only** `specs/<feature>/<ticket ID>/tasks.md`.
-- Reuse the feature folder `qatalyst-log-analyser` already resolved — a bug never gets a new
-  feature folder from you; if there's a reason the folder looks wrong, say so to the developer
-  rather than silently picking a different one.
+- You may write **only** `specs/bug/<ticket ID>/tasks.md` — the same deterministic path
+  `qatalyst-log-analyser` already used for `log-analysis.md`. There is no folder to pick or reuse;
+  if something about the ticket's type classification looks wrong, say so to the developer rather
+  than silently writing somewhere else.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the
   fix cleaner on paper — see `architecture.md` for the layers this app actually has: MVVM +
   Repository + Services.

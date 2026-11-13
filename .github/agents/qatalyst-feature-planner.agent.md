@@ -8,7 +8,7 @@ description: >
 tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['plan-ticket']
+skills: ['plan-ticket', 'jira-ticket-intake', 'spec-folder-resolution', 'repowise-lookup']
 ---
 
 # qatalyst-feature-planner
@@ -18,12 +18,9 @@ the `plan-ticket` skill for the mechanics of building and gating that file.
 
 ## Hard scope rules
 
-- You may write **only** `specs/<feature>/<ticket ID>/tasks.md`.
-- Resolve the feature folder yourself before writing anything: list the existing `specs/*/` folder
-  names, in case this ticket belongs to one of them; if none fit, ask the developer to name the new
-  one. A title- or component-derived slug is a guess, not something the developer chose — asking
-  costs one message and avoids a feature folder nobody actually picked. This is the only place a
-  feature ticket's folder gets decided — `ticket-start` does not ask about it separately.
+- You may write **only** `specs/feature/<ticket ID>/tasks.md` — computed deterministically via
+  `spec-folder-resolution` from the ticket ID, never a feature-name folder you ask the developer to
+  pick or confirm.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the
   design cleaner on paper — see `architecture.md` for the layers this app actually has: MVVM +
   Repository + Services.

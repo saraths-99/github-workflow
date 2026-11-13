@@ -13,13 +13,13 @@ Run the `qatalyst-log-analyser` agent on the ticket ID given as an argument:
 1. Intake the ticket **in full** via Atlassian Rovo MCP — description and every comment, since the
    issue time is often only in a comment — and pin the issue time. Note whether the log attachment
    is a plain text file or a `.zip`.
-2. Ask which feature this ticket belongs to, from the existing `specs/*/` folders — never default to
-   creating a new one; if none fit, say so and ask the developer to confirm before creating one.
-3. Run `logcat_extract.py`, then `logcat_trim.py`, then `logcat_digest.py` — no other shell command.
-4. Link, Map and Rank root-cause hypotheses, re-running from Link as needed, up to 5 passes.
-5. Write `specs/<feature>/<ticket ID>/log-analysis.md`, including a suggested fix (or, if the top
-   two hypotheses are still close after the refine cap, both candidates and their fixes), and post a
-   redacted Jira comment.
-6. Tell the developer it's ready for `/ticket-start`.
+2. Run `logcat_extract.py`, then `logcat_trim.py`, then `logcat_digest.py` — no other shell command.
+3. Link, Map and Rank root-cause hypotheses — Map uses `repowise-lookup` to locate the real class
+   and module each error tag belongs to, grounding the fix in actual code. Re-run from Link as
+   needed, up to 5 passes.
+4. Write `specs/bug/<ticket ID>/log-analysis.md` — deterministic from the ticket ID, nothing to ask
+   about — including a suggested fix (or, if the top two hypotheses are still close after the refine
+   cap, both candidates and their fixes), and post a redacted Jira comment.
+5. Tell the developer it's ready for `/ticket-start`.
 
 If no ticket ID is given, ask for one before doing anything else.

@@ -14,16 +14,17 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
 
 ## Steps
 
-1. Gather inputs: the Jira ticket itself (title, description, comments) via Atlassian Rovo MCP, any
-   linked Confluence pages, any linked Figma designs (read-only — never push a design change),
-   `project-context.md`, and `architecture.md`. For a bug, fold in `log-analysis.md`'s root cause
-   and suggested fix rather than re-investigating. If `log-analysis.md` lists two candidate root
-   causes instead of one, don't pick for the developer — list both under Open Questions with their
-   trade-offs and ask which to implement before the task checklist is written.
-2. Ground every claim in the real code — Repowise, or a direct read if unavailable — callers,
-   existing signatures, and why a pattern is the way it is before changing anything near it. Check
-   once per ticket and fall back rather than retrying it on every lookup.
-3. Write `tasks.md` in the ticket's feature folder, using the `tasks-template.md` shape: What & why,
+1. Gather inputs: use `jira-ticket-intake` for the ticket itself, plus any linked Confluence
+   pages and Figma designs (read-only — never push a design change), `project-context.md`, and
+   `architecture.md`. For a bug, fold in `log-analysis.md`'s root cause and suggested fix rather
+   than re-investigating. If `log-analysis.md` lists two candidate root causes instead of one,
+   don't pick for the developer — list both under Open Questions with their trade-offs and ask
+   which to implement before the task checklist is written.
+2. Use `repowise-lookup` to ground every claim in the real code — callers, existing signatures,
+   and why a pattern is the way it is before changing anything near it.
+3. Write `tasks.md` to `specs/<bug|feature>/<ticket ID>/tasks.md` (see `spec-folder-resolution` —
+   deterministic from the ticket's type and ID, nothing to ask about), using the
+   `tasks-template.md` shape: What & why,
    Acceptance criteria (Given/When/Then, one per testable behavior), Approach (only the sections
    that apply, citing the module map in `copilot-instructions.md`), Out of scope, Open questions,
    then the ordered task checklist. Each task names the project skill `qatalyst-developer` should
@@ -32,7 +33,7 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    area) against this ticket's `tasks.md`.
 4. Size the file to the ticket — a one-line fix gets a short file and a single task; a cross-repo
    feature gets the full set of stories, criteria, and approach detail.
-5. Show the full draft in chat, including the feature folder it lives in.
+5. Show the full draft in chat, including the `specs/<bug|feature>/<ticket ID>/` path it lives in.
 
 ## Gate
 

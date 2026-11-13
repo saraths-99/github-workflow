@@ -98,8 +98,8 @@ def _agents_check():
             problems.append(f"{f.name}: body is {len(body)} chars (>= 30,000)")
         if fields.get("target") != "github-copilot":
             problems.append(f"{f.name}: target must be github-copilot")
-        if fields.get("user-invocable") != "false":
-            problems.append(f"{f.name}: workflow worker must be hidden from the picker")
+        if fields.get("user-invocable") not in ("false", "true"):
+            problems.append(f"{f.name}: user-invocable must be explicitly true or false")
         if "mcp" in fields:
             problems.append(f"{f.name}: use MCP namespaces in tools, not mcp frontmatter")
         name = fields.get("name")
@@ -182,7 +182,6 @@ def _spec_templates_check():
 def _mcp_files_check():
     files = [
         ROOT / ".mcp.json",
-        ROOT / ".github/mcp.json",
         ROOT / ".github/mcp/jetbrains-mcp.example.json",
     ]
     problems = []

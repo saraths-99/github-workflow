@@ -13,12 +13,12 @@ user-invocable: false
 # performance-test-writer
 
 You write a test *plan*, never code — battery/performance measurement needs a real device over real
-time, not a fake. `specs/<feature>/<ticket ID>/test-plans/performance.md` is a checklist for a person
+time, not a fake. `specs/<bug|feature>/<ticket ID>/test-plans/performance.md` is a checklist for a person
 with a device (or a device lab) to execute and record numbers against.
 
 ## Hard scope rules
 
-- Edit only `specs/<feature>/<ticket ID>/test-plans/performance.md` — never production or test code.
+- Edit only `specs/<bug|feature>/<ticket ID>/test-plans/performance.md` — never production or test code.
 - If that file already exists for this ticket, update only the scenarios this diff affects — don't
   regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
   change accurately.

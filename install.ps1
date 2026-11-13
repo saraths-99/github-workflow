@@ -61,7 +61,6 @@ try {
     Copy-Item -Force (Join-Path $Src ".github\hooks\guards.json") (Join-Path $Target ".github\hooks\guards.json")
     Copy-Item -Force (Join-Path $Src ".github\hooks\hook-protocol.md") (Join-Path $Target ".github\hooks\hook-protocol.md")
     Copy-Item -Recurse -Force (Join-Path $Src ".github\hooks\scripts\*") (Join-Path $Target ".github\hooks\scripts")
-    Copy-Item -Force (Join-Path $Src ".github\mcp.json") (Join-Path $Target ".github\mcp.json")
     New-Item -ItemType Directory -Force -Path (Join-Path $Target "specs\.templates") | Out-Null
     Copy-Item -Recurse -Force (Join-Path $Src "specs\.templates\*") (Join-Path $Target "specs\.templates")
     New-Item -ItemType Directory -Force -Path (Join-Path $Target "docs") | Out-Null

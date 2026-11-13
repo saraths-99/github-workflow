@@ -66,9 +66,7 @@ never blocks on it; it just hands the developer the PR text to paste in by hand 
 
 ```mermaid
 flowchart TD
-    A([Intake: read ticket + every<br/>comment, pin issue time]) --> AF{Existing specs/*/<br/>feature folder fits?}
-    AF -- no --> AFX([Stop: ask developer —<br/>never default to a new folder])
-    AF -- yes --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
+    A([Intake: read ticket + every<br/>comment, pin issue time]) --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
     X --> B[Trim: logcat_trim.py]
     B --> BW{Trimmed to ~0 lines?}
     BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
@@ -110,9 +108,10 @@ been converted; the nine specialized test-writer sub-agents (`unit-test-writer` 
 
 | Agent | Job | Copilot tools | Hard scope rule |
 |---|---|---|---|
-| `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; loop lives in the `analyse-logs` skill | read, edit, search, execute, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
-| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`; reuses `qatalyst-log-analyser`'s feature folder, never asks again |
-| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`; the sole place a feature ticket's folder is resolved |
+| `log-ticket-intake` | Reads the bug ticket's full text and pins the issue time and log attachment type; `qatalyst-log-analyser`'s own Intake step | read, search, atlassian-rovo/* | Read-only — writes nothing, never touches a log script |
+| `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; the loop is its own procedure | read, edit, search, execute, agent, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
+| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used |
+| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about |
 | `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
 | `qatalyst-test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search, agent, repowise/* | Pure router — no `edit`/`execute` itself; writes nothing |
 | `unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
@@ -124,9 +123,9 @@ been converted; the nine specialized test-writer sub-agents (`unit-test-writer` 
 | `ota-test-writer` | Firmware OTA test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/ota.md`, never code |
 | `performance-test-writer` | Performance/battery test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/performance.md`, never code |
 | `chaos-test-writer` | Resilience/fault-injection test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/chaos.md`, never code |
-| `qatalyst-code-reviewer` | Reviews diff vs. spec; checklist lives in the `review-diff` skill | read, search, agent, repowise/* | Read-only; checks the specs-only rule on every diff |
-| `qatalyst-security-reviewer` | Reviews sensitive-area diffs; checklist lives in the `review-security` skill | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
-| `qatalyst-error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs; checklist lives in the `review-error-handling` skill | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
+| `qatalyst-code-reviewer` | Reviews diff vs. spec; checklist is its own procedure | read, search, agent, repowise/* | Read-only; checks the specs-only rule on every diff |
+| `qatalyst-security-reviewer` | Reviews sensitive-area diffs; checklist is its own procedure | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
+| `qatalyst-error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs; checklist is its own procedure | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
 
 Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `edit` outright); the
 *written* half — "only these files," "only these commands" — lives in each agent's own blueprint.
@@ -162,7 +161,12 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 |---|---|
 | **Orchestration** | `ticket-start`, `ticket-ship`, `write-tests` (routes to `qatalyst-test-writer` for a standalone test-only task, same as a ticket task) |
 | **Implementation** | `new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration` |
-| **Agent-support** (not slash commands — delegated to by the agent they back) | `plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`), `review-diff` (`qatalyst-code-reviewer`), `review-security` (`qatalyst-security-reviewer`), `review-error-handling` (`qatalyst-error-handling-reviewer`), `analyse-logs` (`qatalyst-log-analyser`) |
+| **Agent-support** (not a slash command — delegated to by the agents it backs) | `plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`) — the only agent-support skill left; `review-diff`, `review-security`, `review-error-handling`, and `analyse-logs` were folded directly into their one respective caller's own agent body (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-log-analyser`) since each had exactly one caller and no sharing to preserve |
+| **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `repowise-lookup` (the Repowise-then-fallback, check-once pattern), `koin-wiring` (registering a binding in `AppModule.kt`) |
+
+`qatalyst-ticket` is a `user-invocable: true` agent-picker entry point that wraps `ticket-start` with
+no procedure of its own — an alternative surface to typing `/ticket-start <ticket ID>`, not a
+replacement for it; the two must be kept in sync if `ticket-start`'s flow changes.
 
 ## 6. Hooks
 
@@ -273,6 +277,7 @@ versus a convention this workflow invented for itself.
     │   ├── testing.instructions.md
     │   └── gradle.instructions.md
     ├── agents/
+    │   ├── log-ticket-intake.agent.md         qatalyst-log-analyser's own Intake step
     │   ├── qatalyst-log-analyser.agent.md
     │   ├── qatalyst-bug-planner.agent.md
     │   ├── qatalyst-feature-planner.agent.md
@@ -302,10 +307,6 @@ versus a convention this workflow invented for itself.
     │   ├── new-api-call/SKILL.md
     │   ├── room-migration/SKILL.md
     │   ├── plan-ticket/SKILL.md              agent-support, not a slash command
-    │   ├── review-diff/SKILL.md              agent-support, not a slash command
-    │   ├── review-security/SKILL.md          agent-support, not a slash command
-    │   ├── review-error-handling/SKILL.md    agent-support, not a slash command
-    │   ├── analyse-logs/SKILL.md             agent-support, not a slash command
     │   ├── write-tests/SKILL.md
     │   ├── ticket-start/SKILL.md
     │   └── ticket-ship/
@@ -327,15 +328,15 @@ versus a convention this workflow invented for itself.
     │   ├── sensitive-paths.txt
     │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each .sh + .ps1)
     ├── mcp/jetbrains-mcp.example.json
-    └── mcp.json
 ```
 
 ### 10.2 Per-ticket runtime additions
 
-Not present until a ticket is actually worked; one set per ticket, inside its feature folder.
+Not present until a ticket is actually worked; one set per ticket, at a path computed
+deterministically from the ticket's type and ID — never a feature-name folder, never asked about.
 
 ```
-specs/<feature>/<ticket-id>/
+specs/<bug|feature>/<ticket-id>/
 ├── log-analysis.md      bug tickets only — written by qatalyst-log-analyser
 ├── tasks.md              written by qatalyst-bug-planner (bug) or qatalyst-feature-planner (feature)
 └── test-plans/           only if a plan-only test-writer sub-agent ran for this ticket
@@ -368,7 +369,7 @@ behavior.
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
 | `~/.copilot/skills/` | GitHub Copilot specification (user scope) | A per-user, home-directory skill location; this workflow does not write to it |
-| `specs/<feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is defined and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
+| `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `ticket-start` at the start of every ticket |
 

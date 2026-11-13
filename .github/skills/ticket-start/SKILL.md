@@ -18,8 +18,9 @@ step 0, rather than relying on the developer to know and to run `/log-analyser` 
 
 You detect the ticket type and hand off — you never write `log-analysis.md` or `tasks.md` yourself;
 that's `qatalyst-log-analyser`, `qatalyst-bug-planner` and `qatalyst-feature-planner`. In
-particular, you never ask about the
-feature folder — whichever planner you hand off to resolves that itself.
+particular, you never ask about the spec folder — it's computed deterministically as
+`specs/<bug|feature>/<ticket ID>/` from the ticket type you just detected, so there's nothing for
+any agent to ask about.
 
 ## 0. Detect whether this is a bug
 
@@ -28,14 +29,14 @@ project this repo's tickets can come from. Each entry has its own `key` and `bug
 app can still track tickets under more than one Jira project, each with its own issue-type scheme,
 so there's no single shared `bug_issue_types` to check against.
 
-1. Read the ticket's Jira `issuetype` field **and its project key** via Atlassian Rovo MCP — read
-   the project key from the ticket's own Jira data, never parsed from the ticket ID string.
+1. Read the ticket's Jira `issuetype` field **and its project key** via `jira-ticket-intake` —
+   never parsed from the ticket ID string.
 2. Match that project key against `jira_projects`. If none matches, **stop and ask the
    developer** — this is a ticket from a Jira project this repo hasn't been configured for; don't
    guess which entry's `bug_issue_types` to fall back to.
 3. Compare the ticket's `issuetype` against *that matched project's* `bug_issue_types`.
 4. **If it matches a bug type:**
-   - If `specs/<feature>/<ticket ID>/log-analysis.md` already exists, hand off straight to
+   - If `specs/bug/<ticket ID>/log-analysis.md` already exists, hand off straight to
      `qatalyst-bug-planner` — it's already been analyzed (via a manual `/log-analyser` run, or a
      previous
      pass of this same step).
@@ -51,11 +52,10 @@ exists" branch just picks it up.
 ## 1. Planning
 
 Wait for the planner you handed off to (`qatalyst-bug-planner` or `qatalyst-feature-planner`) to
-finish: it reads the
-ticket itself plus its Confluence/Figma links, resolves the feature folder (reusing
-`qatalyst-log-analyser`'s, for a bug), and produces one `tasks.md`, approved by the developer. Don't
-start
-the next step until that approval has happened.
+finish: it reads the ticket itself plus its Confluence/Figma links, writes to the deterministic
+`specs/<bug|feature>/<ticket ID>/tasks.md` path (see `spec-folder-resolution` — the same path
+`qatalyst-log-analyser` already used, for a bug), and produces one `tasks.md`, approved by the
+developer. Don't start the next step until that approval has happened.
 
 ## 2. Branches
 
@@ -77,9 +77,9 @@ skip the approval gate, and don't skip step 0's detection, even for a small tick
   `issuetype` field; a title that happens to contain the word "bug" is not the signal.
 - Never write to `log-analysis.md` or `tasks.md` yourself — only `qatalyst-log-analyser`,
   `qatalyst-bug-planner` and
-  `qatalyst-feature-planner` do, and only inside `specs/<feature>/<ticket ID>/`.
-- Never ask about the feature folder yourself — that's the planner's job, so it's asked at most
-  once per ticket.
+  `qatalyst-feature-planner` do, and only inside `specs/<bug|feature>/<ticket ID>/`.
+- Never ask about the spec folder yourself, or let a planner ask — the path is deterministic from
+  the ticket type and ID, so it's never asked about at all.
 - Never create a feature branch before `tasks.md` is approved.
 - Never move the Jira ticket's status without asking first.
 - If a ticket's project key doesn't match any entry in `jira_projects`, or the matched entry's

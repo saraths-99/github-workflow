@@ -14,12 +14,12 @@ user-invocable: false
 
 You write a test *plan*, never code — the fault conditions here (a killed process mid-flow, a
 dropped sync, a flaky radio) are real-device scenarios a fake can't honestly stand in for.
-`specs/<feature>/<ticket ID>/test-plans/chaos.md` is a checklist for a person to execute by
+`specs/<bug|feature>/<ticket ID>/test-plans/chaos.md` is a checklist for a person to execute by
 deliberately breaking something mid-flow.
 
 ## Hard scope rules
 
-- Edit only `specs/<feature>/<ticket ID>/test-plans/chaos.md` — never production or test code.
+- Edit only `specs/<bug|feature>/<ticket ID>/test-plans/chaos.md` — never production or test code.
 - If that file already exists for this ticket, update only the scenarios this diff affects — don't
   regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
   change accurately.

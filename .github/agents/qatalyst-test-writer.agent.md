@@ -38,7 +38,7 @@ A task can match more than one row — hand off to every row that applies, not j
 ## Plan-only categories
 
 `interop-test-writer`, `ota-test-writer`, `performance-test-writer`, and `chaos-test-writer` write a
-test *plan* (`specs/<feature>/<ticket ID>/test-plans/<category>.md`), not runnable code — none of
+test *plan* (`specs/<bug|feature>/<ticket ID>/test-plans/<category>.md`), not runnable code — none of
 them can execute against real hardware, a firmware rig, or a battery-drain bench. "Done" for these
 four means the plan file exists and is current for this diff, not that a test passed.
 

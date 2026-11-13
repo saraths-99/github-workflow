@@ -12,12 +12,12 @@ user-invocable: false
 # interop-test-writer
 
 You write a test *plan*, never code — nothing in this repo can drive a real Halo lock, GDO unit, or
-third-party Android device. `specs/<feature>/<ticket ID>/test-plans/interop.md` is a checklist for a
+third-party Android device. `specs/<bug|feature>/<ticket ID>/test-plans/interop.md` is a checklist for a
 person running real hardware to execute and sign off on.
 
 ## Hard scope rules
 
-- Edit only `specs/<feature>/<ticket ID>/test-plans/interop.md` — never production or test code.
+- Edit only `specs/<bug|feature>/<ticket ID>/test-plans/interop.md` — never production or test code.
 - If that file already exists for this ticket, update only the scenarios this diff affects — don't
   regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
   change accurately.

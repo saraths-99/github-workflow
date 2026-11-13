@@ -12,12 +12,12 @@ user-invocable: false
 # ota-test-writer
 
 You write a test *plan*, never code — an OTA update against real lock firmware can't be faked
-meaningfully. `specs/<feature>/<ticket ID>/test-plans/ota.md` is a checklist for a person running a
+meaningfully. `specs/<bug|feature>/<ticket ID>/test-plans/ota.md` is a checklist for a person running a
 real update to execute and sign off on.
 
 ## Hard scope rules
 
-- Edit only `specs/<feature>/<ticket ID>/test-plans/ota.md` — never production or test code.
+- Edit only `specs/<bug|feature>/<ticket ID>/test-plans/ota.md` — never production or test code.
 - If that file already exists for this ticket, update only the scenarios this diff affects — don't
   regenerate the whole plan from scratch, and don't duplicate a scenario that already covers this
   change accurately.
