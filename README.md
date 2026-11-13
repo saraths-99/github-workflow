@@ -113,6 +113,13 @@ required to start using the workflow.
 
 **Command:** `/qatalyst-ticket-start <ticket ID>`
 
+**Or, without typing a command:** pick `qatalyst-ticket` from Copilot Chat's custom-agent picker
+instead — it's the one agent in this workflow marked `user-invocable: true`, so it's the only one
+that shows up there. Selecting it starts the same `qatalyst-ticket-start` flow; it just asks for
+the ticket ID conversationally if you don't give one with your first message. Every other agent in
+this workflow is `user-invocable: false` — hidden from the picker, only ever reached by one agent
+handing off to another, never by picking it yourself.
+
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
    `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
 2. Hands off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise), which
