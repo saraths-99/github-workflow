@@ -34,12 +34,12 @@ Run this from inside the Android app repo you want the workflow in:
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash
 ```
 
 ```powershell
 # Windows
-irm https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.ps1 | iex
 ```
 
 This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
@@ -55,6 +55,38 @@ hold the app repo's own project data. Everything it touches lands in a normal gi
 Every run also writes `.github/workflow-sync.md` into the app repo, recording which version and
 commit of this workflow it just synced from, and when. Check that file to see what an app repo is
 currently running, and this repo's [`CHANGELOG.md`](CHANGELOG.md) to see what changed since.
+
+### 2a. Manual install (no shell access, e.g. this repo downloaded as a `.zip`)
+
+If you can't run `install.sh`/`install.ps1` — a locked-down machine, or you only have this repo as
+an extracted `.zip` — copy files by hand instead, but **only these paths**, not the whole
+extracted folder:
+
+- `.github/agents/`, `.github/instructions/`, `.github/skills/`, `.github/prompts/`,
+  `.github/log-analyser/scripts/` (just the scripts, not `log-signatures.md`), `.github/mcp/`,
+  `.github/hooks/scripts/` — for each of these, **delete the app repo's existing folder first,
+  then copy the new one in**; don't paste on top of what's there. `install.sh` does this same
+  delete-then-copy itself (`sync_dir`'s `rm -rf` before its `cp`), specifically so a file renamed
+  or removed in this repo disappears from the app repo too. Pasting on top instead leaves the old
+  file sitting next to the new one — e.g. an old `ticket-start.prompt.md` next to the current
+  `qatalyst-ticket-start.prompt.md` — which is a real risk given the renames this workflow went
+  through. `.github/hooks/guards.json` and `.github/hooks/hook-protocol.md` are single files —
+  just overwrite them directly, no folder to delete.
+- `specs/.templates/`, `docs/workflow-design.md`, `docs/field-sources.md` — same: delete and
+  replace the folder, overwrite the two single files directly.
+- `.github/copilot-instructions.md`, `.github/hooks/sensitive-paths.txt`,
+  `.github/log-analyser/log-signatures.md`, `.mcp.json`, `project-context.md`, `architecture.md` —
+  copy these **only if the app repo doesn't already have them**. If it does, leave them alone;
+  they hold that app's own settings and data, not this repo's.
+- Add `.logs/` to the app repo's `.gitignore` if it's not already there.
+- If your file manager ever offers to "keep both" on a naming conflict instead of replacing,
+  decline it — that's how literal duplicate files (`name (1).md`) end up committed by accident.
+
+**Never copy** `README.md`, `install.sh`, `install.ps1`, `VERSION`, `CHANGELOG.md`, or `tests/` —
+those describe and maintain this source repo, not the app repo, and have no place there. This is
+exactly what `install.sh`/`install.ps1` automate; use one of them instead of this section whenever
+you can — it's easy to copy a stray file by hand that `sync_dir`/`keep_if_present` would have
+known to skip.
 
 Then, in the app repo, open it in an IDE with GitHub Copilot (JetBrains or VS Code). Two things
 still need filling in by hand, since no tool can read them off the code or guess them:

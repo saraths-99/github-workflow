@@ -1,13 +1,17 @@
 # Installs/updates the Agentic AI-SDLC workflow from this repo into an app repo.
 #
 # Usage, from inside the app repo (the common case):
-#   irm https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.ps1 | iex
 #
 # Or, with a local checkout of this repo:
 #   \path\to\github-workflow\install.ps1 [-Target <target-repo-path>]   # defaults to the current directory
 #
 # See install.sh for exactly what gets synced vs. preserved. Writes .github\workflow-sync.md every
 # run (version, commit, timestamp) -- see this repo's CHANGELOG.md for what changed since.
+#
+# Can't run this script at all (no shell, or this repo is only a downloaded .zip)? See README.md
+# §2a for exactly which files to copy by hand instead -- don't just copy the whole extracted
+# folder into the app repo.
 
 param(
     [string]$Target = (Get-Location).Path
@@ -16,7 +20,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoUrl = "https://github.com/saraths-99/github-workflow.git"
-$Branch = "main"
+$Branch = "develop"
 
 $Target = (Resolve-Path $Target).Path
 git -C $Target rev-parse --is-inside-work-tree *> $null

@@ -2,10 +2,14 @@
 # Installs/updates the Agentic AI-SDLC workflow from this repo into an app repo.
 #
 # Usage, from inside the app repo (the common case):
-#   curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash
 #
 # Or, with a local checkout of this repo:
 #   /path/to/github-workflow/install.sh [target-repo-path]   # defaults to the current directory
+#
+# Can't run this script at all (no shell, or this repo is only a downloaded .zip)? See README.md
+# §2a for exactly which files to copy by hand instead -- don't just copy the whole extracted
+# folder into the app repo.
 #
 # What it does:
 #   - Downloads this repo (a shallow clone of REPO_URL@BRANCH) into a temp dir.
@@ -24,7 +28,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/saraths-99/github-workflow.git"
-BRANCH="main"
+BRANCH="develop"
 
 TARGET="${1:-$(pwd)}"
 TARGET="$(cd "$TARGET" && pwd)"
