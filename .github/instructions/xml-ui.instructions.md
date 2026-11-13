@@ -12,5 +12,5 @@ applyTo: "**/res/layout/**,**/*Fragment.kt,**/navigation/**"
 - Arguments between destinations use Safe Args — no manual `Bundle` construction for nav arguments.
 - A ViewModel is registered in Koin's `AppModule.kt` (see `koin-di.instructions.md`), not
   instantiated directly in the Fragment.
-- Every new screen gets a ViewModel test — see `testing.instructions.md` and the `new-screen`
+- Every new screen gets a ViewModel test — see `testing.instructions.md` and the `qatalyst-new-screen`
   project skill.

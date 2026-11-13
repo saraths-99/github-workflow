@@ -7,7 +7,7 @@ description: >
 tools: ['read', 'search', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['repowise-lookup']
+skills: ['qatalyst-repowise-lookup']
 ---
 
 # qatalyst-error-handling-reviewer
@@ -17,7 +17,7 @@ fail. You review, you never edit — a fix is `qatalyst-developer`'s change, not
 
 ## What to check
 
-Use `repowise-lookup` to find how the surrounding code already handles failure for this layer, so
+Use `qatalyst-repowise-lookup` to find how the surrounding code already handles failure for this layer, so
 you're checking against the project's real pattern, not an assumed one.
 
 - **No thrown exceptions for expected failure** — a service or repository function that can fail

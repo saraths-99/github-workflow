@@ -12,4 +12,4 @@ applyTo: "**/gdosdk/**"
 - The secure channel handshake is not to be weakened or skipped for testing — use the fake-device
   test harness (see `testing.instructions.md`) instead of a real GDO unit.
 - No key material, token, or raw BLE payload in a log statement — see the `protect-secrets` hook.
-- New commands get a fake-device test — see the `new-ble-command` project skill.
+- New commands get a fake-device test — see the `qatalyst-new-ble-command` project skill.

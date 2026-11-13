@@ -15,8 +15,8 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 17 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer`), review (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`unit-test-writer`, `ble-protocol-test-writer`, `androidtest-writer`, `compatibility-test-writer`, `security-test-writer`, `interop-test-writer`, `ota-test-writer`, `performance-test-writer`, `chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
-| **`.github/skills/`** | Orchestration (`ticket-start`, `ticket-ship`, `write-tests`) and implementation skills (`new-feature`, `new-screen`, `new-ble-command`, `new-api-call`, `room-migration`) |
+| **`.github/agents/`** | The 17 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer`), review (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`qatalyst-unit-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-androidtest-writer`, `qatalyst-compatibility-test-writer`, `qatalyst-security-test-writer`, `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`, `qatalyst-performance-test-writer`, `qatalyst-chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
+| **`.github/skills/`** | Orchestration (`qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests`) and implementation skills (`qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`) |
@@ -74,7 +74,7 @@ required to start using the workflow.
 
 ### Starting a ticket
 
-**Command:** `/ticket-start <ticket ID>`
+**Command:** `/qatalyst-ticket-start <ticket ID>`
 
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
    `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
@@ -88,12 +88,12 @@ required to start using the workflow.
 
 Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; `qatalyst-test-writer`
 covers it with
-tests. Project skills (`/new-screen`, `/new-ble-command`, `/new-api-call`, `/room-migration`) handle
-the per-layer detail; `/new-feature` orchestrates all of them for a task that spans the stack.
+tests. Project skills (`/qatalyst-new-screen`, `/qatalyst-new-ble-command`, `/qatalyst-new-api-call`, `/qatalyst-room-migration`) handle
+the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a task that spans the stack.
 
 ### Shipping
 
-**Command:** `/ticket-ship`
+**Command:** `/qatalyst-ticket-ship`
 
 1. Confirms every task is ticked.
 2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`

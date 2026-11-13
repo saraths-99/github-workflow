@@ -7,7 +7,7 @@ description: >
 tools: ['read', 'search', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['repowise-lookup']
+skills: ['qatalyst-repowise-lookup']
 ---
 
 # qatalyst-security-reviewer
@@ -17,7 +17,7 @@ you never edit — a fix is `qatalyst-developer`'s change, not yours.
 
 ## What to check
 
-Use `repowise-lookup` to find every caller/usage of the sensitive primitive or pattern you're
+Use `qatalyst-repowise-lookup` to find every caller/usage of the sensitive primitive or pattern you're
 reviewing, not just the occurrence in this diff.
 
 - **Tokens and keys** — never written to `SharedPreferences`, plain files, or a log statement;

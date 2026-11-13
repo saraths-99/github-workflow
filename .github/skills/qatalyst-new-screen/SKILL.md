@@ -1,0 +1,29 @@
+---
+name: qatalyst-new-screen
+description: >
+  Adds a Fragment extending BaseFragment, an XML layout with View Binding, a
+  ViewModel registered in AppModule.kt, a nav destination with Safe Args,
+  and a ViewModel test.
+---
+
+# qatalyst-new-screen
+
+Used by `qatalyst-developer` (directly, or via `qatalyst-new-feature`) for a task that adds or changes one
+screen.
+
+## Steps
+
+1. Add the Fragment, extending the shared `BaseFragment` — never `Fragment` directly (see
+   `xml-ui.instructions.md`).
+2. Add its XML layout under `res/layout/` with View Binding — no Compose, no Data Binding.
+3. Add the ViewModel and register it using the `qatalyst-koin-wiring` skill.
+4. Add the nav destination to the existing graph hosted by `HomeActivity`, with Safe Args for any
+   arguments — no manual `Bundle` construction.
+5. Hand off to `qatalyst-test-writer` for the ViewModel test, using the project's existing test
+   dispatcher
+   and fakes (see `testing.instructions.md`).
+
+## Done means
+
+The screen is reachable from the existing nav graph, the ViewModel is Koin-registered, and its test
+passes locally — not just that the Fragment compiles.

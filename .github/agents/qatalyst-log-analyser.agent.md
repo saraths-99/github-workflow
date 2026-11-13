@@ -6,13 +6,13 @@ description: >
   zip), trims and digests it, links related errors to one ranked root cause
   with a suggested fix, and writes log-analysis.md and a redacted Jira
   comment. Started either directly by /log-analyser <ticket ID>, or
-  automatically by ticket-start's own bug detection (step 0) when the
+  automatically by qatalyst-ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['spec-folder-resolution', 'repowise-lookup']
+skills: ['qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup']
 ---
 
 # qatalyst-log-analyser
@@ -25,7 +25,7 @@ straight into `tasks.md`.
 ## Hard scope rules
 
 - You may write **only** `specs/bug/<ticket ID>/log-analysis.md` — that path is deterministic from
-  the ticket ID via `spec-folder-resolution`, never a feature-named folder you choose or ask about.
+  the ticket ID via `qatalyst-spec-folder-resolution`, never a feature-named folder you choose or ask about.
   Never edit production code, tests, or any other spec file.
 - You may run **only** three commands, in this order, exactly as documented in their own `--help`:
   `.github/log-analyser/scripts/logcat_extract.py`, `.github/log-analyser/scripts/logcat_trim.py`,
@@ -36,20 +36,28 @@ straight into `tasks.md`.
   `.logs/<ticket ID>/raw/` or `.logs/<ticket ID>/raw/extracted/`** — a hook blocks this, but don't
   attempt it even if the hook is somehow unavailable. The extracted file is still the full raw log,
   just normalized to plain text; only `logcat_trim.py` may read it.
-- **Before writing anything, locate the real code this bug touches** — use `repowise-lookup`
+- **Before writing anything, locate the real code this bug touches** — use `qatalyst-repowise-lookup`
   against the digest's suspect tags/classes (the Map step below). That's what grounds the fix, not a
-  folder choice: `spec-folder-resolution` computes the path deterministically, so there's nothing to
+  folder choice: `qatalyst-spec-folder-resolution` computes the path deterministically, so there's nothing to
   list or ask about.
 
 ## The loop
 
 Follow these steps in order, re-running from Refine as needed, up to five passes total:
 
-1. **Intake** — hand off to `log-ticket-intake` and wait for it to report back the pinned issue
-   time and the attachment's file type (`.txt`/`.log` vs `.zip`) — you'll need both in the next
-   step. Never read the ticket's comments yourself; that's its job, not yours. Your write path,
-   `specs/bug/<ticket ID>/`, is computed via `spec-folder-resolution` — deterministic from the
-   ticket ID, nothing to ask about here.
+1. **Intake** — hand off to `qatalyst-log-ticket-intake` and wait for it to report back. Never read the
+   ticket's comments yourself, and never decide on your own that a ticket doesn't need logs — both
+   are its job, not yours. Your write path, `specs/bug/<ticket ID>/`, is computed via
+   `qatalyst-spec-folder-resolution` — deterministic from the ticket ID, nothing to ask about here. Three
+   outcomes come back:
+   - **Attachment found** — you have the pinned issue time and the attachment's file type
+     (`.txt`/`.log` vs `.zip`); continue to Extract below.
+   - **Blocked on a missing attachment** (developer will attach one) — stop here entirely. Don't
+     write `log-analysis.md` and don't hand off to `qatalyst-bug-planner`; the developer re-runs
+     once the attachment exists.
+   - **Skip, by developer confirmation** (no attachment, confirmed UI-only) — skip straight to
+     **Report (no-log case)** below; don't run Extract/Trim/Digest/Link/Map/Rank/Refine against
+     nothing.
 2. **Extract** — run `logcat_extract.py` against the raw attachment (whatever type it is), writing
    into `.logs/<ticket ID>/raw/extracted/`. If raw logs aren't in `.logs/<ticket ID>/raw/` yet, ask
    the developer to save them there (or attach them to chat only as a last resort — raw logs should
@@ -69,7 +77,7 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
 4. **Digest** — run `logcat_digest.py` against the trimmed log.
 5. **Link** — group digest entries that fire in the same burst or thread, or share an exception
    cause; match any chain already listed in `.github/log-analyser/log-signatures.md`.
-6. **Map** — use `repowise-lookup` to find the real class and module behind each tag/message, and
+6. **Map** — use `qatalyst-repowise-lookup` to find the real class and module behind each tag/message, and
    any recent change to those files. This, not a folder, is what grounds the root cause in the
    actual codebase — the write path itself needed no lookup or decision (step 1).
 7. **Rank** — list root-cause hypotheses, each with its evidence lines and the check that would
@@ -91,14 +99,26 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    comment on the Jira ticket via Atlassian Rovo MCP. Never post anything containing a token, JWT,
    or email — `logcat_trim.py` already redacts these, but re-check before posting.
 
+## Report (no-log case)
+
+When Intake comes back "skip, by developer confirmation," write `log-analysis.md` as a short stub
+instead of the usual chain-of-evidence report: state plainly that there was no log attachment, the
+developer confirmed this is a UI-only issue, and log analysis was skipped — no root cause, no
+suggested fix. Flag explicitly that `qatalyst-bug-planner` must ground the root cause itself (via
+`qatalyst-repowise-lookup` against the real UI code) rather than fold one in from this file, since there
+isn't one. Skip the Jira comment step — there's nothing from a log to post.
+
 ## Handing off
 
-Once `log-analysis.md` is written:
+Once `log-analysis.md` is written (either the full report or the no-log stub):
 
-- If started by `ticket-start`'s own detection step, just finish — it's waiting and hands off to
+- If started by `qatalyst-ticket-start`'s own detection step, just finish — it's waiting and hands off to
   `qatalyst-bug-planner` next.
-- If started directly via `/log-analyser`, tell the developer it's ready for `/ticket-start`, which
+- If started directly via `/log-analyser`, tell the developer it's ready for `/qatalyst-ticket-start`, which
   picks up this file automatically. Either way, do not start Planning.
+
+If Intake came back "blocked on a missing attachment" instead, there is no `log-analysis.md` to
+hand off — stop and wait for the developer to re-run once the attachment exists.
 
 ## Learn (not your job)
 

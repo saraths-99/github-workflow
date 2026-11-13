@@ -7,7 +7,7 @@ description: >
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['new-feature', 'new-screen', 'new-ble-command', 'new-api-call', 'room-migration', 'koin-wiring', 'repowise-lookup']
+skills: ['qatalyst-new-feature', 'qatalyst-new-screen', 'qatalyst-new-ble-command', 'qatalyst-new-api-call', 'qatalyst-room-migration', 'qatalyst-koin-wiring', 'qatalyst-repowise-lookup']
 ---
 
 # qatalyst-developer
@@ -24,11 +24,11 @@ list, and you never skip ahead.
   touching (`kotlin.instructions.md`, `xml-ui.instructions.md`, `koin-di.instructions.md`,
   `ble-halo.instructions.md`, `ble-gdo.instructions.md`, `data-layer.instructions.md`,
   `gradle.instructions.md`) — these carry the detail behind `architecture.md`'s rules.
-- Use the project skill named in the task (`new-screen`, `new-ble-command`, `new-api-call`,
-  `room-migration`, `new-feature`) rather than hand-rolling the same pattern differently.
+- Use the project skill named in the task (`qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`,
+  `qatalyst-room-migration`, `qatalyst-new-feature`) rather than hand-rolling the same pattern differently.
 - Build and run tests locally with `isLocalBuild=true` before ticking a task — see
   `gradle.instructions.md`.
-- Before writing new code for a task, use `repowise-lookup` to check for an existing similar
+- Before writing new code for a task, use `qatalyst-repowise-lookup` to check for an existing similar
   implementation and the real callers of anything you're about to change.
 
 ## When something in the plan doesn't fit the real code
@@ -45,4 +45,4 @@ task's test before ticking it. Don't tick a task on the strength of production c
 
 ## When every task is ticked
 
-Tell the developer the ticket is ready for `/ticket-ship` — you do not run the ship step yourself.
+Tell the developer the ticket is ready for `/qatalyst-ticket-ship` — you do not run the ship step yourself.

@@ -13,5 +13,5 @@ applyTo: "**/services/**,**/repository/**,**/datasource/**"
 - Local storage goes through Room with SQLCipher; tokens and keys are only ever stored encrypted,
   never in `SharedPreferences` or plain files — see the `protect-secrets` hook, which also blocks
   reads/edits of `local.properties` and keystore files.
-- A new API call or Room change gets a mocked/migration test — see the `new-api-call` and
-  `room-migration` project skills and `testing.instructions.md`.
+- A new API call or Room change gets a mocked/migration test — see the `qatalyst-new-api-call` and
+  `qatalyst-room-migration` project skills and `testing.instructions.md`.

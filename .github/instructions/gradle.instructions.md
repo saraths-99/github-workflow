@@ -13,5 +13,5 @@ applyTo: "**/*.gradle.kts,**/libs.versions.toml"
   `sensitive-paths.txt` and the `protect-secrets` hook denies both reads and edits of them.
 - A new module is added to `settings.gradle.kts` and to the module map in `copilot-instructions.md`
   in the same change — don't let the two drift apart.
-- `ticket-ship` builds with `isLocalBuild=true` before opening a PR — a Gradle change that breaks
+- `qatalyst-ticket-ship` builds with `isLocalBuild=true` before opening a PR — a Gradle change that breaks
   that configuration blocks shipping, not just the pipeline run.

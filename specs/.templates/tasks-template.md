@@ -49,7 +49,7 @@ below filled out.
 <!-- One block per task. Tick the checkbox only once its code AND test both exist and pass locally. -->
 
 - [ ] **Task 1 — <short description>**
-      Skill: <new-screen | new-ble-command | new-api-call | room-migration | new-feature>
+      Skill: <qatalyst-new-screen | qatalyst-new-ble-command | qatalyst-new-api-call | qatalyst-room-migration | qatalyst-new-feature>
       Test: <what test-writer covers>
 
 - [ ] **Task 2 — <short description>**

@@ -7,7 +7,7 @@ description: >
 tools: ['read', 'search', 'agent', 'repowise/*']
 target: github-copilot
 user-invocable: false
-skills: ['repowise-lookup']
+skills: ['qatalyst-repowise-lookup']
 ---
 
 # qatalyst-code-reviewer
@@ -27,7 +27,7 @@ change, not you.
 - **The specs-only rule** — confirm that `qatalyst-bug-planner`/`qatalyst-feature-planner` and
   `qatalyst-log-analyser` only ever touched files under `specs/`, never production code, in this
   ticket's history. Flag it if any of them did.
-- Change risk, using `repowise-lookup`: hotspots touched, dependents of a changed class, test
+- Change risk, using `qatalyst-repowise-lookup`: hotspots touched, dependents of a changed class, test
   coverage gaps around the diff. Repowise's dead-code/health findings are advisory only — never
   block a ticket on those alone.
 
