@@ -163,6 +163,25 @@ class TokenTrackerTest(unittest.TestCase):
         result = self.run_tool("collect")
         self.assertIn("2 lines but no readable trace records", result.stderr)
 
+    def test_html_page(self):
+        self.build_db()
+        conn = sqlite3.connect(self.db)
+        conn.execute("UPDATE spans SET agent_name = '<script>alert(1)</script>' WHERE span_id = 'a2'")
+        conn.commit()
+        conn.close()
+        self.write_marker("ABC-1", T0 + 500)
+        env = {k: v for k, v in self.env.items() if k not in ("DISPLAY", "WAYLAND_DISPLAY")}
+        self.env = dict(env, SSH_CONNECTION="test")
+        out = self.run_tool("report", "ABC-1", "--open").stdout
+        self.assertIn("Couldn't open a browser from here; open", out)
+        page = (self.repo / ".logs" / "token-tracker" / "ABC-1" / "token-usage.html").read_text()
+        self.assertTrue(page.startswith("<!doctype html>"))
+        self.assertNotIn("<script", page)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", page)
+        self.assertIn('<div class="value">2,750</div>', page)
+        self.assertIn("2026-09-21 14:13:21 UTC", page)
+        self.assertEqual(page.count("<tr><td>2026-"), 4)
+
     def test_ticket_with_no_calls(self):
         self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
         self.run_tool("report", "NONE-1")
@@ -170,6 +189,8 @@ class TokenTrackerTest(unittest.TestCase):
         self.assertEqual(doc, {"ticketId": "NONE-1", "totals": {"calls": 0, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
                                "byAgent": [], "calls": []})
         self.assertEqual(self.read_csv("NONE-1"), [])
+        page = (self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.html").read_text()
+        self.assertIn("No model calls found for this ticket.", page)
 
     def test_mark_and_bad_ticket_id(self):
         self.run_tool("mark", "abc-12")

@@ -3,7 +3,9 @@
 
   token_tracker.py mark <ticket ID>     record that work on a ticket starts now
   token_tracker.py collect              copy new model calls from Copilot's traces into .logs/
-  token_tracker.py report <ticket ID>   collect, then write that ticket's usage report
+  token_tracker.py report <ticket ID> [--open]
+                                        collect, then write that ticket's usage report
+                                        (.html, .md, .csv, .json); --open shows the HTML page
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
@@ -12,6 +14,7 @@ Standard library only.
 """
 import argparse
 import csv
+import html
 import json
 import os
 import re
@@ -440,7 +443,153 @@ def _table(headers, rows):
     return "\n".join(out)
 
 
-def cmd_report(root, ticket):
+HTML_STYLE = """
+:root { --bg:#f7f7f5; --surface:#fff; --text:#1f1f1d; --muted:#6b6a65; --border:#e4e3de;
+        --accent:#4b5bd6; --accent-soft:#e3e6fb; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#1b1b1a; --surface:#252523; --text:#ecebe6; --muted:#a3a29b; --border:#3a3936;
+          --accent:#8c98f0; --accent-soft:#2f3359; }
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--text);
+       font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+main { max-width:980px; margin:0 auto; padding:32px 16px 48px; }
+.eyebrow { margin:0; color:var(--muted); font-size:13px; letter-spacing:.02em; }
+h1 { margin:2px 0 4px; font-size:28px; font-weight:600; }
+h2 { margin:32px 0 10px; font-size:17px; font-weight:600; }
+.meta { margin:0; color:var(--muted); font-size:14px; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-top:24px; }
+.tile, .card { background:var(--surface); border:1px solid var(--border); border-radius:10px; }
+.tile { padding:14px 16px; }
+.tile .label { color:var(--muted); font-size:13px; }
+.tile .value { font-size:26px; font-weight:600; font-variant-numeric:tabular-nums; }
+.card { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th, td { padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+th { color:var(--muted); font-weight:500; font-size:13px; }
+tr:last-child td { border-bottom:none; }
+.num { text-align:right; font-variant-numeric:tabular-nums; }
+.share { display:flex; align-items:center; gap:10px; min-width:170px; }
+.bar { flex:1; height:8px; background:var(--accent-soft); border-radius:4px; overflow:hidden; }
+.bar span { display:block; height:100%; background:var(--accent); }
+.share .pct { width:48px; text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+@media (max-width:600px) { .bar { display:none; } .share { min-width:0; } }
+.empty { padding:20px; color:var(--muted); }
+footer { margin-top:28px; color:var(--muted); font-size:13px; }
+code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12.5px; }
+"""
+
+
+def render_html(summary, sources):
+    """Static page from the same data as token-usage.json; every value is escaped, and there are no scripts."""
+    e = html.escape
+    ticket, totals, calls = summary["ticketId"], summary["totals"], summary["calls"]
+    grand = max(totals["totalTokens"], 1)
+
+    def share_cell(tokens):
+        pct = tokens * 100 / grand
+        return (f'<td><div class="share"><div class="bar"><span style="width:{pct:.1f}%"></span></div>'
+                f'<span class="pct">{pct:.1f}%</span></div></td>')
+
+    def readable(ts):
+        return ts.replace("T", " ").replace("Z", " UTC")
+
+    by_model = {}
+    for c in calls:
+        m = by_model.setdefault(c["model"], {"calls": 0, "inputTokens": 0, "outputTokens": 0})
+        m["calls"] += 1
+        m["inputTokens"] += c["inputTokens"]
+        m["outputTokens"] += c["outputTokens"]
+
+    parts = [
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        f"<title>Token usage: {e(ticket)}</title><style>{HTML_STYLE}</style></head><body><main>",
+        f'<p class="eyebrow">Copilot token usage</p><h1>{e(ticket)}</h1>',
+    ]
+    if not calls:
+        parts += [
+            '<p class="meta">No model calls found for this ticket.</p>',
+            '<div class="card" style="margin-top:24px"><p class="empty">Either tracing wasn\'t on while it was worked '
+            f"on, or none of its chats could be linked to it: a chat is linked when "
+            f"<code>token_tracker.py mark {e(ticket)}</code> ran during it, or when one of its turns ran on a branch "
+            f"named for {e(ticket)}.</p></div>",
+        ]
+    else:
+        parts += [
+            f'<p class="meta">{e(readable(calls[0]["timestamp"]))} to {e(readable(calls[-1]["timestamp"]))}'
+            f" · from {e(', '.join(sources))}</p>",
+            '<section class="tiles">',
+        ]
+        for label, value in (("Total tokens", totals["totalTokens"]), ("Input tokens", totals["inputTokens"]),
+                             ("Output tokens", totals["outputTokens"]), ("Model calls", totals["calls"])):
+            parts.append(f'<div class="tile"><div class="label">{label}</div><div class="value">{value:,}</div></div>')
+        parts += [
+            "</section>",
+            '<h2>By agent</h2><div class="card"><table><thead><tr><th>Agent</th><th>Share of tokens</th>'
+            '<th class="num">Calls</th><th class="num">Input</th><th class="num">Output</th><th class="num">Total</th>'
+            "</tr></thead><tbody>",
+        ]
+        for a in summary["byAgent"]:
+            parts.append(
+                f'<tr><td>{e(a["agentName"])}</td>{share_cell(a["totalTokens"])}<td class="num">{a["calls"]:,}</td>'
+                f'<td class="num">{a["inputTokens"]:,}</td><td class="num">{a["outputTokens"]:,}</td>'
+                f'<td class="num">{a["totalTokens"]:,}</td></tr>'
+            )
+        parts.append(
+            '</tbody></table></div><h2>By model</h2><div class="card"><table><thead><tr><th>Model</th>'
+            '<th>Share of tokens</th><th class="num">Calls</th><th class="num">Input</th><th class="num">Output</th>'
+            "</tr></thead><tbody>"
+        )
+        for model, m in sorted(by_model.items(), key=lambda kv: (-(kv[1]["inputTokens"] + kv[1]["outputTokens"]), kv[0])):
+            parts.append(
+                f'<tr><td>{e(model)}</td>{share_cell(m["inputTokens"] + m["outputTokens"])}'
+                f'<td class="num">{m["calls"]:,}</td><td class="num">{m["inputTokens"]:,}</td>'
+                f'<td class="num">{m["outputTokens"]:,}</td></tr>'
+            )
+        parts.append(
+            '</tbody></table></div><h2>Every model call</h2><div class="card"><table><thead><tr><th>Time</th>'
+            '<th>Agent</th><th>Model</th><th class="num">Input</th><th class="num">Output</th></tr></thead><tbody>'
+        )
+        for c in calls:
+            parts.append(
+                f'<tr><td>{e(readable(c["timestamp"]))}</td><td>{e(c["agentName"])}</td><td>{e(c["model"])}</td>'
+                f'<td class="num">{c["inputTokens"]:,}</td><td class="num">{c["outputTokens"]:,}</td></tr>'
+            )
+        parts += [
+            "</tbody></table></div>",
+            "<footer>Skills and hooks make no model calls of their own: a skill's text is counted in the input "
+            "tokens of the agent that loaded it, and hooks are scripts that use no tokens. Same data as "
+            "<code>token-usage.json</code> and <code>token-usage.csv</code> in this folder.</footer>",
+        ]
+    parts.append("</main></body></html>\n")
+    return "".join(parts)
+
+
+def open_in_browser(path):
+    """Opens the page with the OS's own handler; returns False where there's no local display to show it on."""
+    try:
+        if sys.platform == "win32":
+            os.startfile(path)  # noqa: S606 - local file this script just wrote
+            return True
+        if sys.platform == "darwin":
+            if os.environ.get("SSH_CONNECTION"):
+                return False
+            opener = ["open"]
+        else:
+            if os.environ.get("SSH_CONNECTION") or not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+                return False
+            if not shutil.which("xdg-open"):
+                return False
+            opener = ["xdg-open"]
+        subprocess.Popen([*opener, str(path)], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+        return True
+    except OSError:
+        return False
+
+
+def cmd_report(root, ticket, open_page=False):
     calls = collect(root)
     markers = load_jsonl(tracker_dir(root) / MARKERS_FILE)
     mine = calls_for_ticket(calls, markers, ticket)
@@ -510,10 +659,17 @@ def cmd_report(root, ticket):
             "`token-usage.csv` and `token-usage.json`.",
         ]
     (out_dir / "token-usage.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    page = out_dir / "token-usage.html"
+    page.write_text(render_html(summary, sorted({c["source"] for c in mine})), encoding="utf-8")
     print()
     print("\n".join(lines))
     print()
-    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/: token-usage.md, .csv, .json")
+    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/: token-usage.html, .md, .csv, .json")
+    if open_page:
+        if open_in_browser(page):
+            print(f"Opened {page} in your browser.")
+        else:
+            print(f"Couldn't open a browser from here; open {page} to see the report.")
 
 
 def ticket_arg(value):
@@ -527,7 +683,9 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("mark", help="record that work on a ticket starts now").add_argument("ticket", type=ticket_arg)
     sub.add_parser("collect", help="copy new model calls from Copilot's traces into .logs/token-tracker/")
-    sub.add_parser("report", help="collect, then write a ticket's usage report").add_argument("ticket", type=ticket_arg)
+    report = sub.add_parser("report", help="collect, then write a ticket's usage report")
+    report.add_argument("ticket", type=ticket_arg)
+    report.add_argument("--open", action="store_true", help="open token-usage.html in the default browser")
     args = parser.parse_args(argv)
     root = repo_root()
     if args.command == "mark":
@@ -535,7 +693,7 @@ def main(argv=None):
     elif args.command == "collect":
         collect(root)
     else:
-        cmd_report(root, args.ticket)
+        cmd_report(root, args.ticket, open_page=args.open)
 
 
 if __name__ == "__main__":

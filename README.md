@@ -177,15 +177,19 @@ code are never recorded. Requires Python 3.9 or newer.
 
   On Windows: `.github\token-tracker\copilot-tracked.ps1 ABC-123`.
 
-**Seeing a ticket's usage:** `/qatalyst-ticket-ship` shows it as its last step. Any time before
-that, run:
+**Seeing a ticket's usage:** `/qatalyst-ticket-ship` shows it as its last step and opens the HTML
+report in your browser. Any time before that, run:
 
 ```bash
-python3 .github/token-tracker/scripts/token_tracker.py report ABC-123
+python3 .github/token-tracker/scripts/token_tracker.py report ABC-123 --open
 ```
 
-(`py` instead of `python3` on Windows.) It prints the summary and writes three files to `.logs/token-tracker/ABC-123/`:
+(`py` instead of `python3` on Windows; leave out `--open` to skip the browser.) It prints the
+summary and writes four files to `.logs/token-tracker/ABC-123/`:
 
+- `token-usage.html`: the report as a page: totals, a bar per agent and per model, and every model
+  call. Self-contained (no scripts, nothing fetched from the internet), so it opens offline. Over
+  SSH or anywhere else without a local display, `--open` prints the file's path instead.
 - `token-usage.csv`: one row per model call, with `ticketId`, `agentName`, `model`, `inputTokens`,
   `outputTokens`, `timestamp`.
 - `token-usage.json`: the same rows under `calls`, plus `totals` and a `byAgent` breakdown (calls,

@@ -93,10 +93,12 @@ anywhere, and prompt or code content is never captured.
   for every span (reproduced with OpenTelemetry SDK 2.5.1 and 2.12.1). The SQLite store converts
   spans to plain rows first and doesn't have this problem.
 
-`qatalyst-ticket-ship` runs `token_tracker.py report <ticket ID>` as its last step; a developer can
-run it any time. Output goes to `.logs/token-tracker/<ticket ID>/`: `token-usage.csv` (the rows),
-`token-usage.json` (the rows under `calls`, plus `totals` and a per-agent `byAgent` breakdown), and
-`token-usage.md` (readable summary).
+`qatalyst-ticket-ship` runs `token_tracker.py report <ticket ID> --open` as its last step; a
+developer can run it any time. Output goes to `.logs/token-tracker/<ticket ID>/`:
+`token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
+there's a local display), `token-usage.csv` (the rows), `token-usage.json` (the rows under `calls`,
+plus `totals` and a per-agent `byAgent` breakdown), and `token-usage.md` (readable summary). All
+four come from the same data.
 
 ## 3. Log-analysis loop (bug tickets only)
 
@@ -403,6 +405,7 @@ specs/<bug|feature>/<ticket-id>/
 ├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
 ├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
 └── <ticket-id>/
+    ├── token-usage.html  the report as a page; opened by report --open
     ├── token-usage.csv   ticketId, agentName, model, inputTokens, outputTokens, timestamp
     ├── token-usage.json  same rows under calls, plus totals and byAgent
     └── token-usage.md    totals by agent and by model
