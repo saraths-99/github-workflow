@@ -14,7 +14,7 @@
 # What it does:
 #   - Downloads this repo (a shallow clone of REPO_URL@BRANCH) into a temp dir.
 #   - Overwrites the *mechanism* files (agents, instructions, skills, prompts, hooks scripts,
-#     guards.json, log-analyser scripts) with the latest from this repo -- these
+#     guards.json, log-analyser scripts, token-tracker) with the latest from this repo -- these
 #     are maintained here, not hand-edited per app repo, so a later re-run is how you pick up a fix.
 #   - Never overwrites the *project data* files if they already exist: copilot-instructions.md
 #     (your settings block, module map, key rules), hooks/sensitive-paths.txt (grows over
@@ -75,6 +75,7 @@ sync_dir .github/instructions
 sync_dir .github/skills
 sync_dir .github/prompts
 sync_dir .github/log-analyser/scripts
+sync_dir .github/token-tracker
 mkdir -p "$TARGET/.github/hooks/scripts"
 cp "$SRC/.github/hooks/guards.json" "$TARGET/.github/hooks/guards.json"
 cp -R "$SRC/.github/hooks/scripts/." "$TARGET/.github/hooks/scripts/"
@@ -97,6 +98,15 @@ keep_if_present .github/hooks/sensitive-paths.txt
 keep_if_present .mcp.json
 keep_if_present project-context.md
 keep_if_present architecture.md
+
+# Token tracking in VS Code needs one Copilot setting; add it only to a repo with no settings file
+# of its own, and never edit an existing one.
+if [ ! -e "$TARGET/.vscode/settings.json" ]; then
+  mkdir -p "$TARGET/.vscode"
+  cp "$SRC/.github/token-tracker/vscode-settings.json" "$TARGET/.vscode/settings.json"
+elif ! grep -q 'github.copilot.chat.otel.dbSpanExporter.enabled' "$TARGET/.vscode/settings.json"; then
+  echo "  note: for token tracking in VS Code, add \"github.copilot.chat.otel.dbSpanExporter.enabled\": true to .vscode/settings.json"
+fi
 
 if [ -f "$TARGET/.gitignore" ]; then
   grep -qxF '.logs/' "$TARGET/.gitignore" || echo '.logs/' >> "$TARGET/.gitignore"
