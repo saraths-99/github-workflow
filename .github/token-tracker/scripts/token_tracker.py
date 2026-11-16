@@ -9,7 +9,7 @@
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
-file (written when the CLI is started through copilot-tracked.sh / copilot-tracked.ps1).
+file (written when the CLI is started through copilot-tracked.sh). macOS and Linux only.
 Standard library only.
 """
 import argparse
@@ -100,9 +100,7 @@ def vscode_db_paths():
     if override:
         return [Path(override)] if Path(override).is_file() else []
     home = Path.home()
-    if sys.platform == "win32":
-        bases = [Path(os.environ.get("APPDATA", home / "AppData" / "Roaming"))]
-    elif sys.platform == "darwin":
+    if sys.platform == "darwin":
         bases = [home / "Library" / "Application Support"]
     else:
         bases = [Path(os.environ.get("XDG_CONFIG_HOME", home / ".config"))]
@@ -568,9 +566,6 @@ def render_html(summary, sources):
 def open_in_browser(path):
     """Opens the page with the OS's own handler; returns False where there's no local display to show it on."""
     try:
-        if sys.platform == "win32":
-            os.startfile(path)  # noqa: S606 - local file this script just wrote
-            return True
         if sys.platform == "darwin":
             if os.environ.get("SSH_CONNECTION"):
                 return False

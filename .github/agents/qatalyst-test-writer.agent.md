@@ -6,9 +6,10 @@ description: >
   performance, chaos — whether handed off by developer for a tasks.md task
   or by the qatalyst-write-tests skill for a standalone test-only task. Doesn't
   report done until every matched sub-agent has reported back.
-tools: ['read', 'search', 'agent', 'repowise/*']
+tools: ['read', 'search', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 ---
 
 # qatalyst-test-writer

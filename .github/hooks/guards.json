@@ -5,21 +5,21 @@
       "name": "format-kotlin",
       "event": "postToolUse",
       "match": { "tools": ["edit"], "pathGlobs": ["**/*.kt", "**/*.kts"] },
-      "script": { "sh": "scripts/format-kotlin.sh", "ps1": "scripts/format-kotlin.ps1" },
+      "script": { "sh": "scripts/format-kotlin.sh" },
       "timeoutSeconds": 30
     },
     {
       "name": "block-force-push",
       "event": "preToolUse",
       "match": { "tools": ["runCommands"] },
-      "script": { "sh": "scripts/block-force-push.sh", "ps1": "scripts/block-force-push.ps1" },
+      "script": { "sh": "scripts/block-force-push.sh" },
       "timeoutSeconds": 30
     },
     {
       "name": "protect-secrets",
       "event": "preToolUse",
       "match": { "tools": ["read", "edit", "runCommands"] },
-      "script": { "sh": "scripts/protect-secrets.sh", "ps1": "scripts/protect-secrets.ps1" },
+      "script": { "sh": "scripts/protect-secrets.sh" },
       "timeoutSeconds": 30
     },
     {
@@ -29,10 +29,7 @@
         "tools": ["edit", "runCommands"],
         "pathGlobs": ["project-context.md", "architecture.md"]
       },
-      "script": {
-        "sh": "scripts/guard-context-docs.sh",
-        "ps1": "scripts/guard-context-docs.ps1"
-      },
+      "script": { "sh": "scripts/guard-context-docs.sh" },
       "timeoutSeconds": 30
     }
   ]

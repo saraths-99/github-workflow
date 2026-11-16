@@ -18,8 +18,9 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    pages and Figma designs (read-only — never push a design change), `project-context.md`, and
    `architecture.md`. For a bug, fold in `log-analysis.md`'s root cause and suggested fix rather
    than re-investigating. If `log-analysis.md` lists two candidate root causes instead of one,
-   don't pick for the developer — list both under Open Questions with their trade-offs and ask
-   which to implement before the task checklist is written. If `log-analysis.md` is instead the
+   don't pick for the developer — list both under Open Questions with their trade-offs; the
+   approval question (see Gate) asks which to implement, and you write the checklist for the
+   answer. If `log-analysis.md` is instead the
    no-log stub (no attachment, developer confirmed UI-only, log analysis skipped), there is no root
    cause to fold in — step 2 is where you find one instead of re-investigating logs that don't
    exist.
@@ -45,11 +46,15 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
 
 ## Gate
 
-Nothing starts until the developer approves the draft. Once approved, tell the developer a feature
-branch is about to be created and the ticket is about to move to In Progress.
+Nothing starts until the developer approves the draft. Ask for approval with options, per
+`qatalyst-ask-developer`: approve, request changes (the one answer that takes text), or stop —
+plus which root cause to fix, if there are two. If you're running as a sub-agent and can't ask,
+return the draft's path and that question to `qatalyst-ticket-start`, which asks it. On "request
+changes", revise the draft and ask again.
 
 ## If the plan changes mid-ticket
 
 If `qatalyst-developer` or `qatalyst-test-writer` hits something that invalidates the plan, update
-`tasks.md` and get it re-approved before implementation continues — don't let the code and the spec
+`tasks.md` and get it re-approved (approve the updated plan, or stop) before implementation
+continues — don't let the code and the spec
 drift apart silently.

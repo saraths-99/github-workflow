@@ -5,10 +5,87 @@ All notable changes to this workflow are recorded here. Format follows
 [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), applied to the workflow itself
 (agents/skills/hooks/prompts), not to any app repo it's installed into.
 
-Bump `VERSION` and add an entry here for every change that lands in this repo — `install.sh`/
-`install.ps1` read `VERSION` and the synced commit SHA and write both into a sync-record file in
+Bump `VERSION` and add an entry here for every change that lands in this repo — `install.sh`
+reads `VERSION` and the synced commit SHA and writes both into a sync-record file in
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
+
+## [0.3.3] - 2026-11-16
+
+### Changed
+- Every agent's `tools` also lists Android Studio's own tool names (`read_file`, `list_dir`,
+  `get_errors`, `grep_search`, `file_search`, `semantic_search`, `insert_edit_into_file`,
+  `create_file`, `run_in_terminal`, `get_terminal_output`) for the VS Code groups it already has,
+  so sub-agents started there aren't left without workspace tools. Read-only agents get only the
+  read and search names. The sub-agent tool's Android Studio name is still unknown.
+
+## [0.3.2] - 2026-11-16
+
+### Added
+- README §2c: setting up and signing in to the MCP servers in VS Code, Android Studio (choose the
+  Local agent; add servers under Copilot settings › MCP servers if needed) and the Copilot CLI,
+  which servers the flow needs, and what to do when one doesn't connect.
+
+### Changed
+- `atlassian-rovo` points at `https://mcp.atlassian.com/v2/mcp`, the URL Atlassian documents now;
+  the old `/v1/sse` endpoint was deprecated and retired on 30 June 2026. Install doesn't overwrite
+  an app repo's `.mcp.json`, so existing app repos need the URL changed by hand.
+- `.github/mcp/jetbrains-mcp.example.json` uses the layout Android Studio's own `mcp.json` has
+  (`servers`, headers under `requestInit`) and the new Atlassian URL.
+
+## [0.3.1] - 2026-11-16
+
+### Changed
+- Android Studio: the agents that ask the developer list its question tool, `ask_questions` (seen
+  registered in Android Studio's Copilot 1.21.0 log), so questions are clickable there too.
+- Every agent sets `x-github-copilot-invoke-policy` (`["user"]` for `qatalyst-ticket`, `["model"]`
+  for the rest), the field the JetBrains plugin uses to hide agents from its picker in place of
+  `user-invocable`. A static check keeps the two in step.
+
+## [0.3.0] - 2026-11-16
+
+### Added
+- `qatalyst-ask-developer` skill: every place the workflow stops for the developer is a question
+  with options to click (VS Code's `vscode/askQuestions` tool, or `ask_user` in the Copilot CLI,
+  including its agent inside Android Studio; numbered options in Android Studio's own Copilot chat),
+  never an open-ended prompt. Requesting changes to `tasks.md` is the only
+  typed answer.
+
+### Changed
+- `/qatalyst-ticket-start` (and the `qatalyst-ticket` picker agent) now carry a ticket through as
+  one flow: plan approval, branch, In Progress, `qatalyst-developer` through every task, then
+  "Ship it now" runs `qatalyst-ticket-ship`. `/qatalyst-ticket-ship` still works on its own.
+- Running `/qatalyst-ticket-start` again on a ticket resumes it instead of starting over: an
+  existing draft goes to the approval question, ticked tasks or a feature branch continue from the
+  first unticked task, and all tasks ticked goes to the ship question. If the last chat broke
+  partway through a task or the ship step (`.logs/<ticket ID>/in-progress.json` is still there), it
+  says so and asks whether to continue keeping the changes, restart with them stashed, or stop.
+- No ticket ID given: the developer's open Jira tickets are offered to pick from.
+- Missing log attachment: "I've attached it now — check again" replaces re-running the command.
+- Sub-agents that can't ask the developer return the question to `qatalyst-ticket-start`, which
+  asks it; the planners no longer run the approval gate themselves.
+- README: Android Studio needs Agent Skills turned on (a preview setting) for the ticket flow.
+- `qatalyst-ticket` gains `execute` (for the branch, the token mark and pushing) and the
+  `qatalyst-ticket-ship` skill.
+
+## [0.2.1] - 2026-11-16
+
+### Added
+- README §2b: how to install Repowise and index the app repo (`repowise init --yes --no-prose
+  --no-editor-setup`, then `repowise hook install`), and why editor setup must stay off.
+
+### Removed
+- `.github/log-analyser/log-signatures.md`, and `qatalyst-log-analyser`'s step that matched known
+  cause chains against it. No script read it, and its noise-tag and tag-to-module tables were never
+  filled in; Repowise already does the tag-to-module mapping. Install no longer adds it to app
+  repos, but leaves an existing copy alone.
+
+### Changed
+- Install copies only what the workflow uses in the app repo. `.github/mcp/` (the JetBrains MCP
+  snippet), `docs/field-sources.md` and `.github/hooks/hook-protocol.md` stay in this repo and are
+  linked from the README and `workflow-design.md`; install removes copies an older install left.
+- macOS and Linux only: removed `install.ps1`, `copilot-tracked.ps1` and the four hook scripts'
+  `.ps1` versions, and their entries in `guards.json`. Re-running `install.sh` deletes the hook `.ps1` copies from app repos.
 
 ## [0.2.0] - 2026-11-16
 

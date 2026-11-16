@@ -6,20 +6,20 @@ of those files lives. Each skill's own `SKILL.md` is the authoritative source fo
 behavior — this document is a synthesis for a single-page view, not a replacement.
 
 This workflow's files are edited directly, in place — there's no wizard, no templating, no
-detection logic. The one remaining moving part is `install.sh`/`install.ps1` (see
+detection logic. The one remaining moving part is `install.sh` (see
 [README.md §2](../README.md#2-one-time-setup)): a plain file sync, run from inside the actual app
 repo, that pulls the latest agents/skills/instructions/hooks/prompts/mcp config from this repo and
 overwrites them there — a one-way copy, not a generator run against detected app-repo state.
 
 ## 1. One-time manual fill-ins
 
-Three things can't be read off the code or guessed, so `install.sh`/`install.ps1` never overwrite
+Three things can't be read off the code or guessed, so `install.sh` never overwrites
 them once they exist — they're filled in once by hand instead:
 
 - `copilot-instructions.md`'s settings block (`jira_projects`, `base_branch`), module map, and key
   rules.
 - `project-context.md` and `architecture.md`, drafted from the real code per
-  [`docs/field-sources.md`](field-sources.md), confirmed by a developer, then never regenerated —
+  [`docs/field-sources.md`](https://github.com/saraths-99/github-workflow/blob/develop/docs/field-sources.md), confirmed by a developer, then never regenerated —
   edited directly as facts change.
 - MCP tokens, added to your own local config, never committed.
 
@@ -72,7 +72,7 @@ anywhere, and prompt or code content is never captured.
 | Where the developer works | Trace source | What's available |
 |---|---|---|
 | VS Code Copilot Chat | `agent-traces.db` in VS Code's storage for the Copilot Chat extension, turned on by `github.copilot.chat.otel.dbSpanExporter.enabled` | every model call, by agent and sub-agent |
-| Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh`/`.ps1` | same, once the CLI's record layout is confirmed on a real run |
+| Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
 | Android Studio's Copilot chat panel | none: the JetBrains plugin (checked at 1.21.0) has no trace export | nothing |
 
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
@@ -109,7 +109,7 @@ flowchart TD
     B --> BW{Trimmed to ~0 lines?}
     BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
     BW -- no --> C[Digest: logcat_digest.py]
-    C --> D[Link: group + match log-signatures.md]
+    C --> D[Link: group related entries]
     D --> E[Map: Repowise class/module lookup]
     E --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
@@ -123,8 +123,6 @@ Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.
 raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted and, if it
 holds more than one text log, merged in chronological order) into the single file `logcat_trim.py`
 expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by signature.
-`log-signatures.md`'s "Tag → module map" is filled in once by hand from a scan of this repo's
-`Log.d/Log.w/Log.e` call sites, then kept up to date as new tags are added.
 
 ## 4. Agents
 
@@ -135,6 +133,16 @@ are workflow workers, so `user-invocable: false` hides them from the picker whil
 model-driven delegation enabled. Agents that delegate include the `agent` tool; agents that use a
 repo skill list it in `skills`. The portable server definitions live in the workspace-root
 `.mcp.json`.
+
+Each agent's `tools` also lists the names Android Studio's Copilot registers its tools under, after
+the VS Code groups they correspond to: `read` → `read_file`, `list_dir`, `get_errors`; `search` →
+`grep_search`, `file_search`, `semantic_search`; `edit` → `insert_edit_into_file`, `create_file`;
+`execute` → `run_in_terminal`, `get_terminal_output`. Each IDE ignores the names it doesn't know.
+Without them, a sub-agent started in Android Studio can come up with no tools, and the agent that
+started it does the work itself instead ("the subagent sandbox doesn't have access to this
+workspace's tools"). Android Studio's name for the `agent` (sub-agent) tool isn't known yet, so
+delegation there still depends on `agent` being recognised; `x-github-copilot-invoke-policy` mirrors
+`user-invocable` for its picker.
 
 **Naming migration (complete).** Every agent file and every skill folder in this workflow carries
 the `qatalyst-` prefix — the last holdouts (the nine specialized test-writer sub-agents, plus the
@@ -200,7 +208,7 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 | **Orchestration** | `qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests` (routes to `qatalyst-test-writer` for a standalone test-only task, same as a ticket task) |
 | **Implementation** | `qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration` |
 | **Agent-support** (not a slash command — delegated to by the agents it backs) | `qatalyst-plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`) — the only agent-support skill left; `review-diff`, `review-security`, `review-error-handling`, and `analyse-logs` were folded directly into their one respective caller's own agent body (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-log-analyser`) since each had exactly one caller and no sharing to preserve |
-| **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `qatalyst-jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `qatalyst-spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `qatalyst-repowise-lookup` (the Repowise-then-fallback, check-once pattern), `qatalyst-koin-wiring` (registering a binding in `AppModule.kt`) |
+| **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `qatalyst-jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `qatalyst-spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `qatalyst-repowise-lookup` (the Repowise-then-fallback, check-once pattern), `qatalyst-ask-developer` (every stop is a question with options — `vscode/askQuestions` in VS Code, `ask_questions` in Android Studio, `ask_user` in the Copilot CLI, numbered options where none exists — never an open-ended prompt), `qatalyst-koin-wiring` (registering a binding in `AppModule.kt`) |
 
 `qatalyst-ticket` is a `user-invocable: true` agent-picker entry point that wraps `qatalyst-ticket-start` with
 no procedure of its own — an alternative surface to typing `/qatalyst-ticket-start <ticket ID>`, not a
@@ -224,7 +232,8 @@ Copilot event payloads and permission decisions.
 Each script reads one JSON object on stdin (`event`, `tool`, `paths`, `command`, `text`) and writes
 one JSON decision (`allow` / `deny` / `ask`) to stdout. A non-zero exit or a 30-second timeout both
 fall back — a crash denies the action, a timeout silently allows it (open item 4 in §9). Full
-protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
+protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/github-workflow/blob/develop/.github/hooks/hook-protocol.md)
+(in the workflow repo; not installed into the app repo).
 
 ## 7. MCP servers
 
@@ -233,6 +242,10 @@ protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
 | Atlassian Rovo MCP | Jira, Confluence, Bitbucket Cloud | OAuth (Jira/Confluence); Basic auth API token (Bitbucket) |
 | Figma MCP | Linked designs, read-only | Developer's Figma sign-in |
 | Repowise | Code map, risk, dead-code (advisory only) | None — local, optional |
+
+Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoint was retired on
+30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
+workflow repo's README §2c.
 
 ## 8. Safety & control principles
 
@@ -297,14 +310,13 @@ versus a convention this workflow invented for itself.
 ├── workflow.prompt.md                 pre-existing team doc, if any — linked, not written here
 ├── docs/workflows/                    pre-existing team docs, if any
 ├── docs/workflow-design.md            this document
-├── docs/field-sources.md              evidence guide for project-context.md / architecture.md
 ├── .gitignore                         .logs/ ignored
 ├── specs/
 │   └── .templates/
 │       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention
 ├── .logs/                             created lazily, git-ignored — see §10.2
 └── .github/
-    ├── workflow-sync.md               written every install.sh/install.ps1 run — version, commit, timestamp; never hand-edited
+    ├── workflow-sync.md               written every install.sh run — version, commit, timestamp; never hand-edited
     ├── copilot-instructions.md        settings block + module map + key rules + links
     ├── instructions/
     │   ├── kotlin.instructions.md
@@ -338,8 +350,7 @@ versus a convention this workflow invented for itself.
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py
-    │   ├── scripts/logcat_digest.py
-    │   └── log-signatures.md
+    │   └── scripts/logcat_digest.py
     ├── skills/
     │   ├── qatalyst-new-feature/SKILL.md
     │   ├── qatalyst-new-screen/SKILL.md
@@ -351,6 +362,7 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-jira-ticket-intake/SKILL.md       cross-cutting
     │   ├── qatalyst-spec-folder-resolution/SKILL.md   cross-cutting
     │   ├── qatalyst-repowise-lookup/SKILL.md          cross-cutting
+    │   ├── qatalyst-ask-developer/SKILL.md            cross-cutting
     │   ├── qatalyst-write-tests/SKILL.md
     │   ├── qatalyst-ticket-start/SKILL.md
     │   └── qatalyst-ticket-ship/
@@ -368,14 +380,11 @@ versus a convention this workflow invented for itself.
     │   └── qatalyst-ticket-ship.prompt.md
     ├── hooks/
     │   ├── guards.json
-    │   ├── hook-protocol.md
     │   ├── sensitive-paths.txt
-    │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each .sh + .ps1)
-    ├── mcp/jetbrains-mcp.example.json
+    │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each a .sh)
     └── token-tracker/
         ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
-        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on (+ .ps1)
-        ├── copilot-tracked.ps1
+        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on
         └── vscode-settings.json       the one VS Code setting tracing needs; copied to .vscode/settings.json if the app repo has none
 ```
 
@@ -398,12 +407,13 @@ specs/<bug|feature>/<ticket-id>/
 ├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads
 │   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
-└── digest.md             error groups with counts and first/last times
+├── digest.md             error groups with counts and first/last times
+└── in-progress.json      only while a task or the ship step runs; still there on resume = the last chat broke midway
 
 .logs/token-tracker/
 ├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time
 ├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
-├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
+├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh
 └── <ticket-id>/
     ├── token-usage.html  the report as a page; opened by report --open
     └── token-usage.json  ticketId, agentName, model, inputTokens, outputTokens, timestamp per call,
@@ -428,7 +438,7 @@ by this workflow; GitHub Copilot has no knowledge of any of these and assigns th
 | `.github/agents/*.md` | Location per specification; `.agent.md` suffix is a project convention | The specification requires only that the file reside in `.github/agents/`; the `.agent.md` suffix is applied by this workflow for readability and is not required by GitHub Copilot |
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
-| `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh`/`install.ps1` run, never hand-edited |
+| `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh` run, never hand-edited |
 | `.github/token-tracker/` | Project-specific convention | Not a GitHub Copilot concept; scripts that read Copilot's local traces. Only the setting it relies on, `github.copilot.chat.otel.dbSpanExporter.enabled`, is Copilot's own |
 | `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |

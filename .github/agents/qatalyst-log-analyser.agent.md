@@ -9,10 +9,11 @@ description: >
   automatically by qatalyst-ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
-tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*']
+tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
-skills: ['qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup']
+x-github-copilot-invoke-policy: ["model"]
+skills: ['qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup', 'qatalyst-ask-developer']
 ---
 
 # qatalyst-log-analyser
@@ -60,8 +61,9 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
      nothing.
 2. **Extract** — run `logcat_extract.py` against the raw attachment (whatever type it is), writing
    into `.logs/<ticket ID>/raw/extracted/`. If raw logs aren't in `.logs/<ticket ID>/raw/` yet, ask
-   the developer to save them there (or attach them to chat only as a last resort — raw logs should
-   not live in chat history). If the attachment is a `.zip`, the script extracts every `.txt`/`.log`
+   the developer, with options (see `qatalyst-ask-developer`): download it from the ticket (offer
+   this only if your Jira tools can fetch attachments), I've saved it there — continue, or skip log
+   analysis. Never ask them to paste a log into chat — raw logs should not live in chat history. If the attachment is a `.zip`, the script extracts every `.txt`/`.log`
    entry inside it and, when there's more than one, merges them in chronological order — never unzip
    or merge anything yourself. Read only the script's own manifest output (file names, sizes, what
    was skipped and why) — never the extracted text.
@@ -72,11 +74,11 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    attach the wrong capture, or the ticket's timestamp is in a different timezone than the device
    that produced the log), or the window itself is just too narrow. Check the trimmed file's own
    date/time range against the issue time pinned in step 1, widen the window if it's just too
-   narrow, and otherwise stop and ask the developer rather than reporting a root cause built on an
-   empty digest.
+   narrow, and otherwise ask the developer — widen the time window, use the whole log, or wrong
+   attachment, stop — rather than reporting a root cause built on an empty digest.
 4. **Digest** — run `logcat_digest.py` against the trimmed log.
 5. **Link** — group digest entries that fire in the same burst or thread, or share an exception
-   cause; match any chain already listed in `.github/log-analyser/log-signatures.md`.
+   cause.
 6. **Map** — use `qatalyst-repowise-lookup` to find the real class and module behind each tag/message, and
    any recent change to those files. This, not a folder, is what grounds the root cause in the
    actual codebase — the write path itself needed no lookup or decision (step 1).
@@ -114,13 +116,8 @@ Once `log-analysis.md` is written (either the full report or the no-log stub):
 
 - If started by `qatalyst-ticket-start`'s own detection step, just finish — it's waiting and hands off to
   `qatalyst-bug-planner` next.
-- If started directly via `/log-analyser`, tell the developer it's ready for `/qatalyst-ticket-start`, which
+- If started directly via `/log-analyser`, say it's ready for `/qatalyst-ticket-start`, which
   picks up this file automatically. Either way, do not start Planning.
 
 If Intake came back "blocked on a missing attachment" instead, there is no `log-analysis.md` to
 hand off — stop and wait for the developer to re-run once the attachment exists.
-
-## Learn (not your job)
-
-After the fix is confirmed, the *developer* adds the chain, its noise tags, and the fix that
-resolved it to `log-signatures.md` — you only read that file, never write to it.

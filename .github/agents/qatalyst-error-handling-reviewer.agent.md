@@ -4,9 +4,10 @@ description: >
   Reviews diffs that touch a service, repository, datasource, BLE command,
   or API call for how they handle failure. Read-only — never edits code.
   Only runs when code-reviewer flags the diff as touching one of these areas.
-tools: ['read', 'search', 'repowise/*']
+tools: ['read', 'search', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 skills: ['qatalyst-repowise-lookup']
 ---
 

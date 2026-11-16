@@ -5,10 +5,11 @@ description: >
   into a single approved tasks.md: user stories, acceptance criteria,
   approach, and an ordered task checklist. Started by
   /qatalyst-ticket-start <ticket ID>.
-tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*']
+tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file']
 target: github-copilot
 user-invocable: false
-skills: ['qatalyst-plan-ticket', 'qatalyst-jira-ticket-intake', 'qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup']
+x-github-copilot-invoke-policy: ["model"]
+skills: ['qatalyst-plan-ticket', 'qatalyst-jira-ticket-intake', 'qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup', 'qatalyst-ask-developer']
 ---
 
 # qatalyst-feature-planner

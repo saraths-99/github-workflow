@@ -4,9 +4,10 @@ description: >
   Writes tests for security-sensitive logic — secure-channel crypto,
   access-code/PIN handling, storage of tokens and keys. Routed to by
   test-writer whenever code-reviewer flags the task as security-sensitive.
-tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 ---
 
 # qatalyst-security-test-writer

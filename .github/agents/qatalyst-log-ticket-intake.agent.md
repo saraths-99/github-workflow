@@ -5,10 +5,11 @@ description: >
   the issue time, and identifies the log attachment's file type and
   location. The Intake step `qatalyst-log-analyser` hands off to before
   running any log script.
-tools: ['read', 'search', 'atlassian-rovo/*']
+tools: ['read', 'search', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
 target: github-copilot
 user-invocable: false
-skills: ['qatalyst-jira-ticket-intake']
+x-github-copilot-invoke-policy: ["model"]
+skills: ['qatalyst-jira-ticket-intake', 'qatalyst-ask-developer']
 ---
 
 # qatalyst-log-ticket-intake
@@ -40,15 +41,16 @@ chat and stop.
 
 ## If no log attachment is present
 
-Don't assume one is coming and don't assume it isn't needed — ask the developer directly: *"No log
-attachment found on this ticket — did you forget to attach one, or is this a UI-only issue that
-doesn't need logs?"*
+Don't assume one is coming and don't assume it isn't needed — ask the developer, with options (see
+`qatalyst-ask-developer`): *"No log attachment found on this ticket."* — **UI-only issue, skip log
+analysis** · **I've attached it now, check again** · **Stop, I'll attach it later**.
 
-- **They forgot / will attach one** — tell them to attach it and re-run `/qatalyst-ticket-start` (or
-  `/log-analyser`) once it's there. Report back to `qatalyst-log-analyser` that the run is blocked
+- **I've attached it now** — read the ticket's attachment list again. If it's there, carry on as if
+  it had been there all along; if it still isn't, ask the same question again.
+- **Stop, I'll attach it later** — report back to `qatalyst-log-analyser` that the run is blocked
   on a missing attachment, and stop — don't let `qatalyst-log-analyser` start the loop against
-  nothing.
-- **They confirm it's UI-only / doesn't need logs** — report back to `qatalyst-log-analyser` that
+  nothing. Running `/qatalyst-ticket-start` again later picks it up.
+- **UI-only, skip log analysis** — report back to `qatalyst-log-analyser` that
   log analysis should be skipped for this ticket, by developer confirmation. Don't decide this
   yourself from the ticket text alone, even if it reads as obviously visual (a wrong color, a
   misaligned view) — the developer confirms it, every time.

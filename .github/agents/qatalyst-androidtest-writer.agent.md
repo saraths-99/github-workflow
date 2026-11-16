@@ -4,9 +4,10 @@ description: >
   Writes instrumented UI tests for a new or changed screen — navigation,
   permission prompts, and config-change survival. Routed to by test-writer
   for any task touching a Fragment, layout, or nav destination.
-tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 ---
 
 # qatalyst-androidtest-writer
