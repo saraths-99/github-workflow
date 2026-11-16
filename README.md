@@ -141,6 +141,8 @@ Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; 
 covers it with
 tests. Project skills (`/qatalyst-new-screen`, `/qatalyst-new-ble-command`, `/qatalyst-new-api-call`, `/qatalyst-room-migration`) handle
 the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a task that spans the stack.
+Once the last task is ticked, `qatalyst-developer` shows the ticket's token usage (see below) and
+tells you it's ready to ship.
 
 ### Shipping
 
@@ -153,7 +155,6 @@ the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a tas
 3. Builds and tests locally.
 4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and
    moves the ticket to In Review.
-5. Shows the ticket's token usage (see below).
 
 ### Token usage per ticket
 
@@ -177,8 +178,9 @@ code are never recorded. Requires Python 3.9 or newer.
 
   On Windows: `.github\token-tracker\copilot-tracked.ps1 ABC-123`.
 
-**Seeing a ticket's usage:** `/qatalyst-ticket-ship` shows it as its last step and opens the HTML
-report in your browser. Any time before that, run:
+**Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
+and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
+shipping to include the review and ship steps), run:
 
 ```bash
 python3 .github/token-tracker/scripts/token_tracker.py report ABC-123 --open

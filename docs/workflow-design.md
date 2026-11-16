@@ -93,8 +93,9 @@ anywhere, and prompt or code content is never captured.
   for every span (reproduced with OpenTelemetry SDK 2.5.1 and 2.12.1). The SQLite store converts
   spans to plain rows first and doesn't have this problem.
 
-`qatalyst-ticket-ship` runs `token_tracker.py report <ticket ID> --open` as its last step; a
-developer can run it any time. Output goes to `.logs/token-tracker/<ticket ID>/`:
+`qatalyst-developer` runs `token_tracker.py report <ticket ID> --open` once every task in
+`tasks.md` is ticked, before pointing the developer at `/qatalyst-ticket-ship`; a developer can run
+it again any time, for example after shipping to include the review and ship steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
 `token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
 there's a local display), `token-usage.csv` (the rows), `token-usage.json` (the rows under `calls`,
 plus `totals` and a per-agent `byAgent` breakdown), and `token-usage.md` (readable summary). All

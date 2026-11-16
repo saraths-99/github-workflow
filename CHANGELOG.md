@@ -21,8 +21,8 @@ changed since its last sync.
   Copilot Chat's local trace database and the Copilot CLI's trace file; the Android Studio chat
   panel has no trace export, so Android Studio users run the Copilot CLI through
   `copilot-tracked.sh`/`.ps1`.
-- `qatalyst-ticket-start` marks the ticket for tracking first; `qatalyst-ticket-ship` shows the
-  ticket's token usage as its last step and opens the HTML report.
+- `qatalyst-ticket-start` marks the ticket for tracking first; `qatalyst-developer` shows the
+  ticket's token usage and opens the HTML report once every task in `tasks.md` is ticked.
 - `install.sh`/`install.ps1` sync `.github/token-tracker/` and create `.vscode/settings.json` with
   the one setting tracking needs, only if the app repo has no such file.
 
