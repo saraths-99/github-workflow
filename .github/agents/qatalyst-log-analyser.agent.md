@@ -76,7 +76,7 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    empty digest.
 4. **Digest** — run `logcat_digest.py` against the trimmed log.
 5. **Link** — group digest entries that fire in the same burst or thread, or share an exception
-   cause; match any chain already listed in `.github/log-analyser/log-signatures.md`.
+   cause.
 6. **Map** — use `qatalyst-repowise-lookup` to find the real class and module behind each tag/message, and
    any recent change to those files. This, not a folder, is what grounds the root cause in the
    actual codebase — the write path itself needed no lookup or decision (step 1).
@@ -119,8 +119,3 @@ Once `log-analysis.md` is written (either the full report or the no-log stub):
 
 If Intake came back "blocked on a missing attachment" instead, there is no `log-analysis.md` to
 hand off — stop and wait for the developer to re-run once the attachment exists.
-
-## Learn (not your job)
-
-After the fix is confirmed, the *developer* adds the chain, its noise tags, and the fix that
-resolved it to `log-signatures.md` — you only read that file, never write to it.

@@ -3,7 +3,7 @@
 This repo holds the Copilot customization for this Android app — agents, skills, path
 instructions, hooks, prompts and MCP config, checked in and used as-is. There is no generator
 wizard: a change here is a direct edit to the live workflow files, same as any other change. The
-only other moving part is [`install.sh`](install.sh)/[`install.ps1`](install.ps1), which copies
+only other moving part is [`install.sh`](install.sh), which copies
 these files into the actual app repo (see §2) and re-syncs them after a later update here.
 
 For the full design reference — flowcharts, the agent/skill/hook tables, risk log, and exactly
@@ -19,36 +19,32 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/skills/`** | Orchestration (`qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests`) and implementation skills (`qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
-| **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`) |
+| **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`); stays in this repo, not installed |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
-| **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
+| **`.github/log-analyser/`** | The log-analysis loop's scripts |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
-| **`install.sh`**, **`install.ps1`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
-| **`VERSION`**, **`CHANGELOG.md`** | This workflow's own version and change history — bumped and entered for every change that lands here; `install.sh`/`install.ps1` read both at sync time (see §2) |
+| **`install.sh`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
+| **`VERSION`**, **`CHANGELOG.md`** | This workflow's own version and change history — bumped and entered for every change that lands here; `install.sh` reads both at sync time (see §2) |
 
 ## 2. One-time setup
 
-Run this from inside the Android app repo you want the workflow in:
+Run this from inside the Android app repo you want the workflow in (macOS or Linux; the workflow
+doesn't support Windows):
 
 ```bash
-# macOS / Linux
 curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash
 ```
 
-```powershell
-# Windows
-irm https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.ps1 | iex
-```
-
 This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
-the JetBrains MCP reference snippet, log-analyser scripts), `.mcp.json` if the app repo doesn't
-already have one, `specs/.templates/`, and `docs/workflow-design.md` +
-`docs/field-sources.md` into the app repo. Run it again any time this repo changes, to pick up the
+log-analyser scripts), `.mcp.json` if the app repo doesn't already have one, `specs/.templates/`,
+and `docs/workflow-design.md` into the app repo. Reference material only a person reads once — the
+JetBrains MCP snippet, `docs/field-sources.md`, `.github/hooks/hook-protocol.md` — stays here and
+isn't installed; an older install's copies of them are removed. Run it again any time this repo changes, to pick up the
 update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
 but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md`, `architecture.md`,
-`hooks/sensitive-paths.txt` or `log-analyser/log-signatures.md` if they already exist, since those
+or `hooks/sensitive-paths.txt` if they already exist, since those
 hold the app repo's own project data. Everything it touches lands in a normal git working tree, so
 `git status`/`git diff` shows exactly what changed and it's trivially reversible.
 
@@ -58,33 +54,35 @@ currently running, and this repo's [`CHANGELOG.md`](CHANGELOG.md) to see what ch
 
 ### 2a. Manual install (no shell access, e.g. this repo downloaded as a `.zip`)
 
-If you can't run `install.sh`/`install.ps1` — a locked-down machine, or you only have this repo as
+If you can't run `install.sh` — a locked-down machine, or you only have this repo as
 an extracted `.zip` — copy files by hand instead, but **only these paths**, not the whole
 extracted folder:
 
 - `.github/agents/`, `.github/instructions/`, `.github/skills/`, `.github/prompts/`,
-  `.github/log-analyser/scripts/` (just the scripts, not `log-signatures.md`), `.github/mcp/`,
+  `.github/log-analyser/scripts/`,
   `.github/hooks/scripts/` — for each of these, **delete the app repo's existing folder first,
   then copy the new one in**; don't paste on top of what's there. `install.sh` does this same
   delete-then-copy itself (`sync_dir`'s `rm -rf` before its `cp`), specifically so a file renamed
   or removed in this repo disappears from the app repo too. Pasting on top instead leaves the old
   file sitting next to the new one — e.g. an old `ticket-start.prompt.md` next to the current
   `qatalyst-ticket-start.prompt.md` — which is a real risk given the renames this workflow went
-  through. `.github/hooks/guards.json` and `.github/hooks/hook-protocol.md` are single files —
-  just overwrite them directly, no folder to delete.
-- `specs/.templates/`, `docs/workflow-design.md`, `docs/field-sources.md` — same: delete and
-  replace the folder, overwrite the two single files directly.
-- `.github/copilot-instructions.md`, `.github/hooks/sensitive-paths.txt`,
-  `.github/log-analyser/log-signatures.md`, `.mcp.json`, `project-context.md`, `architecture.md` —
+  through. `.github/hooks/guards.json` is a single file — just overwrite it directly, no folder
+  to delete.
+- `specs/.templates/`, `docs/workflow-design.md` — same: delete and replace the folder,
+  overwrite the single file directly.
+- `.github/copilot-instructions.md`, `.github/hooks/sensitive-paths.txt`, `.mcp.json`,
+  `project-context.md`, `architecture.md` —
   copy these **only if the app repo doesn't already have them**. If it does, leave them alone;
   they hold that app's own settings and data, not this repo's.
 - Add `.logs/` to the app repo's `.gitignore` if it's not already there.
 - If your file manager ever offers to "keep both" on a naming conflict instead of replacing,
   decline it — that's how literal duplicate files (`name (1).md`) end up committed by accident.
 
-**Never copy** `README.md`, `install.sh`, `install.ps1`, `VERSION`, `CHANGELOG.md`, or `tests/` —
-those describe and maintain this source repo, not the app repo, and have no place there. This is
-exactly what `install.sh`/`install.ps1` automate; use one of them instead of this section whenever
+**Never copy** `README.md`, `install.sh`, `VERSION`, `CHANGELOG.md`, `tests/`,
+`.github/mcp/`, `.github/hooks/hook-protocol.md` or `docs/field-sources.md` — those describe and
+maintain this source repo, or are reference material read from here, and have no place in the app
+repo. This is
+exactly what `install.sh` automates; use it instead of this section whenever
 you can — it's easy to copy a stray file by hand that `sync_dir`/`keep_if_present` would have
 known to skip.
 
@@ -100,12 +98,57 @@ still need filling in by hand, since no tool can read them off the code or guess
    directly; enable the workspace MCP config option if your VS Code version requires it, then sign
    in to the servers as prompted. If your app repo already had `.mcp.json`, merge the
    `atlassian-rovo`, `figma`, and `repowise` servers into it. JetBrains has its own separate
-   `mcp.json` location (not this repo), so copy `.github/mcp/jetbrains-mcp.example.json` into it
+   `mcp.json` location (not the app repo), so copy this repo's
+   [`.github/mcp/jetbrains-mcp.example.json`](.github/mcp/jetbrains-mcp.example.json) into it
    instead. Bitbucket PR tools may need a separate local API-token configuration. Never commit a
-   filled-in token or credential.
+   filled-in token or credential. The `repowise` server only works once Repowise is installed and
+   has indexed the app repo — see §2b.
 
 Optional integrations (Atlassian Rovo MCP, Figma MCP, Repowise) enhance the agents but aren't
 required to start using the workflow.
+
+### 2b. Repowise (optional)
+
+Repowise gives the planners, developer, test writers and reviewers the app's call graph, change
+risk and hotspots (through `qatalyst-repowise-lookup`). Without it they fall back to plain file
+search, so nothing breaks — they just see less. Set it up once per developer machine:
+
+1. **Install it.** Needs Python 3.11 or newer.
+
+   ```bash
+   pipx install repowise
+   ```
+
+2. **Index the app repo**, from its root:
+
+   ```bash
+   repowise init --yes --no-prose --no-editor-setup
+   ```
+
+   - `--no-prose` builds the index from the code alone: no model, no API key, and none of the
+     app's code is sent anywhere.
+   - `--no-editor-setup` keeps the run to `.repowise/` and nothing else. **Never leave it off.**
+     Without it, `init` writes `CLAUDE.md`, `AGENTS.md` and `.vscode/mcp.json` into the app repo,
+     re-points machine-wide editor configs at this repo, and wires up every editor it finds.
+     None of that belongs in this workflow: `.mcp.json` already starts Repowise for Copilot, a
+     second entry in `.vscode/mcp.json` starts it twice, and `AGENTS.md` would compete with
+     `copilot-instructions.md`.
+
+3. **Keep the index current** after every commit:
+
+   ```bash
+   repowise hook install
+   ```
+
+   This adds a git post-commit hook that runs `repowise update`. If you'd rather not, run
+   `repowise update` yourself before starting a ticket.
+
+4. **Keep `.repowise/` out of git** — it's a per-machine index. Add `.repowise/` to the app repo's
+   `.gitignore` if it isn't there.
+
+Check it with `repowise status`. Repowise sends anonymous usage telemetry by default; turn it off
+with `repowise telemetry disable` if your project needs that. To remove it from a repo, run
+`repowise uninstall --dry-run` to see what it wrote, then `repowise uninstall --all`.
 
 ## 3. Daily operational workflow
 

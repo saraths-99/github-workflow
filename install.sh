@@ -14,12 +14,15 @@
 # What it does:
 #   - Downloads this repo (a shallow clone of REPO_URL@BRANCH) into a temp dir.
 #   - Overwrites the *mechanism* files (agents, instructions, skills, prompts, hooks scripts,
-#     guards.json, mcp server list, log-analyser scripts) with the latest from this repo -- these
+#     guards.json, log-analyser scripts) with the latest from this repo -- these
 #     are maintained here, not hand-edited per app repo, so a later re-run is how you pick up a fix.
 #   - Never overwrites the *project data* files if they already exist: copilot-instructions.md
-#     (your settings block, module map, key rules), hooks/sensitive-paths.txt and
-#     log-analyser/log-signatures.md (both grow over time), project-context.md, architecture.md,
+#     (your settings block, module map, key rules), hooks/sensitive-paths.txt (grows over
+#     time), project-context.md, architecture.md,
 #     .mcp.json (which may contain other project servers), and anything under specs/ (ticket data).
+#   - Installs only what the workflow uses in the app repo. Reference material -- the JetBrains MCP
+#     snippet, docs/field-sources.md, hooks/hook-protocol.md -- stays in this repo, and copies
+#     left by an older install are removed.
 #   - Leaves everything git-tracked in the target repo, so `git status`/`git diff` shows exactly
 #     what changed and the run is trivially reversible.
 #   - Writes .github/workflow-sync.md every run, recording the synced version, commit SHA, and
@@ -72,21 +75,25 @@ sync_dir .github/instructions
 sync_dir .github/skills
 sync_dir .github/prompts
 sync_dir .github/log-analyser/scripts
-sync_dir .github/mcp
 mkdir -p "$TARGET/.github/hooks/scripts"
 cp "$SRC/.github/hooks/guards.json" "$TARGET/.github/hooks/guards.json"
-cp "$SRC/.github/hooks/hook-protocol.md" "$TARGET/.github/hooks/hook-protocol.md"
 cp -R "$SRC/.github/hooks/scripts/." "$TARGET/.github/hooks/scripts/"
 mkdir -p "$TARGET/specs/.templates"
 cp -R "$SRC/specs/.templates/." "$TARGET/specs/.templates/"
 mkdir -p "$TARGET/docs"
 cp "$SRC/docs/workflow-design.md" "$TARGET/docs/workflow-design.md"
-cp "$SRC/docs/field-sources.md" "$TARGET/docs/field-sources.md"
+
+# Reference material an older install copied in; it stays in this repo now.
+rm -rf "$TARGET/.github/mcp"
+rm -f "$TARGET/.github/hooks/hook-protocol.md" "$TARGET/docs/field-sources.md"
+# Windows versions of the hook scripts, from before the workflow went macOS/Linux only.
+for guard in format-kotlin block-force-push protect-secrets guard-context-docs; do
+  rm -f "$TARGET/.github/hooks/scripts/$guard.ps1"
+done
 
 echo "Preserving project data (only added if missing) ..."
 keep_if_present .github/copilot-instructions.md
 keep_if_present .github/hooks/sensitive-paths.txt
-keep_if_present .github/log-analyser/log-signatures.md
 keep_if_present .mcp.json
 keep_if_present project-context.md
 keep_if_present architecture.md
@@ -100,7 +107,7 @@ fi
 cat > "$TARGET/.github/workflow-sync.md" <<EOF
 # Workflow sync record
 
-Do not edit by hand — every run of install.sh/install.ps1 overwrites this file.
+Do not edit by hand — every run of install.sh overwrites this file.
 
 - Source: $REPO_URL@$BRANCH
 - Version: $WORKFLOW_VERSION
@@ -113,5 +120,5 @@ EOF
 echo
 echo "Done. Review with 'git status' / 'git diff' in $TARGET, then commit."
 if [ ! -f "$TARGET/.github/copilot-instructions.md" ] || grep -q 'FILL IN' "$TARGET/.github/copilot-instructions.md" 2>/dev/null; then
-  echo "Next: fill in copilot-instructions.md's settings block, and draft project-context.md/architecture.md (see docs/field-sources.md)."
+  echo "Next: fill in copilot-instructions.md's settings block, and draft project-context.md/architecture.md (see https://github.com/saraths-99/github-workflow/blob/develop/docs/field-sources.md)."
 fi

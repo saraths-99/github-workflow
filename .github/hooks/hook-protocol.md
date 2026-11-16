@@ -5,7 +5,7 @@ them the same way regardless of what the guard checks.
 
 ## Invocation
 
-The host calls the guard's `.sh` (or `.ps1` on Windows) with a single JSON object on **stdin**:
+The host calls the guard's `.sh` with a single JSON object on **stdin**:
 
 ```json
 {

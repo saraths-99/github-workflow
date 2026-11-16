@@ -6,20 +6,20 @@ of those files lives. Each skill's own `SKILL.md` is the authoritative source fo
 behavior — this document is a synthesis for a single-page view, not a replacement.
 
 This workflow's files are edited directly, in place — there's no wizard, no templating, no
-detection logic. The one remaining moving part is `install.sh`/`install.ps1` (see
+detection logic. The one remaining moving part is `install.sh` (see
 [README.md §2](../README.md#2-one-time-setup)): a plain file sync, run from inside the actual app
 repo, that pulls the latest agents/skills/instructions/hooks/prompts/mcp config from this repo and
 overwrites them there — a one-way copy, not a generator run against detected app-repo state.
 
 ## 1. One-time manual fill-ins
 
-Three things can't be read off the code or guessed, so `install.sh`/`install.ps1` never overwrite
+Three things can't be read off the code or guessed, so `install.sh` never overwrites
 them once they exist — they're filled in once by hand instead:
 
 - `copilot-instructions.md`'s settings block (`jira_projects`, `base_branch`), module map, and key
   rules.
 - `project-context.md` and `architecture.md`, drafted from the real code per
-  [`docs/field-sources.md`](field-sources.md), confirmed by a developer, then never regenerated —
+  [`docs/field-sources.md`](https://github.com/saraths-99/github-workflow/blob/develop/docs/field-sources.md), confirmed by a developer, then never regenerated —
   edited directly as facts change.
 - MCP tokens, added to your own local config, never committed.
 
@@ -71,7 +71,7 @@ flowchart TD
     B --> BW{Trimmed to ~0 lines?}
     BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
     BW -- no --> C[Digest: logcat_digest.py]
-    C --> D[Link: group + match log-signatures.md]
+    C --> D[Link: group related entries]
     D --> E[Map: Repowise class/module lookup]
     E --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
@@ -85,8 +85,6 @@ Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.
 raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted and, if it
 holds more than one text log, merged in chronological order) into the single file `logcat_trim.py`
 expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by signature.
-`log-signatures.md`'s "Tag → module map" is filled in once by hand from a scan of this repo's
-`Log.d/Log.w/Log.e` call sites, then kept up to date as new tags are added.
 
 ## 4. Agents
 
@@ -186,7 +184,8 @@ Copilot event payloads and permission decisions.
 Each script reads one JSON object on stdin (`event`, `tool`, `paths`, `command`, `text`) and writes
 one JSON decision (`allow` / `deny` / `ask`) to stdout. A non-zero exit or a 30-second timeout both
 fall back — a crash denies the action, a timeout silently allows it (open item 4 in §9). Full
-protocol: [`.github/hooks/hook-protocol.md`](../.github/hooks/hook-protocol.md).
+protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/github-workflow/blob/develop/.github/hooks/hook-protocol.md)
+(in the workflow repo; not installed into the app repo).
 
 ## 7. MCP servers
 
@@ -259,14 +258,13 @@ versus a convention this workflow invented for itself.
 ├── workflow.prompt.md                 pre-existing team doc, if any — linked, not written here
 ├── docs/workflows/                    pre-existing team docs, if any
 ├── docs/workflow-design.md            this document
-├── docs/field-sources.md              evidence guide for project-context.md / architecture.md
 ├── .gitignore                         .logs/ ignored
 ├── specs/
 │   └── .templates/
 │       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention
 ├── .logs/                             created lazily, git-ignored — see §10.2
 └── .github/
-    ├── workflow-sync.md               written every install.sh/install.ps1 run — version, commit, timestamp; never hand-edited
+    ├── workflow-sync.md               written every install.sh run — version, commit, timestamp; never hand-edited
     ├── copilot-instructions.md        settings block + module map + key rules + links
     ├── instructions/
     │   ├── kotlin.instructions.md
@@ -300,8 +298,7 @@ versus a convention this workflow invented for itself.
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py
-    │   ├── scripts/logcat_digest.py
-    │   └── log-signatures.md
+    │   └── scripts/logcat_digest.py
     ├── skills/
     │   ├── qatalyst-new-feature/SKILL.md
     │   ├── qatalyst-new-screen/SKILL.md
@@ -330,10 +327,8 @@ versus a convention this workflow invented for itself.
     │   └── qatalyst-ticket-ship.prompt.md
     ├── hooks/
     │   ├── guards.json
-    │   ├── hook-protocol.md
     │   ├── sensitive-paths.txt
-    │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each .sh + .ps1)
-    ├── mcp/jetbrains-mcp.example.json
+    │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each a .sh)
 ```
 
 ### 10.2 Per-ticket runtime additions
@@ -375,7 +370,7 @@ by this workflow; GitHub Copilot has no knowledge of any of these and assigns th
 | `.github/agents/*.md` | Location per specification; `.agent.md` suffix is a project convention | The specification requires only that the file reside in `.github/agents/`; the `.agent.md` suffix is applied by this workflow for readability and is not required by GitHub Copilot |
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
-| `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh`/`install.ps1` run, never hand-edited |
+| `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh` run, never hand-edited |
 | `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `qatalyst-ticket-start` at the start of every ticket |

@@ -5,10 +5,29 @@ All notable changes to this workflow are recorded here. Format follows
 [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), applied to the workflow itself
 (agents/skills/hooks/prompts), not to any app repo it's installed into.
 
-Bump `VERSION` and add an entry here for every change that lands in this repo — `install.sh`/
-`install.ps1` read `VERSION` and the synced commit SHA and write both into a sync-record file in
+Bump `VERSION` and add an entry here for every change that lands in this repo — `install.sh`
+reads `VERSION` and the synced commit SHA and writes both into a sync-record file in
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
+
+## [0.1.1] - 2026-11-16
+
+### Added
+- README §2b: how to install Repowise and index the app repo (`repowise init --yes --no-prose
+  --no-editor-setup`, then `repowise hook install`), and why editor setup must stay off.
+
+### Removed
+- `.github/log-analyser/log-signatures.md`, and `qatalyst-log-analyser`'s step that matched known
+  cause chains against it. No script read it, and its noise-tag and tag-to-module tables were never
+  filled in; Repowise already does the tag-to-module mapping. Install no longer adds it to app
+  repos, but leaves an existing copy alone.
+
+### Changed
+- Install copies only what the workflow uses in the app repo. `.github/mcp/` (the JetBrains MCP
+  snippet), `docs/field-sources.md` and `.github/hooks/hook-protocol.md` stay in this repo and are
+  linked from the README and `workflow-design.md`; install removes copies an older install left.
+- macOS and Linux only: removed `install.ps1` and the four hook scripts' `.ps1` versions, and their
+  entries in `guards.json`. Re-running `install.sh` deletes the hook `.ps1` copies from app repos.
 
 ## [0.1.0] - 2026-11-13
 
