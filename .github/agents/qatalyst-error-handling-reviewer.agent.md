@@ -7,6 +7,7 @@ description: >
 tools: ['read', 'search', 'repowise/*']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 skills: ['qatalyst-repowise-lookup']
 ---
 

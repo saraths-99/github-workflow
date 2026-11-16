@@ -8,6 +8,7 @@ description: >
 tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 skills: ['qatalyst-plan-ticket', 'qatalyst-jira-ticket-intake', 'qatalyst-spec-folder-resolution', 'qatalyst-repowise-lookup', 'qatalyst-ask-developer']
 ---
 

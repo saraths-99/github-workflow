@@ -88,7 +88,7 @@ def _agents_check():
         return False, "no agents found"
     mcp_config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
     server_names = set(mcp_config.get("mcpServers", {}))
-    built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo", "vscode/askQuestions", "ask_user"}
+    built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo", "vscode/askQuestions", "ask_questions", "ask_user"}
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))
@@ -100,6 +100,10 @@ def _agents_check():
             problems.append(f"{f.name}: target must be github-copilot")
         if fields.get("user-invocable") not in ("false", "true"):
             problems.append(f"{f.name}: user-invocable must be explicitly true or false")
+        # JetBrains Copilot ignores user-invocable and hides agents by this field instead.
+        expected_policy = '["user"]' if fields.get("user-invocable") == "true" else '["model"]'
+        if fields.get("x-github-copilot-invoke-policy") != expected_policy:
+            problems.append(f"{f.name}: x-github-copilot-invoke-policy must be {expected_policy} to match user-invocable")
         if "mcp" in fields:
             problems.append(f"{f.name}: use MCP namespaces in tools, not mcp frontmatter")
         name = fields.get("name")

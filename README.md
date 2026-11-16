@@ -191,17 +191,16 @@ continue that task keeping its changes, restart it with the changes stashed, or 
 
 **One flow, no typing.** From the command (or the picker) to the PRs, the ticket runs as one flow.
 Wherever it stops for you, it asks a question with options to click — approve the plan, skip log
-analysis for a UI-only bug, ship now — using VS Code's `askQuestions` tool, or `ask_user` in the
-Copilot CLI; the only answer you ever type is what to change when you ask for changes to
+analysis for a UI-only bug, ship now — using VS Code's `askQuestions` tool, `ask_questions` in
+Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type is what to change when you ask for changes to
 `tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
 `qatalyst-ask-developer` skill holds every question and its options.
 
 **In Android Studio:** turn on Agent Skills first (Settings › GitHub Copilot › Chat › Agent; it's a
 preview feature) — the ticket flow, planning and the questions are all skills, and without them the
-agents run without their instructions. Android Studio's own Copilot chat has no question tool, so
-questions come as numbered options and you reply with the number. To click options instead, use
-the Copilot CLI agent (in the chat panel's agent list, or `copilot` in the terminal), which asks
-with `ask_user`.
+agents run without their instructions. Android Studio's Copilot chat asks its questions with its
+own `ask_questions` tool. Its agent picker hides agents by `x-github-copilot-invoke-policy` rather
+than `user-invocable`, so every agent here sets both — only `qatalyst-ticket` shows in either IDE.
 
 ### Implementation & testing
 

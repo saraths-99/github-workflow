@@ -10,6 +10,15 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.1] - 2026-11-16
+
+### Changed
+- Android Studio: the agents that ask the developer list its question tool, `ask_questions` (seen
+  registered in Android Studio's Copilot 1.21.0 log), so questions are clickable there too.
+- Every agent sets `x-github-copilot-invoke-policy` (`["user"]` for `qatalyst-ticket`, `["model"]`
+  for the rest), the field the JetBrains plugin uses to hide agents from its picker in place of
+  `user-invocable`. A static check keeps the two in step.
+
 ## [0.3.0] - 2026-11-16
 
 ### Added

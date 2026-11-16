@@ -9,6 +9,7 @@ description: >
 tools: ['read', 'search', 'agent', 'repowise/*']
 target: github-copilot
 user-invocable: false
+x-github-copilot-invoke-policy: ["model"]
 ---
 
 # qatalyst-test-writer

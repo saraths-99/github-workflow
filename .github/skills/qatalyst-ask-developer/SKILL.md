@@ -14,16 +14,16 @@ for the developer, the developer answers by picking an option, not by typing. Th
 
 ## Asking
 
-1. Ask with whichever question tool you have: `vscode/askQuestions` in VS Code, `ask_user` in the
-   Copilot CLI (including the Copilot CLI agent inside Android Studio). One short question, and 2–4
+1. Ask with whichever question tool you have: `vscode/askQuestions` in VS Code, `ask_questions` in
+   Android Studio's Copilot chat, `ask_user` in the Copilot CLI. One short question, and 2–4
    options. Put the safe or recommended option first.
 2. Each option is a complete answer that tells you exactly what to do next ("Skip log analysis",
    not "Yes"). Never offer an option that then needs a typed follow-up, except the ones marked
    below as needing text.
 3. Several independent questions at the same stop go in one `askQuestions` call, not one after
    another.
-4. Where neither tool is available (Android Studio's own Copilot chat), write the same question
-   with numbered options and accept the number alone as the answer.
+4. Where none of these tools is available, write the same question with numbered options and
+   accept the number alone as the answer.
 5. Never end a turn with an open-ended question such as "What would you like to do?" or "Let me
    know how to proceed." If you need the developer, it's one of the questions below or a new one in
    the same shape.

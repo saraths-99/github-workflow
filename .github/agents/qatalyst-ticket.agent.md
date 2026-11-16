@@ -6,9 +6,10 @@ description: >
   qatalyst-ticket-start flow /qatalyst-ticket-start does, from detecting bug vs.
   feature through planning, implementation and shipping, with every stop a
   question with options.
-tools: ['read', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_user']
+tools: ['read', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user']
 target: github-copilot
 user-invocable: true
+x-github-copilot-invoke-policy: ["user"]
 skills: ['qatalyst-ticket-start', 'qatalyst-ticket-ship', 'qatalyst-ask-developer']
 ---
 
