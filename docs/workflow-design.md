@@ -94,8 +94,9 @@ anywhere, and prompt or code content is never captured.
   spans to plain rows first and doesn't have this problem.
 
 `qatalyst-ticket-ship` runs `token_tracker.py report <ticket ID>` as its last step; a developer can
-run it any time. Output goes to `.logs/token-tracker/<ticket ID>/token-usage.csv` and
-`token-usage.md`.
+run it any time. Output goes to `.logs/token-tracker/<ticket ID>/`: `token-usage.csv` (the rows),
+`token-usage.json` (the rows under `calls`, plus `totals` and a per-agent `byAgent` breakdown), and
+`token-usage.md` (readable summary).
 
 ## 3. Log-analysis loop (bug tickets only)
 
@@ -403,6 +404,7 @@ specs/<bug|feature>/<ticket-id>/
 ├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
 └── <ticket-id>/
     ├── token-usage.csv   ticketId, agentName, model, inputTokens, outputTokens, timestamp
+    ├── token-usage.json  same rows under calls, plus totals and byAgent
     └── token-usage.md    totals by agent and by model
 ```
 

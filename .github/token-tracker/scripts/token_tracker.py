@@ -447,14 +447,30 @@ def cmd_report(root, ticket):
     out_dir = tracker_dir(root) / ticket
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(out_dir / "token-usage.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        w.writerow(FIELDS)
-        for c in mine:
-            w.writerow([ticket, c["agentName"], c["model"], c["inputTokens"], c["outputTokens"], iso(c["timestamp_ms"])])
-
     total_in = sum(c["inputTokens"] for c in mine)
     total_out = sum(c["outputTokens"] for c in mine)
+    rows = [dict(zip(FIELDS, (ticket, c["agentName"], c["model"], c["inputTokens"], c["outputTokens"], iso(c["timestamp_ms"]))))
+            for c in mine]
+    by_agent = {}
+    for r in rows:
+        a = by_agent.setdefault(r["agentName"], {"agentName": r["agentName"], "calls": 0, "inputTokens": 0, "outputTokens": 0})
+        a["calls"] += 1
+        a["inputTokens"] += r["inputTokens"]
+        a["outputTokens"] += r["outputTokens"]
+    for a in by_agent.values():
+        a["totalTokens"] = a["inputTokens"] + a["outputTokens"]
+    summary = {
+        "ticketId": ticket,
+        "totals": {"calls": len(rows), "inputTokens": total_in, "outputTokens": total_out, "totalTokens": total_in + total_out},
+        "byAgent": sorted(by_agent.values(), key=lambda a: (-a["totalTokens"], a["agentName"])),
+        "calls": rows,
+    }
+    (out_dir / "token-usage.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    with open(out_dir / "token-usage.csv", "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w.writeheader()
+        w.writerows(rows)
+
     lines = [f"# Token usage — {ticket}", ""]
     if not mine:
         lines += [
@@ -491,13 +507,13 @@ def cmd_report(root, ticket):
             "",
             "Skills and hooks make no model calls of their own: a skill's text is counted in the input tokens of "
             "the agent that loaded it, and hooks are scripts that use no tokens. Per-call rows are in "
-            "`token-usage.csv`.",
+            "`token-usage.csv` and `token-usage.json`.",
         ]
     (out_dir / "token-usage.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print()
     print("\n".join(lines))
     print()
-    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/token-usage.md and token-usage.csv")
+    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/: token-usage.md, .csv, .json")
 
 
 def ticket_arg(value):

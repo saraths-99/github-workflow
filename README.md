@@ -184,9 +184,13 @@ that, run:
 python3 .github/token-tracker/scripts/token_tracker.py report ABC-123
 ```
 
-(`py` instead of `python3` on Windows.) It prints the summary and writes
-`.logs/token-tracker/ABC-123/token-usage.csv` (one row per model call: `ticketId`, `agentName`,
-`model`, `inputTokens`, `outputTokens`, `timestamp`) and `token-usage.md`.
+(`py` instead of `python3` on Windows.) It prints the summary and writes three files to `.logs/token-tracker/ABC-123/`:
+
+- `token-usage.csv`: one row per model call, with `ticketId`, `agentName`, `model`, `inputTokens`,
+  `outputTokens`, `timestamp`.
+- `token-usage.json`: the same rows under `calls`, plus `totals` and a `byAgent` breakdown (calls,
+  input, output and total tokens per agent, largest first), for feeding into other tools.
+- `token-usage.md`: the readable summary, by agent and by model.
 
 **How a chat gets counted for a ticket:** `/qatalyst-ticket-start` and the CLI launcher record the
 ticket ID when they start, and any chat that ran on the ticket's feature branch counts too. A chat

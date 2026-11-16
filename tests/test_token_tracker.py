@@ -109,7 +109,14 @@ class TokenTrackerTest(unittest.TestCase):
         self.assertTrue(all(r["ticketId"] == "ABC-1" for r in rows))
         self.assertEqual(rows[0]["timestamp"], "2026-09-21T14:13:21Z")
         self.assertIn("2,750 tokens (2,500 input, 250 output) across 4 model calls", out)
-        stored = (self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
+        doc = json.loads((self.repo / ".logs" / "token-tracker" / "ABC-1" / "token-usage.json").read_text())
+        self.assertEqual(doc["ticketId"], "ABC-1")
+        self.assertEqual(doc["totals"], {"calls": 4, "inputTokens": 2500, "outputTokens": 250, "totalTokens": 2750})
+        self.assertEqual([(a["agentName"], a["calls"], a["totalTokens"]) for a in doc["byAgent"]], [
+            ("qatalyst-bug-planner", 2, 1320), ("qatalyst-ticket", 1, 1100), ("GitHub Copilot Chat", 1, 330),
+        ])
+        self.assertEqual(doc["calls"], [dict(r, inputTokens=int(r["inputTokens"]), outputTokens=int(r["outputTokens"])) for r in rows])
+        stored =(self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
         self.assertNotIn("9999", stored)
 
     def test_rows_survive_copilot_cleanup(self):
@@ -155,6 +162,14 @@ class TokenTrackerTest(unittest.TestCase):
         self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
         result = self.run_tool("collect")
         self.assertIn("2 lines but no readable trace records", result.stderr)
+
+    def test_ticket_with_no_calls(self):
+        self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
+        self.run_tool("report", "NONE-1")
+        doc = json.loads((self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.json").read_text())
+        self.assertEqual(doc, {"ticketId": "NONE-1", "totals": {"calls": 0, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
+                               "byAgent": [], "calls": []})
+        self.assertEqual(self.read_csv("NONE-1"), [])
 
     def test_mark_and_bad_ticket_id(self):
         self.run_tool("mark", "abc-12")
