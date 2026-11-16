@@ -233,6 +233,10 @@ protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/githu
 | Figma MCP | Linked designs, read-only | Developer's Figma sign-in |
 | Repowise | Code map, risk, dead-code (advisory only) | None — local, optional |
 
+Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoint was retired on
+30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
+workflow repo's README §2c.
+
 ## 8. Safety & control principles
 
 - **Developer approves every gate** — each spec file, every task, and the commit/push/PR step all

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "atlassian-rovo": {
-      "url": "https://mcp.atlassian.com/v1/sse"
+      "url": "https://mcp.atlassian.com/v2/mcp"
     },
     "figma": {
       "command": "npx",

@@ -102,18 +102,54 @@ still need filling in by hand, since no tool can read them off the code or guess
 2. **`project-context.md` / `architecture.md`** — draft these once from the real code (see
    [`docs/field-sources.md`](docs/field-sources.md) for what counts as solid evidence per field),
    get a developer to confirm the draft, then never regenerate them — edit by hand as facts change.
-3. **MCP setup** — both VS Code Copilot and the Copilot CLI read the workspace-root `.mcp.json`
-   directly; enable the workspace MCP config option if your VS Code version requires it, then sign
-   in to the servers as prompted. If your app repo already had `.mcp.json`, merge the
-   `atlassian-rovo`, `figma`, and `repowise` servers into it. JetBrains has its own separate
-   `mcp.json` location (not the app repo), so copy this repo's
-   [`.github/mcp/jetbrains-mcp.example.json`](.github/mcp/jetbrains-mcp.example.json) into it
-   instead. Bitbucket PR tools may need a separate local API-token configuration. Never commit a
-   filled-in token or credential. The `repowise` server only works once Repowise is installed and
-   has indexed the app repo — see §2b.
+3. **MCP servers** — set them up and sign in once per machine; see §2c.
 
-Optional integrations (Atlassian Rovo MCP, Figma MCP, Repowise) enhance the agents but aren't
-required to start using the workflow.
+### 2c. MCP servers
+
+The agents reach Jira, Confluence, Bitbucket, Figma and Repowise through MCP servers. The app repo's
+`.mcp.json` lists them:
+
+| Server | Used for | Needed? |
+|---|---|---|
+| `atlassian-rovo` | Reading the ticket and its comments, Confluence pages, moving the ticket, Bitbucket PRs and Pipelines | **Yes** — `/qatalyst-ticket-start` reads the ticket's issue type from Jira, so the flow can't start without it. Without the Bitbucket tools, ship still pushes and gives you the PR text to paste. |
+| `figma` | Reading linked designs (read-only) | Optional |
+| `repowise` | Code map, callers, change risk | Optional — needs Repowise installed and the repo indexed first (§2b) |
+
+Keep the server names as they are: the agents find the tools by them (`atlassian-rovo/*`,
+`figma/*`, `repowise/*`), so a server added under another name is invisible to them.
+
+**VS Code.** VS Code reads `.mcp.json` from the workspace root by itself (the setting
+`chat.mcp.workspaceRootConfig.enabled`, on by default). Open the Chat view's tools menu or run
+**MCP: List Servers**, start each server, and sign in to Atlassian in the browser when asked. If the
+servers don't show up there, add them by hand: Copilot settings › **MCP servers** › add each one,
+with the same name, URL or command as in `.mcp.json`.
+
+**Android Studio.**
+1. In the Copilot chat, choose **Local** from the agent options (Copilot / Cloud / Local). The
+   Local agent loads the app repo's `.mcp.json`; the others don't run against your machine.
+2. If the servers still aren't there, add them yourself: Copilot settings › **MCP servers** › add
+   each one. That file uses a slightly different layout (`servers`, with headers under
+   `requestInit`); [`.github/mcp/jetbrains-mcp.example.json`](.github/mcp/jetbrains-mcp.example.json)
+   in this repo has it ready to copy.
+3. Sign in to Atlassian when the server says it needs authorization.
+
+**Copilot CLI.** It reads the repo's `.mcp.json` too; servers of your own go in
+`~/.copilot/mcp-config.json`.
+
+**Signing in to Atlassian.** The browser sign-in is the default. If your company uses API tokens
+instead, add `"Authorization": "Basic <base64 of email:api-token>"` as a header in your *own*
+config (VS Code's user MCP settings, Android Studio's `mcp.json`) — never in the repo's `.mcp.json`,
+and never commit it. The Bitbucket tools also need an Atlassian admin to turn them on for your
+site.
+
+**If something doesn't connect:**
+- *"requires authorization"* — sign in to Atlassian from the server's entry in the MCP list.
+- *`repowise` timed out* — Repowise isn't installed or the repo isn't indexed yet (§2b).
+- *`figma` timed out* — `npx` downloads the server on first start, which can outlast the start
+  timeout; start it again once the download has finished.
+- *Atlassian worked before and now fails* — an app repo installed before 0.3.2 still points at the
+  retired `https://mcp.atlassian.com/v1/sse`. Install never overwrites `.mcp.json`, so change that
+  URL to `https://mcp.atlassian.com/v2/mcp` by hand.
 
 ### 2b. Repowise (optional)
 

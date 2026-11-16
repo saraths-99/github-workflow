@@ -10,6 +10,20 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.2] - 2026-11-16
+
+### Added
+- README §2c: setting up and signing in to the MCP servers in VS Code, Android Studio (choose the
+  Local agent; add servers under Copilot settings › MCP servers if needed) and the Copilot CLI,
+  which servers the flow needs, and what to do when one doesn't connect.
+
+### Changed
+- `atlassian-rovo` points at `https://mcp.atlassian.com/v2/mcp`, the URL Atlassian documents now;
+  the old `/v1/sse` endpoint was deprecated and retired on 30 June 2026. Install doesn't overwrite
+  an app repo's `.mcp.json`, so existing app repos need the URL changed by hand.
+- `.github/mcp/jetbrains-mcp.example.json` uses the layout Android Studio's own `mcp.json` has
+  (`servers`, headers under `requestInit`) and the new Atlassian URL.
+
 ## [0.3.1] - 2026-11-16
 
 ### Changed
