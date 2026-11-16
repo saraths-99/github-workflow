@@ -22,6 +22,15 @@ particular, you never ask about the spec folder — it's computed deterministica
 `specs/<bug|feature>/<ticket ID>/` from the ticket type you just detected, so there's nothing for
 any agent to ask about.
 
+## Token tracking
+
+Before step 0, if you can run terminal commands, run
+`python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>` (`py` instead of `python3`
+on Windows). It only appends a line to `.logs/token-tracker/markers.jsonl`, so this chat's model calls
+can be linked to the ticket later. If you can't run commands, skip it without comment: the report
+still links this chat once one of its turns runs on the ticket's feature branch. Never let this step
+fail or delay the ticket.
+
 ## 0. Detect whether this is a bug
 
 `jira_projects` (in `copilot-instructions.md`'s settings block) is a list, one entry per Jira

@@ -22,6 +22,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`) |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
+| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launchers, and the VS Code setting it needs (see §3, "Token usage per ticket") |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
@@ -43,7 +44,7 @@ irm https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install
 ```
 
 This downloads this repo and copies `.github/` (agents, skills, instructions, hooks, prompts,
-the JetBrains MCP reference snippet, log-analyser scripts), `.mcp.json` if the app repo doesn't
+the JetBrains MCP reference snippet, log-analyser scripts, token tracker), `.mcp.json` if the app repo doesn't
 already have one, `specs/.templates/`, and `docs/workflow-design.md` +
 `docs/field-sources.md` into the app repo. Run it again any time this repo changes, to pick up the
 update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
@@ -51,6 +52,10 @@ but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md
 `hooks/sensitive-paths.txt` or `log-analyser/log-signatures.md` if they already exist, since those
 hold the app repo's own project data. Everything it touches lands in a normal git working tree, so
 `git status`/`git diff` shows exactly what changed and it's trivially reversible.
+
+If the app repo has no `.vscode/settings.json`, the install also creates one holding the single
+Copilot setting token tracking needs. If it already has one, the install leaves it alone and prints
+the line to add yourself.
 
 Every run also writes `.github/workflow-sync.md` into the app repo, recording which version and
 commit of this workflow it just synced from, and when. Check that file to see what an app repo is
@@ -64,7 +69,7 @@ extracted folder:
 
 - `.github/agents/`, `.github/instructions/`, `.github/skills/`, `.github/prompts/`,
   `.github/log-analyser/scripts/` (just the scripts, not `log-signatures.md`), `.github/mcp/`,
-  `.github/hooks/scripts/` — for each of these, **delete the app repo's existing folder first,
+  `.github/token-tracker/`, `.github/hooks/scripts/` — for each of these, **delete the app repo's existing folder first,
   then copy the new one in**; don't paste on top of what's there. `install.sh` does this same
   delete-then-copy itself (`sync_dir`'s `rm -rf` before its `cp`), specifically so a file renamed
   or removed in this repo disappears from the app repo too. Pasting on top instead leaves the old
@@ -79,6 +84,8 @@ extracted folder:
   copy these **only if the app repo doesn't already have them**. If it does, leave them alone;
   they hold that app's own settings and data, not this repo's.
 - Add `.logs/` to the app repo's `.gitignore` if it's not already there.
+- Copy `.github/token-tracker/vscode-settings.json` to `.vscode/settings.json` only if the app repo
+  has no such file; otherwise add its one line to the existing file.
 - If your file manager ever offers to "keep both" on a naming conflict instead of replacing,
   decline it — that's how literal duplicate files (`name (1).md`) end up committed by accident.
 
@@ -134,6 +141,8 @@ Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; 
 covers it with
 tests. Project skills (`/qatalyst-new-screen`, `/qatalyst-new-ble-command`, `/qatalyst-new-api-call`, `/qatalyst-room-migration`) handle
 the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a task that spans the stack.
+Once the last task is ticked, `qatalyst-developer` shows the ticket's token usage (see below) and
+tells you it's ready to ship.
 
 ### Shipping
 
@@ -146,6 +155,55 @@ the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a tas
 3. Builds and tests locally.
 4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and
    moves the ticket to In Review.
+
+### Token usage per ticket
+
+The workflow can report how many tokens a ticket used, split by agent and sub-agent and by model.
+It reads only what Copilot records on your own machine; nothing is uploaded, and your prompts and
+code are never recorded. Requires Python 3.9 or newer.
+
+**Turning it on, once per machine:**
+
+- **VS Code:** the setting `"github.copilot.chat.otel.dbSpanExporter.enabled": true`. The install
+  adds it to `.vscode/settings.json` for you if that file didn't exist; otherwise add it yourself,
+  in that file or your user settings. Tracking also stops if VS Code's own `telemetry.telemetryLevel`
+  is `off`.
+- **Android Studio:** its Copilot chat panel can't record token usage yet (the plugin has no trace
+  export). Use the Copilot CLI in Android Studio's terminal instead, started through the launcher so
+  tracking is on:
+
+  ```bash
+  .github/token-tracker/copilot-tracked.sh ABC-123
+  ```
+
+  On Windows: `.github\token-tracker\copilot-tracked.ps1 ABC-123`.
+
+**Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
+and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
+shipping to include the review and ship steps), run:
+
+```bash
+python3 .github/token-tracker/scripts/token_tracker.py report ABC-123 --open
+```
+
+(`py` instead of `python3` on Windows; leave out `--open` to skip the browser.) It prints the
+summary and writes two files to `.logs/token-tracker/ABC-123/`:
+
+- `token-usage.html`: the report as a page: totals, a bar per agent and per model, and every model
+  call. Self-contained (no scripts, nothing fetched from the internet), so it opens offline. Over
+  SSH or anywhere else without a local display, `--open` prints the file's path instead.
+- `token-usage.json`: one row per model call under `calls` (`ticketId`, `agentName`, `model`,
+  `inputTokens`, `outputTokens`, `timestamp`), plus `totals` and a `byAgent` breakdown (calls,
+  input, output and total tokens per agent, largest first), for feeding into other tools.
+
+**How a chat gets counted for a ticket:** `/qatalyst-ticket-start` and the CLI launcher record the
+ticket ID when they start, and any chat that ran on the ticket's feature branch counts too. A chat
+that did neither (for example, planning started from the `qatalyst-ticket` picker that you abandoned
+before a branch was created) isn't counted; run
+`python3 .github/token-tracker/scripts/token_tracker.py mark ABC-123` at the start of such a chat to
+include it. Skills and hooks don't appear as separate rows: they make no model calls of their own.
+Copilot deletes its trace data after 7 days, so run `report` (or `collect`) at least weekly on a
+long-running ticket; everything it has copied stays in `.logs/token-tracker/`.
 
 ## 4. Maintenance
 

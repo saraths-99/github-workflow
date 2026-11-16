@@ -45,4 +45,11 @@ task's test before ticking it. Don't tick a task on the strength of production c
 
 ## When every task is ticked
 
-Tell the developer the ticket is ready for `/qatalyst-ticket-ship` — you do not run the ship step yourself.
+1. Run `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID> --open` (`py`
+   instead of `python3` on Windows) and show the developer the summary it prints: the ticket's total
+   tokens and the split by agent and model. It reads local trace files only, writes to
+   `.logs/token-tracker/<ticket ID>/` (gitignored, never committed), and opens the HTML version,
+   `token-usage.html`, in the developer's browser; where it can't open one, it prints the file's
+   path instead, so pass that on. If it fails or finds no calls, say so in one line and carry on.
+2. Tell the developer the ticket is ready for `/qatalyst-ticket-ship` — you do not run the ship step
+   yourself.
