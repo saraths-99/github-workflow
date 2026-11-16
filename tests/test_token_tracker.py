@@ -1,5 +1,4 @@
 """Tests for .github/token-tracker/scripts/token_tracker.py. Run: python3 -m unittest tests/test_token_tracker.py"""
-import csv
 import json
 import os
 import sqlite3
@@ -63,9 +62,8 @@ class TokenTrackerTest(unittest.TestCase):
         with open(d / "markers.jsonl", "a") as f:
             f.write(json.dumps({"ticketId": ticket, "timestamp_ms": ts}) + "\n")
 
-    def read_csv(self, ticket):
-        with open(self.repo / ".logs" / "token-tracker" / ticket / "token-usage.csv") as f:
-            return list(csv.DictReader(f))
+    def read_rows(self, ticket):
+        return json.loads((self.repo / ".logs" / "token-tracker" / ticket / "token-usage.json").read_text())["calls"]
 
     def build_db(self):
         conn = sqlite3.connect(self.db)
@@ -100,11 +98,11 @@ class TokenTrackerTest(unittest.TestCase):
         self.build_db()
         self.write_marker("ABC-1", T0 + 500)
         out = self.run_tool("report", "abc-1").stdout
-        rows = self.read_csv("ABC-1")
+        rows = self.read_rows("ABC-1")
         self.assertEqual(list(rows[0].keys()), ["ticketId", "agentName", "model", "inputTokens", "outputTokens", "timestamp"])
         self.assertEqual([(r["agentName"], r["inputTokens"]) for r in rows], [
-            ("qatalyst-ticket", "1000"), ("qatalyst-bug-planner", "500"), ("qatalyst-bug-planner", "700"),
-            ("GitHub Copilot Chat", "300"),
+            ("qatalyst-ticket", 1000), ("qatalyst-bug-planner", 500), ("qatalyst-bug-planner", 700),
+            ("GitHub Copilot Chat", 300),
         ])
         self.assertTrue(all(r["ticketId"] == "ABC-1" for r in rows))
         self.assertEqual(rows[0]["timestamp"], "2026-09-21T14:13:21Z")
@@ -115,7 +113,8 @@ class TokenTrackerTest(unittest.TestCase):
         self.assertEqual([(a["agentName"], a["calls"], a["totalTokens"]) for a in doc["byAgent"]], [
             ("qatalyst-bug-planner", 2, 1320), ("qatalyst-ticket", 1, 1100), ("GitHub Copilot Chat", 1, 330),
         ])
-        self.assertEqual(doc["calls"], [dict(r, inputTokens=int(r["inputTokens"]), outputTokens=int(r["outputTokens"])) for r in rows])
+        self.assertEqual(sorted(p.name for p in (self.repo / ".logs" / "token-tracker" / "ABC-1").iterdir()),
+                         ["token-usage.html", "token-usage.json"])
         stored =(self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
         self.assertNotIn("9999", stored)
 
@@ -128,7 +127,7 @@ class TokenTrackerTest(unittest.TestCase):
         conn.commit()
         conn.close()
         self.run_tool("report", "ABC-1")
-        self.assertEqual(len(self.read_csv("ABC-1")), 4)
+        self.assertEqual(len(self.read_rows("ABC-1")), 4)
 
     def test_cli_trace_file(self):
         d = self.repo / ".logs" / "token-tracker"
@@ -151,9 +150,9 @@ class TokenTrackerTest(unittest.TestCase):
         self.write_marker("XY-7", T0)
         self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
         self.run_tool("report", "XY-7")
-        rows = self.read_csv("XY-7")
+        rows = self.read_rows("XY-7")
         self.assertEqual([(r["agentName"], r["inputTokens"], r["outputTokens"]) for r in rows],
-                         [("qatalyst-developer", "40", "4"), ("qatalyst-developer", "60", "6")])
+                         [("qatalyst-developer", 40, 4), ("qatalyst-developer", 60, 6)])
 
     def test_unreadable_trace_file_warns(self):
         d = self.repo / ".logs" / "token-tracker"
@@ -188,7 +187,6 @@ class TokenTrackerTest(unittest.TestCase):
         doc = json.loads((self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.json").read_text())
         self.assertEqual(doc, {"ticketId": "NONE-1", "totals": {"calls": 0, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
                                "byAgent": [], "calls": []})
-        self.assertEqual(self.read_csv("NONE-1"), [])
         page = (self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.html").read_text()
         self.assertIn("No model calls found for this ticket.", page)
 

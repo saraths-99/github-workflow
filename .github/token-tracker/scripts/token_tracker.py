@@ -5,7 +5,7 @@
   token_tracker.py collect              copy new model calls from Copilot's traces into .logs/
   token_tracker.py report <ticket ID> [--open]
                                         collect, then write that ticket's usage report
-                                        (.html, .md, .csv, .json); --open shows the HTML page
+                                        (.html, .json); --open shows the HTML page
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
@@ -13,7 +13,6 @@ file (written when the CLI is started through copilot-tracked.sh / copilot-track
 Standard library only.
 """
 import argparse
-import csv
 import html
 import json
 import os
@@ -560,7 +559,7 @@ def render_html(summary, sources):
             "</tbody></table></div>",
             "<footer>Skills and hooks make no model calls of their own: a skill's text is counted in the input "
             "tokens of the agent that loaded it, and hooks are scripts that use no tokens. Same data as "
-            "<code>token-usage.json</code> and <code>token-usage.csv</code> in this folder.</footer>",
+            "<code>token-usage.json</code> in this folder.</footer>",
         ]
     parts.append("</main></body></html>\n")
     return "".join(parts)
@@ -615,11 +614,8 @@ def cmd_report(root, ticket, open_page=False):
         "calls": rows,
     }
     (out_dir / "token-usage.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    with open(out_dir / "token-usage.csv", "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
-        w.writeheader()
-        w.writerows(rows)
 
+    # Printed only, as the summary an agent passes on; the files are the .html and .json.
     lines = [f"# Token usage — {ticket}", ""]
     if not mine:
         lines += [
@@ -656,15 +652,14 @@ def cmd_report(root, ticket, open_page=False):
             "",
             "Skills and hooks make no model calls of their own: a skill's text is counted in the input tokens of "
             "the agent that loaded it, and hooks are scripts that use no tokens. Per-call rows are in "
-            "`token-usage.csv` and `token-usage.json`.",
+            "`token-usage.html` and `token-usage.json`.",
         ]
-    (out_dir / "token-usage.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     page = out_dir / "token-usage.html"
     page.write_text(render_html(summary, sorted({c["source"] for c in mine})), encoding="utf-8")
     print()
     print("\n".join(lines))
     print()
-    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/: token-usage.html, .md, .csv, .json")
+    print(f"Written to {out_dir.relative_to(root) if out_dir.is_relative_to(root) else out_dir}/: token-usage.html, token-usage.json")
     if open_page:
         if open_in_browser(page):
             print(f"Opened {page} in your browser.")

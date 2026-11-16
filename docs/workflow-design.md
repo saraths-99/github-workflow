@@ -97,9 +97,8 @@ anywhere, and prompt or code content is never captured.
 `tasks.md` is ticked, before pointing the developer at `/qatalyst-ticket-ship`; a developer can run
 it again any time, for example after shipping to include the review and ship steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
 `token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
-there's a local display), `token-usage.csv` (the rows), `token-usage.json` (the rows under `calls`,
-plus `totals` and a per-agent `byAgent` breakdown), and `token-usage.md` (readable summary). All
-four come from the same data.
+there's a local display) and `token-usage.json` (one row per call under `calls`, plus `totals` and a
+per-agent `byAgent` breakdown). Both come from the same data.
 
 ## 3. Log-analysis loop (bug tickets only)
 
@@ -407,9 +406,8 @@ specs/<bug|feature>/<ticket-id>/
 ├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
 └── <ticket-id>/
     ├── token-usage.html  the report as a page; opened by report --open
-    ├── token-usage.csv   ticketId, agentName, model, inputTokens, outputTokens, timestamp
-    ├── token-usage.json  same rows under calls, plus totals and byAgent
-    └── token-usage.md    totals by agent and by model
+    └── token-usage.json  ticketId, agentName, model, inputTokens, outputTokens, timestamp per call,
+                          plus totals and byAgent
 ```
 
 ### 10.3 Naming conventions: specification compliance

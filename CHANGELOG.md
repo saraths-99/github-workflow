@@ -16,8 +16,8 @@ changed since its last sync.
 - Per-ticket token tracking (`.github/token-tracker/`): `token_tracker.py mark/collect/report`
   writes one row per model call (`ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`,
   `timestamp`) plus totals by agent and model to `.logs/token-tracker/<ticket ID>/`, as
-  `token-usage.html` (self-contained page, opened in the browser by `report --open`),
-  `token-usage.csv`, `token-usage.json` (rows plus `totals` and `byAgent`) and `token-usage.md`. Reads VS Code
+  `token-usage.html` (self-contained page, opened in the browser by `report --open`) and
+  `token-usage.json` (rows plus `totals` and `byAgent`). Reads VS Code
   Copilot Chat's local trace database and the Copilot CLI's trace file; the Android Studio chat
   panel has no trace export, so Android Studio users run the Copilot CLI through
   `copilot-tracked.sh`/`.ps1`.
