@@ -10,6 +10,32 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.0] - 2026-11-16
+
+### Added
+- `qatalyst-ask-developer` skill: every place the workflow stops for the developer is a question
+  with options to click (VS Code's `vscode/askQuestions` tool, or `ask_user` in the Copilot CLI,
+  including its agent inside Android Studio; numbered options in Android Studio's own Copilot chat),
+  never an open-ended prompt. Requesting changes to `tasks.md` is the only
+  typed answer.
+
+### Changed
+- `/qatalyst-ticket-start` (and the `qatalyst-ticket` picker agent) now carry a ticket through as
+  one flow: plan approval, branch, In Progress, `qatalyst-developer` through every task, then
+  "Ship it now" runs `qatalyst-ticket-ship`. `/qatalyst-ticket-ship` still works on its own.
+- Running `/qatalyst-ticket-start` again on a ticket resumes it instead of starting over: an
+  existing draft goes to the approval question, ticked tasks or a feature branch continue from the
+  first unticked task, and all tasks ticked goes to the ship question. If the last chat broke
+  partway through a task or the ship step (`.logs/<ticket ID>/in-progress.json` is still there), it
+  says so and asks whether to continue keeping the changes, restart with them stashed, or stop.
+- No ticket ID given: the developer's open Jira tickets are offered to pick from.
+- Missing log attachment: "I've attached it now — check again" replaces re-running the command.
+- Sub-agents that can't ask the developer return the question to `qatalyst-ticket-start`, which
+  asks it; the planners no longer run the approval gate themselves.
+- README: Android Studio needs Agent Skills turned on (a preview setting) for the ticket flow.
+- `qatalyst-ticket` gains `execute` (for the branch, the token mark and pushing) and the
+  `qatalyst-ticket-ship` skill.
+
 ## [0.2.1] - 2026-11-16
 
 ### Added

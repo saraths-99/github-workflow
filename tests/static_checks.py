@@ -88,7 +88,7 @@ def _agents_check():
         return False, "no agents found"
     mcp_config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
     server_names = set(mcp_config.get("mcpServers", {}))
-    built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo"}
+    built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo", "vscode/askQuestions", "ask_user"}
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))

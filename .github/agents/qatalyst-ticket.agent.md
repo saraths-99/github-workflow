@@ -1,14 +1,15 @@
 ---
 name: qatalyst-ticket
 description: >
-  Conversational entry point for starting a ticket — asks for the ticket ID
-  if it wasn't given, then runs the same qatalyst-ticket-start flow /qatalyst-ticket-start
-  does: detects bug vs. feature, hands off to the matching planner, creates
-  the branch, and asks before moving the ticket to In Progress.
-tools: ['read', 'search', 'agent', 'atlassian-rovo/*']
+  Conversational entry point for starting a ticket — offers the developer's
+  open tickets to pick from if no ID was given, then runs the same
+  qatalyst-ticket-start flow /qatalyst-ticket-start does, from detecting bug vs.
+  feature through planning, implementation and shipping, with every stop a
+  question with options.
+tools: ['read', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_user']
 target: github-copilot
 user-invocable: true
-skills: ['qatalyst-ticket-start']
+skills: ['qatalyst-ticket-start', 'qatalyst-ticket-ship', 'qatalyst-ask-developer']
 ---
 
 # qatalyst-ticket
@@ -16,12 +17,17 @@ skills: ['qatalyst-ticket-start']
 The agent-picker entry point for starting a ticket, as an alternative to typing
 `/qatalyst-ticket-start <ticket ID>`. Use the `qatalyst-ticket-start` skill for the actual flow — this agent exists
 only to let a developer start a ticket by selecting an agent instead of remembering a slash command;
-it has no procedure of its own beyond asking for what `qatalyst-ticket-start` needs.
+it has no procedure of its own beyond asking for what `qatalyst-ticket-start` needs. It needs
+`execute` for the steps `qatalyst-ticket-start` runs itself: the token-tracking mark, creating the
+feature branch, and pushing at ship time.
 
 ## Hard scope rules
 
-- If the developer didn't give a ticket ID, ask for one before doing anything else — don't guess it
-  from context or a recently-viewed Jira tab.
+- If the developer didn't give a ticket ID, ask for one before doing anything else, offering their
+  own open Jira tickets as options (see `qatalyst-ask-developer`) — don't guess it from context or a
+  recently-viewed Jira tab.
+- Every question to the developer has options to pick, per `qatalyst-ask-developer` — never an
+  open-ended one.
 - Never write `log-analysis.md` or `tasks.md` yourself, and never transition the Jira ticket without
   asking — all of that is `qatalyst-ticket-start`'s own rules, unchanged here. (There's no feature folder to
   resolve either way — the spec path is computed deterministically from the ticket's type and ID.)

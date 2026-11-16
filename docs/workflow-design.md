@@ -198,7 +198,7 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 | **Orchestration** | `qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests` (routes to `qatalyst-test-writer` for a standalone test-only task, same as a ticket task) |
 | **Implementation** | `qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration` |
 | **Agent-support** (not a slash command — delegated to by the agents it backs) | `qatalyst-plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`) — the only agent-support skill left; `review-diff`, `review-security`, `review-error-handling`, and `analyse-logs` were folded directly into their one respective caller's own agent body (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-log-analyser`) since each had exactly one caller and no sharing to preserve |
-| **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `qatalyst-jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `qatalyst-spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `qatalyst-repowise-lookup` (the Repowise-then-fallback, check-once pattern), `qatalyst-koin-wiring` (registering a binding in `AppModule.kt`) |
+| **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `qatalyst-jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `qatalyst-spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `qatalyst-repowise-lookup` (the Repowise-then-fallback, check-once pattern), `qatalyst-ask-developer` (every stop is a question with options — `vscode/askQuestions` in VS Code, `ask_user` in the Copilot CLI, numbered options where neither exists — never an open-ended prompt), `qatalyst-koin-wiring` (registering a binding in `AppModule.kt`) |
 
 `qatalyst-ticket` is a `user-invocable: true` agent-picker entry point that wraps `qatalyst-ticket-start` with
 no procedure of its own — an alternative surface to typing `/qatalyst-ticket-start <ticket ID>`, not a
@@ -348,6 +348,7 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-jira-ticket-intake/SKILL.md       cross-cutting
     │   ├── qatalyst-spec-folder-resolution/SKILL.md   cross-cutting
     │   ├── qatalyst-repowise-lookup/SKILL.md          cross-cutting
+    │   ├── qatalyst-ask-developer/SKILL.md            cross-cutting
     │   ├── qatalyst-write-tests/SKILL.md
     │   ├── qatalyst-ticket-start/SKILL.md
     │   └── qatalyst-ticket-ship/
@@ -392,7 +393,8 @@ specs/<bug|feature>/<ticket-id>/
 ├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads
 │   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
-└── digest.md             error groups with counts and first/last times
+├── digest.md             error groups with counts and first/last times
+└── in-progress.json      only while a task or the ship step runs; still there on resume = the last chat broke midway
 
 .logs/token-tracker/
 ├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time

@@ -9,7 +9,8 @@ Run the `qatalyst-ticket-ship` skill:
 2. Run `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
    if flagged) and the local
    build/tests.
-3. Show the planned PRs and merge order, and ask once before pushing anything.
+3. Show the planned PRs and merge order, and ask once before pushing anything: push and open the
+   PRs, or cancel.
 4. On confirmation, push and open one cross-linked PR per repo, in merge order.
 5. Check each repo's Pipelines run where Pipelines is on; note it in the PR description where it's
    off.

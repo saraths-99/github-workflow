@@ -25,10 +25,12 @@ treat every step below as per-repo unless it says otherwise.
    pass with no open comments, in every repo.
 3. Build and run tests locally with `isLocalBuild=true`, in every repo touched.
 4. **Ask the developer once**, showing: the planned PRs and their merge order (which repo depends on
-   which), the files that will be pushed in each, and each PR's title and description. Do nothing in
-   steps 5–7 until they say yes.
+   which), the files that will be pushed in each, and each PR's title and description. Ask with
+   options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7
+   until they pick "push".
 5. On confirmation, commit, push `feature/<ticket ID>-<slug>` in each repo, and open one
-   cross-linked Bitbucket PR per repo, in merge order. The spec folder
+   cross-linked Bitbucket PR per repo, in merge order. When continuing a ship that a broken chat
+   left partway, check each repo first and skip the push or PR it already has. The spec folder
    (`specs/<bug|feature>/<ticket ID>/`) ships in whichever repo owns it (see `architecture.md`'s
    module map) — never duplicated across repos.
 6. Check whether Bitbucket Pipelines is on for each repo (see `pipelines-detection.md`'s three-step

@@ -166,8 +166,8 @@ with `repowise telemetry disable` if your project needs that. To remove it from 
 
 **Or, without typing a command:** pick `qatalyst-ticket` from Copilot Chat's custom-agent picker
 instead — it's the one agent in this workflow marked `user-invocable: true`, so it's the only one
-that shows up there. Selecting it starts the same `qatalyst-ticket-start` flow; it just asks for
-the ticket ID conversationally if you don't give one with your first message. Every other agent in
+that shows up there. Selecting it starts the same `qatalyst-ticket-start` flow; if you don't give a
+ticket ID with your first message, it offers your open Jira tickets to pick from. Every other agent in
 this workflow is `user-invocable: false` — hidden from the picker, only ever reached by one agent
 handing off to another, never by picking it yourself.
 
@@ -178,6 +178,30 @@ handing off to another, never by picking it yourself.
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
    not three.
 3. Creates the feature branch and asks before moving the ticket to In Progress.
+4. Runs `qatalyst-developer` through every task, then asks whether to ship now; picking "Ship it
+   now" runs the shipping steps below in the same chat.
+
+**Picking up where it stopped.** If the chat breaks, or you stop at a question, run
+`/qatalyst-ticket-start <ticket ID>` again (in a new chat is fine). It works out where the ticket
+is from `tasks.md` and the feature branch: an unapproved draft goes back to the approval question,
+a half-done ticket continues from the first unticked task, and a finished one goes to the ship
+question. Nothing is re-planned. If the last chat broke in the middle of a task (or of shipping),
+it tells you so — which task, when it started, how many files are changed — and asks whether to
+continue that task keeping its changes, restart it with the changes stashed, or stop.
+
+**One flow, no typing.** From the command (or the picker) to the PRs, the ticket runs as one flow.
+Wherever it stops for you, it asks a question with options to click — approve the plan, skip log
+analysis for a UI-only bug, ship now — using VS Code's `askQuestions` tool, or `ask_user` in the
+Copilot CLI; the only answer you ever type is what to change when you ask for changes to
+`tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
+`qatalyst-ask-developer` skill holds every question and its options.
+
+**In Android Studio:** turn on Agent Skills first (Settings › GitHub Copilot › Chat › Agent; it's a
+preview feature) — the ticket flow, planning and the questions are all skills, and without them the
+agents run without their instructions. Android Studio's own Copilot chat has no question tool, so
+questions come as numbered options and you reply with the number. To click options instead, use
+the Copilot CLI agent (in the chat panel's agent list, or `copilot` in the terminal), which asks
+with `ask_user`.
 
 ### Implementation & testing
 
@@ -185,20 +209,21 @@ Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; 
 covers it with
 tests. Project skills (`/qatalyst-new-screen`, `/qatalyst-new-ble-command`, `/qatalyst-new-api-call`, `/qatalyst-room-migration`) handle
 the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a task that spans the stack.
-Once the last task is ticked, `qatalyst-developer` shows the ticket's token usage (see below) and
-tells you it's ready to ship.
+Once the last task is ticked, `qatalyst-developer` shows the ticket's token usage (see below), and
+the flow asks whether to ship now.
 
 ### Shipping
 
-**Command:** `/qatalyst-ticket-ship`
+Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". If you picked
+"Stop here, I'll ship later", run it on its own with **`/qatalyst-ticket-ship`**.
 
 1. Confirms every task is ticked.
 2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
    for flagged diffs) against
    the spec.
 3. Builds and tests locally.
-4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and
-   moves the ticket to In Review.
+4. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR,
+   waits on Pipelines where it's on, and moves the ticket to In Review.
 
 ### Token usage per ticket
 
