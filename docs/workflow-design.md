@@ -134,6 +134,16 @@ model-driven delegation enabled. Agents that delegate include the `agent` tool; 
 repo skill list it in `skills`. The portable server definitions live in the workspace-root
 `.mcp.json`.
 
+Each agent's `tools` also lists the names Android Studio's Copilot registers its tools under, after
+the VS Code groups they correspond to: `read` → `read_file`, `list_dir`, `get_errors`; `search` →
+`grep_search`, `file_search`, `semantic_search`; `edit` → `insert_edit_into_file`, `create_file`;
+`execute` → `run_in_terminal`, `get_terminal_output`. Each IDE ignores the names it doesn't know.
+Without them, a sub-agent started in Android Studio can come up with no tools, and the agent that
+started it does the work itself instead ("the subagent sandbox doesn't have access to this
+workspace's tools"). Android Studio's name for the `agent` (sub-agent) tool isn't known yet, so
+delegation there still depends on `agent` being recognised; `x-github-copilot-invoke-policy` mirrors
+`user-invocable` for its picker.
+
 **Naming migration (complete).** Every agent file and every skill folder in this workflow carries
 the `qatalyst-` prefix — the last holdouts (the nine specialized test-writer sub-agents, plus the
 13 skills and `log-ticket-intake` that were still unprefixed) were renamed in one pass, along with

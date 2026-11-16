@@ -4,7 +4,7 @@ description: >
   Reviews the ticket's diff against tasks.md, the path instructions and
   both context docs; checks change risk with Repowise. Read-only — never
   edits code.
-tools: ['read', 'search', 'agent', 'repowise/*']
+tools: ['read', 'search', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

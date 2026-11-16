@@ -10,6 +10,15 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.3] - 2026-11-16
+
+### Changed
+- Every agent's `tools` also lists Android Studio's own tool names (`read_file`, `list_dir`,
+  `get_errors`, `grep_search`, `file_search`, `semantic_search`, `insert_edit_into_file`,
+  `create_file`, `run_in_terminal`, `get_terminal_output`) for the VS Code groups it already has,
+  so sub-agents started there aren't left without workspace tools. Read-only agents get only the
+  read and search names. The sub-agent tool's Android Studio name is still unknown.
+
 ## [0.3.2] - 2026-11-16
 
 ### Added

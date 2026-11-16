@@ -89,6 +89,9 @@ def _agents_check():
     mcp_config = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
     server_names = set(mcp_config.get("mcpServers", {}))
     built_in_tools = {"read", "edit", "search", "execute", "agent", "web", "todo", "vscode/askQuestions", "ask_questions", "ask_user"}
+    # Android Studio's Copilot registers tools under these names instead of VS Code's groups.
+    built_in_tools |= {"read_file", "list_dir", "get_errors", "grep_search", "file_search", "semantic_search",
+                       "insert_edit_into_file", "create_file", "run_in_terminal", "get_terminal_output"}
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))

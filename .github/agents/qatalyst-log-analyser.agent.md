@@ -9,7 +9,7 @@ description: >
   automatically by qatalyst-ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
-tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user']
+tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

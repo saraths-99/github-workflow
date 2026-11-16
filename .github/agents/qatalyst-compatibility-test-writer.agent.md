@@ -5,7 +5,7 @@ description: >
   (LockModelNumber and the ala-carte capability interfaces). Routed to by
   test-writer for any task touching model-specific logic or adding support
   for a new model.
-tools: ['read', 'edit', 'search', 'execute', 'repowise/*']
+tools: ['read', 'edit', 'search', 'execute', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

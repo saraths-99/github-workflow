@@ -5,7 +5,7 @@ description: >
   the issue time, and identifies the log attachment's file type and
   location. The Intake step `qatalyst-log-analyser` hands off to before
   running any log script.
-tools: ['read', 'search', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user']
+tools: ['read', 'search', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
