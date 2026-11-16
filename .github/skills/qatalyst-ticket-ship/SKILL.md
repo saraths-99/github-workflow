@@ -36,6 +36,11 @@ treat every step below as per-repo unless it says otherwise.
    pass. Where it's off, say so in that PR's description instead of waiting for a check that won't
    appear.
 7. Once every repo's gate clears, move the Jira ticket to In Review.
+8. Run `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID>` (`py` instead of
+   `python3` on Windows) and show the developer the summary it prints: the ticket's total tokens and
+   the split by agent and model. It reads local trace files only and writes to
+   `.logs/token-tracker/<ticket ID>/` (gitignored, never committed). If it fails or finds no calls,
+   say so in one line; it never blocks shipping.
 
 ## If the Bitbucket tools aren't available
 

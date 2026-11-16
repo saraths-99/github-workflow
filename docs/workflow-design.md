@@ -62,6 +62,41 @@ admin turning on the Bitbucket tools — nothing this workflow controls. Without
 never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
 `qatalyst-ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
 
+### Token usage per ticket
+
+`.github/token-tracker/scripts/token_tracker.py` reports how many tokens a ticket used, one row per
+model call: `ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`, `timestamp`, plus a
+summary by agent and by model. It reads only what Copilot itself records locally; nothing is sent
+anywhere, and prompt or code content is never captured.
+
+| Where the developer works | Trace source | What's available |
+|---|---|---|
+| VS Code Copilot Chat | `agent-traces.db` in VS Code's storage for the Copilot Chat extension, turned on by `github.copilot.chat.otel.dbSpanExporter.enabled` | every model call, by agent and sub-agent |
+| Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh`/`.ps1` | same, once the CLI's record layout is confirmed on a real run |
+| Android Studio's Copilot chat panel | none: the JetBrains plugin (checked at 1.21.0) has no trace export | nothing |
+
+- **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
+  `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, and
+  the CLI launcher does it on start), or, failing that, when any turn in it ran on a branch named
+  for the ticket. The `qatalyst-ticket` picker agent has no terminal tool, so its chats rely on the
+  branch rule.
+- **Agent names.** An agent picked from the picker is recorded by Copilot as "GitHub Copilot Chat"
+  with its own name in a separate attribute; the tracker uses that name. A chat with no custom agent
+  shows as "GitHub Copilot Chat".
+- **Skills and hooks** make no model calls of their own, so they have no rows: a skill's text is
+  counted in the input tokens of the agent that loaded it.
+- **Retention.** Copilot deletes its own trace rows after 7 days, so every `collect`/`report` run
+  copies new calls into `.logs/token-tracker/calls.jsonl` (git-ignored), and reports are built from
+  that copy. Calls recorded against a different repo's remote URL are skipped.
+- **Why not Copilot's `file` exporter in VS Code.** As of Copilot Chat's current source, its file
+  exporter serializes span objects directly, which fails on a circular reference and writes `{}`
+  for every span (reproduced with OpenTelemetry SDK 2.5.1 and 2.12.1). The SQLite store converts
+  spans to plain rows first and doesn't have this problem.
+
+`qatalyst-ticket-ship` runs `token_tracker.py report <ticket ID>` as its last step; a developer can
+run it any time. Output goes to `.logs/token-tracker/<ticket ID>/token-usage.csv` and
+`token-usage.md`.
+
 ## 3. Log-analysis loop (bug tickets only)
 
 ```mermaid
@@ -334,6 +369,11 @@ versus a convention this workflow invented for itself.
     │   ├── sensitive-paths.txt
     │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each .sh + .ps1)
     ├── mcp/jetbrains-mcp.example.json
+    └── token-tracker/
+        ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
+        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on (+ .ps1)
+        ├── copilot-tracked.ps1
+        └── vscode-settings.json       the one VS Code setting tracing needs; copied to .vscode/settings.json if the app repo has none
 ```
 
 ### 10.2 Per-ticket runtime additions
@@ -356,14 +396,23 @@ specs/<bug|feature>/<ticket-id>/
 │   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 └── digest.md             error groups with counts and first/last times
+
+.logs/token-tracker/
+├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time
+├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
+├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
+└── <ticket-id>/
+    ├── token-usage.csv   ticketId, agentName, model, inputTokens, outputTokens, timestamp
+    └── token-usage.md    totals by agent and by model
 ```
 
 ### 10.3 Naming conventions: specification compliance
 
 Every path under `.github/` conforms to a documented GitHub Copilot customization path, verified
 against the [customization cheat sheet](https://docs.github.com/en/copilot/reference/customization-cheat-sheet),
-with one exception: `.github/workflow-sync.md`, a project-specific convention this workflow writes
-there purely because `.github/` is where the rest of its files already live. Every path outside
+with two exceptions: `.github/workflow-sync.md` and `.github/token-tracker/`, project-specific
+conventions this workflow keeps there purely because `.github/` is where the rest of its files
+already live. Every path outside
 `.github/` — `specs/`, the `-template.md` suffix — is also a project-specific convention introduced
 by this workflow; GitHub Copilot has no knowledge of any of these and assigns them no behavior.
 
@@ -376,6 +425,7 @@ by this workflow; GitHub Copilot has no knowledge of any of these and assigns th
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
 | `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
 | `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh`/`install.ps1` run, never hand-edited |
+| `.github/token-tracker/` | Project-specific convention | Not a GitHub Copilot concept; scripts that read Copilot's local traces. Only the setting it relies on, `github.copilot.chat.otel.dbSpanExporter.enabled`, is Copilot's own |
 | `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
 | `specs/.templates/*-template.md` | Project-specific convention | The `-template` suffix excludes the scaffold from any glob that scans `specs/**/tasks.md` for live ticket specs, while the `.md` extension preserves Markdown rendering in editors and previews |
 | `jira_projects` settings-block field (and its per-entry `key`/`bug_issue_types`) | Project-specific convention | Not a GitHub Copilot concept; read by `qatalyst-ticket-start` at the start of every ticket |

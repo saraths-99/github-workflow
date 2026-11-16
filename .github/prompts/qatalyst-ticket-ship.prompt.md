@@ -14,3 +14,5 @@ Run the `qatalyst-ticket-ship` skill:
 5. Check each repo's Pipelines run where Pipelines is on; note it in the PR description where it's
    off.
 6. Move the ticket to In Review once every repo's gate clears.
+7. Run `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID>` and show its
+   token-usage summary; never block shipping on it.

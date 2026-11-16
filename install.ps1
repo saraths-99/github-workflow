@@ -66,6 +66,7 @@ try {
     Sync-Dir ".github\prompts"
     Sync-Dir ".github\log-analyser\scripts"
     Sync-Dir ".github\mcp"
+    Sync-Dir ".github\token-tracker"
     New-Item -ItemType Directory -Force -Path (Join-Path $Target ".github\hooks\scripts") | Out-Null
     Copy-Item -Force (Join-Path $Src ".github\hooks\guards.json") (Join-Path $Target ".github\hooks\guards.json")
     Copy-Item -Force (Join-Path $Src ".github\hooks\hook-protocol.md") (Join-Path $Target ".github\hooks\hook-protocol.md")
@@ -83,6 +84,16 @@ try {
     Keep-IfPresent ".mcp.json"
     Keep-IfPresent "project-context.md"
     Keep-IfPresent "architecture.md"
+
+    # Token tracking in VS Code needs one Copilot setting; add it only to a repo with no settings
+    # file of its own, and never edit an existing one.
+    $vscodeSettings = Join-Path $Target ".vscode\settings.json"
+    if (-not (Test-Path $vscodeSettings)) {
+        New-Item -ItemType Directory -Force -Path (Join-Path $Target ".vscode") | Out-Null
+        Copy-Item -Force (Join-Path $Src ".github\token-tracker\vscode-settings.json") $vscodeSettings
+    } elseif (-not (Select-String -Path $vscodeSettings -Pattern "github.copilot.chat.otel.dbSpanExporter.enabled" -SimpleMatch -Quiet)) {
+        Write-Host '  note: for token tracking in VS Code, add "github.copilot.chat.otel.dbSpanExporter.enabled": true to .vscode\settings.json'
+    }
 
     $gitignore = Join-Path $Target ".gitignore"
     if (Test-Path $gitignore) {
