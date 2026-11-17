@@ -28,5 +28,16 @@ applyTo: "**/test/**,**/androidTest/**"
   see `qatalyst-room-migration`.
 - Tests live alongside the existing test folders for that module — don't create a new top-level
   test source set.
-- `qatalyst-code-reviewer` checks every acceptance criterion in the ticket's `tasks.md` against the
-  tests added, not just against the production code.
+- **Edge cases.** For every function the change adds or alters, ask: empty or null input; a limit or
+  boundary value; the same call twice (is it safe to repeat?); cancelled or interrupted partway; the
+  process restarted mid-way; another caller of the same code. Cover the ones that can happen, and
+  every item in the ticket's `tasks.md` Edge cases section; say which you left out and why.
+- **A bug gets a regression test.** The first acceptance criterion's test reproduces the reported
+  scenario. When the production change is small, confirm the test fails without it: temporarily
+  revert only the production files (`git stash push -- <those paths>`), run the test, restore them
+  (`git stash pop`) and check `git status` that they're back. Say whether you saw it fail; never claim
+  it did without running it.
+- **A green Gradle task is not a passing test run** where a module's build ignores test failures
+  (`architecture.md`'s Testing conventions names them): read that module's test report for failures.
+- `qatalyst-code-reviewer` checks every acceptance criterion and every edge case in the ticket's
+  `tasks.md` against the tests added, not just against the production code.

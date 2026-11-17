@@ -23,7 +23,9 @@ treat every step below as per-repo unless it says otherwise.
    `qatalyst-security-reviewer` too if `qatalyst-code-reviewer` flagged a sensitive area, and
    `qatalyst-error-handling-reviewer` too if it flagged a layer where functions can fail. All must
    pass with no open comments, in every repo.
-3. Build and run tests locally with `isLocalBuild=true`, in every repo touched.
+3. Build and run tests locally with `isLocalBuild=true`, in every repo touched. Where a module's
+   build ignores test failures (see `testing.instructions.md`), read its test report instead of
+   trusting the exit code.
 4. **Ask the developer once**, showing: the planned PRs and their merge order (which repo depends on
    which), the files that will be pushed in each, and each PR's title and description. Ask with
    options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7

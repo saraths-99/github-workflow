@@ -5,6 +5,7 @@ description: >
   the timeout, and at least one error mapping. Routed to by test-writer for
   any task that adds or changes a BLE command.
 tools: ['read', 'edit', 'search', 'execute', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
+model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

@@ -14,9 +14,25 @@ below filled out.
 ## Acceptance criteria
 
 <!-- Given/When/Then, one per testable behavior. code-reviewer and test-writer check every one of
-     these against the diff before the ticket can ship. -->
+     these against the diff before the ticket can ship.
+     For a bug, the FIRST criterion is the reported scenario itself: Given the state the report
+     describes, When the user does what they did, Then the correct behavior — not the failure. It gets
+     a test that reproduces it (and fails without the fix). If an automated test can't reproduce it
+     (hardware only, a real device), say why under Open questions and name the manual check. -->
 
 - **Given** ... **When** ... **Then** ...
+
+## Edge cases
+
+<!-- What else could go wrong around this change, and which task's test covers each. Start from the
+     callers and dependents Repowise found, log-analysis.md's "still unexplained" list, and the
+     checklist in testing.instructions.md (empty or null input, a limit or boundary value, the same
+     call twice, cancelled or interrupted partway, the process restarted mid-way), then add what is
+     specific to this ticket. A one-line fix may have one or two; write "none beyond the standard
+     checklist" only after checking. code-reviewer checks every line has a test, or a stated reason it
+     can't. -->
+
+- <edge case> → Task N's test
 
 ## Approach
 
@@ -50,11 +66,11 @@ below filled out.
 
 - [ ] **Task 1 — <short description>**
       Skill: <qatalyst-new-screen | qatalyst-new-ble-command | qatalyst-new-api-call | qatalyst-room-migration | qatalyst-new-feature>
-      Test: <what test-writer covers>
+      Test: <what test-writer covers — which acceptance criteria and edge cases>
 
 - [ ] **Task 2 — <short description>**
       Skill: <skill>
-      Test: <what test-writer covers>
+      Test: <what test-writer covers — which acceptance criteria and edge cases>
 
 <!-- ... one block per task ... -->
 

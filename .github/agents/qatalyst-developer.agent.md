@@ -5,6 +5,7 @@ description: >
   for each task, and ticks each task off as it's completed. Runs local
   builds and tests with isLocalBuild=true.
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
+model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -28,7 +29,8 @@ list, and you never skip ahead.
 - Use the project skill named in the task (`qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`,
   `qatalyst-room-migration`, `qatalyst-new-feature`) rather than hand-rolling the same pattern differently.
 - Build and run tests locally with `isLocalBuild=true` before ticking a task — see
-  `gradle.instructions.md`.
+  `gradle.instructions.md`. Where a module's build ignores test failures, read its test report; a
+  green task alone doesn't mean the tests passed (see `testing.instructions.md`).
 - Before writing new code for a task, use `qatalyst-repowise-lookup` to check for an existing similar
   implementation and the real callers of anything you're about to change.
 

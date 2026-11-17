@@ -1,57 +1,69 @@
 # Hook protocol
 
-The exact contract every guard script in `scripts/` follows, so `guards.json` can invoke any of
-them the same way regardless of what the guard checks.
+`guards.json` is in GitHub Copilot's native hook format, so Copilot runs it directly — there's no
+custom runner. Each entry calls a `.sh` in `scripts/`, which hands off to `scripts/guards.py`.
 
-## Invocation
+## Which IDEs run it
 
-The host calls the guard's `.sh` with a single JSON object on **stdin**:
+| IDE | Runs `.github/hooks/*.json`? |
+|---|---|
+| VS Code | Yes, with `chat.useHooks` on (the default). `ask` shows the normal confirmation |
+| Copilot CLI | Yes. `ask` becomes `deny` in autopilot mode |
+| Android Studio (Copilot plugin 1.21) | No — the plugin doesn't load hook files yet, so the agents' written rules are the only guard there |
+
+## Config
 
 ```json
 {
-  "event": "preToolUse",
-  "tool": "edit",
-  "paths": ["app/src/main/.../LoginFragment.kt"],
-  "command": null,
-  "text": null
+  "version": 1,
+  "hooks": {
+    "preToolUse":  [ { "type": "command", "bash": ".github/hooks/scripts/protect-secrets.sh", "timeoutSec": 30 } ],
+    "postToolUse": [ { "type": "command", "bash": ".github/hooks/scripts/format-kotlin.sh", "timeoutSec": 30 } ]
+  }
 }
 ```
 
-- `event` — `"preToolUse"` or `"postToolUse"`.
-- `tool` — the tool being called (`read`, `edit`, `runCommands`, or an MCP tool name).
-- `paths` — file paths the call touches, if any; `[]` or omitted otherwise.
-- `command` — the shell command text, only set when `tool` is `runCommands`.
-- `text` — free text being written (a Jira comment, a PR description), only set for tools that post
-  text content.
+Commands run from the repo root. There's no `matcher`: every guard runs on every tool call and
+decides for itself which calls it cares about.
 
-## Response
+## Input (stdin)
 
-The script writes exactly one JSON object to **stdout** and exits `0`:
+VS Code sends `{"hook_event_name", "cwd", "tool_name", "tool_input", ...}`; the Copilot CLI sends
+`{"cwd", "toolName", "toolArgs", ...}`, where `toolArgs` can be a JSON string. `guards.py` accepts
+both and reads, from the tool's arguments:
+
+- **paths** — any string under a key containing `path`, `file`, `uri` or `dir`, plus the files an
+  `apply_patch` names;
+- **command** — the `command` argument (terminal tools);
+- **text** — every other string (file content, a Jira comment, a PR description).
+
+## Output (stdout)
+
+- **Let the call through:** print nothing and exit 0. Never print `allow` — in VS Code that
+  auto-approves the tool and skips the developer's usual confirmation.
+- **Deny or ask:** print one object, carrying the decision both where the CLI reads it and where
+  VS Code reads it:
 
 ```json
-{"decision": "allow"}
-{"decision": "deny", "reason": "local.properties is a protected path"}
-{"decision": "ask", "reason": "this edits architecture.md"}
+{
+  "permissionDecision": "deny",
+  "permissionDecisionReason": "local.properties matches a sensitive-paths.txt entry, so Copilot can't touch it",
+  "hookSpecificOutput": { "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": "..." }
+}
 ```
-
-- `allow` — proceed.
-- `deny` — block the action; the host shows `reason` to the developer.
-- `ask` — the host prompts the developer before proceeding, if the current agent mode supports an
-  interactive ask; if it doesn't, the host treats `ask` as `deny` (per `guard-context-docs.sh`'s own
-  note).
 
 ## Failure modes
 
-- **Non-zero exit, or no valid JSON on stdout** — the host treats this as an error and denies the
-  action. A guard script should let a genuine internal error propagate (non-zero exit) rather than
-  swallow it into a false `allow`.
-- **Timeout** — 30 seconds by default. A timed-out guard falls back to normal permissions (as if the
-  guard weren't installed) — this is a host behavior, not something the script controls. Keep every
-  guard's own logic fast (string/glob matching only; no network calls) so this path is never hit in
-  practice.
+- **Exit 2, any other non-zero exit, or a crash** — the call is denied (fails closed).
+- **Timeout** (30 seconds) — the call goes ahead through normal permissions (fails open). Every
+  guard is string matching only, so this isn't hit in practice; `format-kotlin` is the one that
+  runs Gradle, and it's a `postToolUse` hook that can't block anything anyway.
 
-## `postToolUse` can't deny
+## The guards
 
-`format-kotlin` is the only `postToolUse` guard. Its `decision` field is only ever `"allow"` — the
-event has already happened by the time a `postToolUse` guard runs. Its real job is the side effect
-(running the formatter), not the decision.
+| Guard | Event | Does |
+|---|---|---|
+| `protect-secrets` | `preToolUse` | Denies a call whose paths match `sensitive-paths.txt`, or a command naming one — except the log analyser's own `logcat_extract.py` / `logcat_trim.py` run on their own (no `;`, `&&`, `|`, `` ` `` or `$(`). Denies Jira/Confluence/PR text that looks like a JWT or token |
+| `block-force-push` | `preToolUse` | Denies `git push` with `--force`, `-f` or `--force-with-lease` |
+| `guard-context-docs` | `preToolUse` | Asks before an edit to, or a command naming, `project-context.md` / `architecture.md` |
+| `format-kotlin` | `postToolUse` | After a `.kt`/`.kts` edit, runs `./gradlew ktlintFormat` (or `spotlessApply`) if the repo has one |

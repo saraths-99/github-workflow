@@ -5,6 +5,7 @@ description: >
   using the project's existing coroutine test dispatcher and fakes. Routed
   to by test-writer for any task touching one of these layers.
 tools: ['read', 'edit', 'search', 'execute', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
+model: ['GPT-6 Luna (copilot)', 'Claude Haiku 5.5 (copilot)', 'GPT-5.6 Luna (copilot)', 'Claude Haiku 4.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -30,6 +31,11 @@ layer-specific detail.
 - Every function that can fail asserts both the success path and at least one failure path mapped
   into `Result<T, ModuleError>` — never just the happy path. See `kotlin.instructions.md` and
   `data-layer.instructions.md`.
+- Edge cases, not only the failure path: empty or null input, a limit or boundary value, a repeated
+  call, cancellation, a restart — the checklist in `testing.instructions.md` plus this task's entries
+  in `tasks.md`'s Edge cases section.
+- For a bug, the test that reproduces the reported scenario (the ticket's first acceptance
+  criterion).
 - A mapper test asserts the DTO/entity never leaks past the boundary it's supposed to stop at.
 - A Room entity/DAO change gets a migration test, run against the real migration, not a
   fresh-schema shortcut.

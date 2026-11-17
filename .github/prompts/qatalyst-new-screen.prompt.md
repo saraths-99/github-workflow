@@ -1,8 +1,10 @@
 ---
 mode: agent
-description: Add a new screen (Fragment, layout, ViewModel, nav destination, test).
+model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
+description: Add a new screen (Compose screen, ViewModel, nav destination, test).
 ---
 
-Run the `qatalyst-new-screen` skill for the screen described in the argument: add the Fragment extending
-`BaseFragment`, its XML layout with View Binding, the ViewModel registered in `AppModule.kt`, the
-nav destination with Safe Args, then hand off to `qatalyst-test-writer` for the ViewModel test.
+Run the `qatalyst-new-screen` skill for the screen described in the argument: build a new screen in
+Jetpack Compose (a change to an existing screen stays in its XML layout, with its Fragment extending
+`BaseFragment`), register the ViewModel in `AppModule.kt`, add the nav destination with Safe Args,
+then hand off to `qatalyst-test-writer` for the ViewModel test.

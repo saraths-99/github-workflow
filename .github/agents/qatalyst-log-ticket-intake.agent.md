@@ -6,6 +6,7 @@ description: >
   location. The Intake step `qatalyst-log-analyser` hands off to before
   running any log script.
 tools: ['read', 'search', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
+model: ['GPT-6 Luna (copilot)', 'Claude Haiku 5.5 (copilot)', 'GPT-5.6 Luna (copilot)', 'Claude Haiku 4.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

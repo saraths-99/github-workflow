@@ -5,6 +5,7 @@ description: >
   both context docs; checks change risk with Repowise. Read-only — never
   edits code.
 tools: ['read', 'search', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
+model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -20,6 +21,9 @@ change, not you.
 
 - Every acceptance criterion in `tasks.md` is actually met by the diff, not just plausible on a
   skim.
+- Every item in `tasks.md`'s Edge cases section has a test that exercises it, or a stated reason it
+  can't; and for a bug, the first acceptance criterion has a test that reproduces the reported
+  scenario. Read the tests themselves, not just the task ticks.
 - Every task in `tasks.md` that's ticked actually corresponds to a real, present change.
 - The diff follows every path instruction file under `.github/instructions/` that applies to the
   files touched.

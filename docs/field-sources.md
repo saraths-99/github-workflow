@@ -21,7 +21,7 @@ cite it if you can, mark it inferred if you're not sure, write `TBD` if you have
 | Field | Solid evidence | Inferred-only evidence |
 |---|---|---|
 | Layering | Distinct `*/services/`, `*/repository/`, `*ViewModel.kt` present across multiple features | Only one or two features follow the pattern |
-| UI approach | `viewBinding` build flag + XML layouts, with no Compose dependency anywhere | Compose present in one module only — note as a deviation, don't average it away |
+| UI approach | `viewBinding` build flag + XML layouts for existing screens; the Compose build feature and dependency where newer screens use it | A developer note that newer screens use Compose, with no Compose in the build file read — record the note, say which file was read, and don't average the two away |
 | Navigation | Single host Activity + `NavHostFragment` + Safe Args plugin | Multiple Activities each hosting their own nav graph — note as a deviation |
 | DI | `koin-android` + `AppModule.kt` definitions covering most feature modules | A module with hand-built singletons alongside Koin elsewhere |
 | Module graph | `settings.gradle.kts` `include(...)` calls, read directly — this is a fact, not an inference | — (there is no "inferred" version of a module list) |

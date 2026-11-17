@@ -18,7 +18,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/agents/`** | The 17 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer`), review (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`qatalyst-unit-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-androidtest-writer`, `qatalyst-compatibility-test-writer`, `qatalyst-security-test-writer`, `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`, `qatalyst-performance-test-writer`, `qatalyst-chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
 | **`.github/skills/`** | Orchestration (`qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests`) and implementation skills (`qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
-| **`.github/hooks/`** | `guards.json` + the guard scripts (format, force-push block, secret protection, context-doc guard) |
+| **`.github/hooks/`** | `guards.json` (Copilot's native hook format — VS Code and the Copilot CLI run it; Android Studio doesn't yet) + the guard scripts (format, force-push block, secret protection, context-doc guard) |
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`); stays in this repo, not installed |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts |
@@ -231,6 +231,15 @@ analysis for a UI-only bug, ship now — using VS Code's `askQuestions` tool, `a
 Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type is what to change when you ask for changes to
 `tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
 `qatalyst-ask-developer` skill holds every question and its options.
+
+**Models.** You don't pick a model. Starting a ticket switches the chat to Claude Opus 5.5, which
+also runs log analysis and planning; `qatalyst-developer` and the reviewers run on Claude Sonnet 5.5,
+and most test writers on GPT-6 Luna — each agent's `model:` line sets it, and each list falls back
+across Claude and GPT models (the full table is in [docs/workflow-design.md](docs/workflow-design.md)
+§4). If a model isn't offered on your plan, the agent uses the next one in its list, or the chat's
+model. Don't switch the chat to a cheaper model partway through: VS Code won't start a sub-agent on
+a model that costs more than the chat's, and the step fails with "exceeds the current model's cost
+tier".
 
 **In Android Studio:** turn on Agent Skills first (Settings › GitHub Copilot › Chat › Agent; it's a
 preview feature) — the ticket flow, planning and the questions are all skills, and without them the
