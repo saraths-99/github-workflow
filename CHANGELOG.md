@@ -10,6 +10,23 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.0] - 2026-11-17
+
+### Changed
+- The hooks now actually run. `guards.json` is rewritten in GitHub Copilot's native hook format
+  (`hooks` keyed by `preToolUse` / `postToolUse`, `bash` command entries), which VS Code and the
+  Copilot CLI load from `.github/hooks/`; before, it was in a custom format nothing ran. Android
+  Studio's Copilot plugin doesn't load hook files yet.
+- The four guard scripts are thin wrappers around a new `scripts/guards.py`, which reads both VS
+  Code's and the CLI's payloads, prints nothing to let a call through (so the IDE's own
+  confirmation still applies), and prints a `permissionDecision` to deny or ask.
+- `protect-secrets` now also blocks commands naming a raw log (`cat .logs/<ticket>/raw/...`), which
+  the old pattern never matched, while still letting the log analyser's `logcat_extract.py` and
+  `logcat_trim.py` read them. Its token check now only applies to Jira, Confluence and PR text, so
+  Kotlin code containing `token = ...` isn't blocked.
+- `guard-context-docs` asks only on edits to `project-context.md` / `architecture.md`, not reads.
+- `hook-protocol.md` and the static hook check describe the native format.
+
 ## [0.3.3] - 2026-11-16
 
 ### Changed

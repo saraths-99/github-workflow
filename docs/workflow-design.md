@@ -216,23 +216,22 @@ replacement for it; the two must be kept in sync if `qatalyst-ticket-start`'s fl
 
 ## 6. Hooks
 
-The checked-in `guards.json` array and its `{event, tool, paths, command, text}` stdin contract
-are the workflow's existing custom guard runner, not VS Code Copilot's native hook format. Changing
-agent frontmatter does not activate these guards in a Copilot session. Before relying on them in
-VS Code, migrate them to the native `.github/hooks/*.json` command-hook schema and validate the
-Copilot event payloads and permission decisions.
+`guards.json` is in GitHub Copilot's native hook format (`version: 1`, `hooks` keyed by
+`preToolUse` / `postToolUse`, `bash` command entries), so VS Code and the Copilot CLI run it as-is.
+Android Studio's Copilot plugin (1.21) doesn't load hook files yet; there, the agents' written rules
+are the only guard.
 
 | Hook | Event | Denies / does |
 |---|---|---|
 | `format-kotlin` | `postToolUse` | Runs the formatter on an edited `.kt`/`.kts` file (never denies — event fires after the fact) |
 | `block-force-push` | `preToolUse` | Denies a shell command containing `git push` + `--force`/`--force-with-lease`/`-f` |
-| `protect-secrets` | `preToolUse` | Denies reads/edits/commands naming a `sensitive-paths.txt` entry; denies text containing a JWT or token-shaped string |
-| `guard-context-docs` | `preToolUse` | Asks before `project-context.md`/`architecture.md` is touched; `ask` degrades to `deny` if the agent mode can't ask |
+| `protect-secrets` | `preToolUse` | Denies reads/edits/commands naming a `sensitive-paths.txt` entry (the log analyser's own extract/trim scripts excepted); denies Jira/PR text containing a JWT or token-shaped string |
+| `guard-context-docs` | `preToolUse` | Asks before `project-context.md`/`architecture.md` is edited; `ask` becomes `deny` in CLI autopilot |
 
-Each script reads one JSON object on stdin (`event`, `tool`, `paths`, `command`, `text`) and writes
-one JSON decision (`allow` / `deny` / `ask`) to stdout. A non-zero exit or a 30-second timeout both
-fall back — a crash denies the action, a timeout silently allows it (open item 4 in §9). Full
-protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/github-workflow/blob/develop/.github/hooks/hook-protocol.md)
+Each `.sh` hands off to `scripts/guards.py`, which reads either IDE's payload from stdin and prints
+nothing to let a call through (printing `allow` would auto-approve it in VS Code) or one
+`permissionDecision` object to deny or ask. A crash denies the call; a 30-second timeout lets it
+through (open item 4 in §9). Full protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/github-workflow/blob/develop/.github/hooks/hook-protocol.md)
 (in the workflow repo; not installed into the app repo).
 
 ## 7. MCP servers
