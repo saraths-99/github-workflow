@@ -10,6 +10,23 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.6] - 2026-11-17
+
+### Added
+- Edge cases are now planned and checked. `tasks-template.md` has an "Edge cases" section, each line
+  tied to the task whose test covers it, drawn from the callers Repowise finds, `log-analysis.md`'s
+  unexplained items and a checklist in `testing.instructions.md` (empty or null input, a boundary
+  value, the same call twice, cancelled or interrupted partway, a restart mid-way, another caller of
+  the same code). The unit-test writer covers them, the test router's "done" requires them, and
+  `qatalyst-code-reviewer` checks every one has a test or a stated reason it can't.
+- A bug is planned with a way to see it fail: its first acceptance criterion is the reported scenario
+  itself, with a regression test that reproduces it (`qatalyst-bug-planner`, `qatalyst-plan-ticket`,
+  `testing.instructions.md`). Where a small fix makes it practical, the test is checked to fail
+  without the fix; a bug no automated test can reproduce names the manual check under Open questions.
+- A green Gradle task is not treated as a passing test run where a module's build ignores test
+  failures: `qatalyst-developer`, the ship step and `testing.instructions.md` say to read that module's
+  test report.
+
 ## [0.3.5] - 2026-11-17
 
 ### Added

@@ -53,8 +53,10 @@ three separate files and three separate approvals (requirements, then design, th
 by two different agents — that meant asking the developer to approve three times, and a duplicate
 ask for the feature folder name along the way (one agent resolved it, the next one re-confirmed
 it). `tasks.md` now carries what the old `requirements.md` and `design.md` covered — what the ticket
-is for, acceptance criteria, approach/risks — as sections ahead of the task checklist, in the single
-file `qatalyst-code-reviewer` and `qatalyst-test-writer` check against.
+is for, acceptance criteria, edge cases, approach/risks — as sections ahead of the task checklist, in
+the single file `qatalyst-code-reviewer` and `qatalyst-test-writer` check against. For a bug, the first
+acceptance criterion is the reported scenario itself, so the fix is planned with a test that
+reproduces it; each edge case is tied to the task whose test covers it.
 
 That "Can we reach Bitbucket" step is a real, current gap worth naming plainly: opening a PR and checking CI both need
 Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an

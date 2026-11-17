@@ -49,6 +49,9 @@ four means the plan file exists and is current for this diff, not that a test pa
 For a code-producing sub-agent: its test exists, passes locally, and asserts against the relevant
 acceptance criteria — this ticket's `tasks.md` for a ticket task, or the behavior described in the
 standalone request for a `qatalyst-write-tests`-originated one — not just that the code runs without
-throwing. For a plan-only sub-agent: its plan file exists and reflects this diff. Report back to
-whoever handed you the task (`qatalyst-developer`, to tick it; or the developer who ran
-`/qatalyst-write-tests` directly) once every sub-agent this task needed has reported back.
+throwing. For a bug ticket, the first acceptance criterion's test reproduces the reported scenario;
+and every item in `tasks.md`'s Edge cases section that this task owns has a test, or a stated reason
+it can't, passed back to whoever handed you the task. For a plan-only sub-agent: its plan file exists
+and reflects this diff. Report back to whoever handed you the task (`qatalyst-developer`, to tick
+it; or the developer who ran `/qatalyst-write-tests` directly) once every sub-agent this task needed
+has reported back.

@@ -34,10 +34,15 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
 3. Write `tasks.md` to `specs/<bug|feature>/<ticket ID>/tasks.md` (see `qatalyst-spec-folder-resolution` —
    deterministic from the ticket's type and ID, nothing to ask about), using the
    `tasks-template.md` shape: What & why,
-   Acceptance criteria (Given/When/Then, one per testable behavior), Approach (only the sections
-   that apply, citing the module map in `copilot-instructions.md`), Out of scope, Open questions,
+   Acceptance criteria (Given/When/Then, one per testable behavior; for a bug, the first one is the
+   reported scenario itself, so the fix gets a test that reproduces it), Edge cases (what else could
+   go wrong around the change, each tied to the task whose test covers it — drawn from the callers
+   and dependents step 2 found, `log-analysis.md`'s unexplained items, and `testing.instructions.md`'s
+   checklist), Approach (only the sections that apply, citing the module map in
+   `copilot-instructions.md`), Out of scope, Open questions,
    then the ordered task checklist. Each task names the project skill `qatalyst-developer` should
-   use and what `qatalyst-test-writer` should cover. The last task is always the review —
+   use and what `qatalyst-test-writer` should cover — the acceptance criteria and edge cases its
+   test exercises. The last task is always the review —
    `qatalyst-code-reviewer` (and `qatalyst-security-reviewer` when the diff touches a sensitive
    area) against this ticket's `tasks.md`.
 4. Size the file to the ticket — a one-line fix gets a short file and a single task; a cross-repo
