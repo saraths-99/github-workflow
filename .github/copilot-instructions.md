@@ -41,7 +41,7 @@ base_branch: <FILL IN: e.g. main>
 <!-- FILL IN: short bullets only — summarize architecture.md, don't restate it. Example shape: -->
 
 - Layers: <!-- e.g. "MVVM + Repository + Services. No use-case layer." -->
-- UI: XML + View Binding.
+- UI: existing screens XML + View Binding; new screens Jetpack Compose.
 - DI: Koin.
 - Errors: <!-- e.g. "kotlin-result, not thrown exceptions." -->
 - Storage: Room. <!-- e.g. "Room + SQLCipher. Tokens/keys only in encrypted storage." -->

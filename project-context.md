@@ -1,7 +1,5 @@
 # Project context
 
-> Lines marked **TBD — conflict** are unresolved: two readings of the code disagree. Check them
-> against the base branch (`base_branch` in `.github/copilot-instructions.md`), then delete the marker.
 > Component behavior lives in `architecture.md`.
 
 ## What this app does
@@ -17,7 +15,9 @@ integration. The app is built from five repositories (see below).
 
 ## Target platforms
 
-Phone only — no `wear`/`tv` module in `settings.gradle.kts`. `minSdk = 29` (Android 10),
+Phone only — no `wear`/`tv` module in `settings.gradle.kts`, though the app depends on
+`play-services-wearable` (`app/build.gradle.kts:194`); **TBD:** what the app uses it for.
+`minSdk = 29` (Android 10),
 `compileSdk`/`targetSdk = 36` (`gradle/libs.versions.toml:16-17`). Android Auto is an in-app
 integration (`androidx.car` dependency, `feature/car/` package), not a separate build target.
 
@@ -27,9 +27,11 @@ Bitbucket workspace `team_giga_zuul`; repositories and their modules are in `arc
 existing citation `android_common_ui/README.md` spells that repository with an underscore, the
 workspace's repository is `android_common-ui` — **TBD:** confirm the real name.
 
-**Branch.** Which branch tickets branch from is `base_branch` in `.github/copilot-instructions.md`:
-**TBD** until that is filled in. Do not infer behavior from another branch, from a similarly named
-SDK, or from an old packaged artifact.
+**Branch.** Tickets branch from `develop` (developer note); `base_branch` in
+`.github/copilot-instructions.md` needs that value. Some facts here were read on `develop2`, a newer
+line than the `app/build.gradle.kts` they cite, so recheck a fact on `develop` before relying on it
+for a change. Do not infer behavior from another branch, from a similarly named SDK, or from an old
+packaged artifact.
 
 **Local source builds.** The app's `settings.gradle.kts` includes the other repositories' modules from
 sibling directories — all five checked out side by side in one workspace folder, named as in the
@@ -44,17 +46,25 @@ catalog artifacts instead. Being in the settings does not prove the app depends 
 - **Flavor dimensions, in order:** `environment`, then `brand`. Environments: `integration`, `qa`,
   `production`, `beta`, `stability`, `stability2`. Brands: `kwikset`, `weiser`. Build types: `debug`,
   `release`. A variant is named like `IntegrationKwiksetDebug`.
-- **Build features:** ViewBinding and BuildConfig are enabled. Compose: **TBD — conflict**, see
-  `architecture.md`'s UI section.
+- **Build features:** ViewBinding and BuildConfig are enabled in the file read. Newer screens use
+  Compose — see `architecture.md`'s UI section.
 - **Release build:** minification and resource shrinking on. The release-signing assignment is
   commented out in the file read, so do not assume release signing is configured.
-- **BuildConfig flags,** filled from project properties: `ALLOW_SEND_BLE_WHILE_MATTER_ENABLE`,
-  `APP_FEEDBACK_ENABLE`, `IS_GDO_FEATURE_ENABLED`, `IS_QR_SCAN_LOCK_ENABLED`,
-  `IS_GOOGLE_HOME_API_ENABLED`. Their configured values are not recorded here; never invent them.
+- **BuildConfig flags,** filled from project properties (`app/build.gradle.kts:36-40`):
+  `ALLOW_SEND_BLE_WHILE_MATTER_ENABLE`, `APP_FEEDBACK_ENABLE`, `IS_GDO_FEATURE_ENABLED`,
+  `IS_QR_SCAN_LOCK_ENABLED`, `IS_GOOGLE_HOME_API_ENABLED`. Their configured values are not recorded
+  here; never invent them. Each environment also sets its own `WEB_PORTAL_URL` and
+  `APP_RATING_TIMER_1`/`APP_RATING_TIMER_2` (`app/build.gradle.kts:83-130`).
+- **Application ID:** the brand flavors set it (`com.kwikset.blewifi`, `com.weiser.blewifi`;
+  `app/build.gradle.kts:73-82`); integration, qa, stability and stability2 append `.dev`; production
+  adds nothing; `beta` sets `com.spectrum.giga` (`app/build.gradle.kts:108-110`). `environment` is the
+  first dimension, so beta's ID should override the brand's and be the same for both brands —
+  **TBD:** confirm against the merged ID of the two beta variants.
 - **Toolchain:** Java/Kotlin target 17; Gradle wrapper 8.9 (the app catalog's separate `gradle`
   entry of 8.7.0 is not the wrapper version). Only the app's version catalog was read.
 - The app has several distinct version numbers (app version, production override, version code,
-  equivalent production app version, internal artifact versions); never collapse them into one.
+  equivalent production app version, internal artifact versions); never collapse them into one. The
+  `production` flavor drops the last two parts of the app version (`app/build.gradle.kts:102-103`).
 
 ## Build and test commands
 
@@ -68,6 +78,20 @@ ones that work, and replace this block:
 ./gradlew -PisLocalBuild=true :app:testIntegrationKwiksetDebugUnitTest
 ./gradlew -PisLocalBuild=true :commonsdk:testDebugUnitTest :spectrumsdk:testDebugUnitTest :gdosdk:testDebugUnitTest
 ```
+
+**Required Gradle properties.** `app/build.gradle.kts` reads these with `project.property(...)`, which
+has no default, so a missing one fails the build before any task runs (`app/build.gradle.kts:20-21`,
+`36-40`, `153-175`):
+- `isLocalBuild`;
+- the five BuildConfig flags above;
+- `artifactoryUrl`, `artifactoryUsername` and `artifactoryPassword` — the repositories block is always
+  evaluated, so even a build with `isLocalBuild=true` needs them;
+- `artifactoryDevRepoKey` or `artifactoryProdRepoKey`, chosen by the `buildType` property (default
+  `debug`).
+
+Release signing also reads a store file, alias and passwords from properties, but only when they are
+present. Where these properties are normally set was not read. Several are credentials: keep them in
+a user-level `gradle.properties`, never in the repository.
 
 Confirm each task exists first (`./gradlew -PisLocalBuild=true :app:tasks --all`). A green task is not
 proof that tests passed — see `architecture.md`'s Testing conventions.
@@ -90,7 +114,7 @@ One line per top-level package under `app/src/main/java/com/spectrum/halo/featur
 - `landing` — splash/welcome screens
 - `lock` — lock control, settings, access codes, and Matter pairing
   (`ALLOW_SEND_BLE_WHILE_MATTER_ENABLE` flag)
-- `login` / `signup` / `resetpassword` — authentication flows (see Key integrations)
+- `login` / `signup` / `resetpassword` — authentication flows (see `architecture.md`, Networking)
 - `navigation` — shared nav graph/host wiring
 - `newfeaturehighlight` — what's-new / feature-highlight UI
 - `realtimevoidalert` / `home/automation/realtimevoicealert` — real-time voice alert automation
@@ -109,10 +133,6 @@ TBD — no explicit developer note on file; never inferred from code or package 
 
 ## Key integrations
 
-- **AWS Cognito, via Amplify** — sign-in/auth, including a Cognito Hosted UI redirect activity
-  (`amplify-core-kotlin`, `aws-auth-cognito`, `AndroidManifest.xml`'s
-  `HostedUIRedirectActivity`). **TBD:** confirm what Amplify is used for; see `architecture.md`,
-  Networking.
 - **AWS AppSync** — real-time device/lock state (`aws-android-sdk-appsync` dependency,
   `gradle/libs.versions.toml`)
 - **Retrofit REST APIs** — `*RestInterface.kt` under `commonsdk`/`spectrumsdk`'s
@@ -121,8 +141,9 @@ TBD — no explicit developer note on file; never inferred from code or package 
 - **Nordic BLE** — lock/GDO communication (`ble.ktx`/`scanner` dependencies; see
   `ble-halo.instructions.md`/`ble-gdo.instructions.md`)
 - **Firebase** — Crashlytics, Analytics, and Cloud Messaging (push notifications)
-- **Google Maps SDK** — `play-services-maps` + `maps.ktx`, with a `GEO_MAP_API_KEY` resource per
-  environment flavor
+- **Google Maps SDK** — `play-services-maps` + `maps.ktx`, with a `GEO_MAP_API_KEY` resource: a
+  default in `defaultConfig` and a different one for the `production` flavor
+  (`app/build.gradle.kts:41`, `106`). Both are literals in the build file; never copy them.
 - **Google Home API** — `play-services-home`/`play-services-home-types`, imported as local
   `.aar` files because "the Home APIs used in this open beta are not yet available in Google's
   official libraries" (`app/build.gradle.kts:267-269`)
@@ -139,7 +160,7 @@ TBD — no explicit developer note on file; never inferred from code or package 
 - **Brand identity is a build-time constraint, not a runtime one** — `flavorDimensions +=
   listOf("environment", "brand")` with distinct `applicationId`s per brand
   (`com.kwikset.blewifi` / `com.weiser.blewifi`), enforced by Gradle, not a runtime switch
-  (`app/build.gradle.kts:70-82`).
+  (`app/build.gradle.kts:70-82`). Exception: `beta` sets its own ID — see Build variants.
 - **Release automation is out of bounds** — the root `build.gradle.kts` registers a `releaseApp` task
   (a custom `ReleaseTask`) that coordinates versions across all five repositories' artifacts and
   documents an auto-push option. Do not run it without the developer's explicit say-so. Its code and

@@ -1,8 +1,5 @@
 # Architecture
 
-> Lines marked **TBD — conflict** are unresolved: two readings of the code disagree. Check them
-> against the base branch (`base_branch` in `.github/copilot-instructions.md`), then delete the marker.
-
 ## Repositories
 
 | Repository | Modules | Role |
@@ -72,15 +69,13 @@ local-build graph, not the only one.
 
 View Binding (`buildFeatures.viewBinding = true`, `app/build.gradle.kts:135`). Single host
 `HomeActivity` + `NavHostFragment` (`app/src/main/res/layout/activity_home.xml`) with Safe Args
-(`androidx.navigation.safeargs.kotlin` plugin). Two standalone secondary activities:
-`WebViewActivity` (tutorial web content) and Amplify's `HostedUIRedirectActivity` (Cognito
-Hosted UI callback).
+(`androidx.navigation.safeargs.kotlin` plugin). One standalone secondary activity: `WebViewActivity`
+(tutorial web content).
 
-**TBD — conflict on Compose.** One reading found no Compose dependency anywhere in `app`; another says
-the app build enables Compose, that there is a `compose/` package under
-`app/src/main/java/com/spectrum/halo/`, and that the version catalog carries a Compose BOM. Check
-`buildFeatures` in `app/build.gradle.kts` and that package. The "no Compose" rule in
-`xml-ui.instructions.md` rests on the answer.
+**Compose.** Existing screens are XML layouts with View Binding; newer screens are built with Jetpack
+Compose (developer note). A `compose/` package exists under `app/src/main/java/com/spectrum/halo/`.
+The `app/build.gradle.kts` cited in this file predates Compose — it has no Compose feature, plugin or
+dependency — so read the current `develop` build file for the Compose setup before adding a screen.
 
 **Base classes.** `common-ui` has a shared `BaseFragment`
 (`common-ui/src/main/java/com/spectrum/common/feature/common/BaseFragment.kt`): it observes
@@ -99,7 +94,7 @@ one), not by Koin: Koin covers the application layer and the SDK facades it hand
 
 ## Networking
 
-Three parallel channels:
+Two parallel channels:
 - **Retrofit REST** — `*RestInterface.kt` under `commonsdk`/`spectrumsdk`'s
   `interfaces/rest/` packages (auth, token, user, device, history, home, upload-image,
   utility), built via `RestInterfaceBuilder.kt`. It uses separate converters for the general, token
@@ -108,12 +103,10 @@ Three parallel channels:
   the interceptors or change a converter unless the change is about that.
 - **AWS AppSync (GraphQL)** — real-time device/lock state (`aws-android-sdk-appsync`), with a regional
   client configuration.
-- **AWS Cognito, via Amplify** — authentication, including a Hosted UI redirect flow. **TBD:** whether
-  this is the consumer sign-in. Another reading has consumer login running through step sequences and a
-  regional REST token API (`commonsdk/.../module/auth/`); confirm where `Amplify.configure` is called.
-
-`AuthTokenManagerImpl` (`commonsdk/.../module/auth/`) stores tokens per region and keeps the existing
-refresh token when a refresh response omits one; keep region identity intact on every token update.
+Authentication runs through Flow-based login step sequences
+(`commonsdk/.../module/auth/stepsequences/login/`) and the REST token API. `AuthTokenManagerImpl`
+(`commonsdk/.../module/auth/`) stores tokens per region and keeps the existing refresh token when a
+refresh response omits one; keep region identity intact on every token update.
 
 ## BLE
 
@@ -213,8 +206,9 @@ coroutine dispatchers. Instrumented tests use AndroidX JUnit4 + Espresso + UiAut
 (`androidTestImplementation`). Tests live alongside their own module's existing `src/test`/
 `src/androidTest` trees (e.g. `gdosdk/src/test/.../ble/queue/GdoBleQueueImplTest.kt`,
 `commonsdk/src/test/.../module/ble/model/BleQueueTest.kt`) — no separate top-level test
-source set found. The SDK builds between them also use JUnit 4, Mockito and Kover; **TBD:** which
-module uses which mocking library.
+source set found. The app module uses MockK only, with no Mockito (`app/build.gradle.kts`); the SDK
+builds between them also use JUnit 4, Mockito and Kover. **TBD:** which SDK module uses which
+mocking library.
 
 **A passing Gradle task is not a passing test run.** `commonsdk` sets `ignoreFailures = true` on its
 debug and release unit-test tasks, several library builds set lint `abortOnError = false`, and the GDO
@@ -224,8 +218,8 @@ Kover configuration excludes selected packages and classes. Read the test report
 ## Rationale: TBD
 
 Several instruction files say "see `architecture.md` for why". No reason can be recovered from code,
-and none is to be guessed. A developer needs to supply, in a sentence each: why the UI stays on View
-Binding (or, if Compose is in use, where it is allowed); why there is no use-case layer; why the SDKs
+and none is to be guessed. A developer needs to supply, in a sentence each: why existing screens stay
+XML while new ones use Compose, and whether old ones will be migrated; why there is no use-case layer; why the SDKs
 assemble services through `Dependencies` instead of Koin, and why `GdoSdk` is kept apart; and why the
 Halo and GDO BLE stacks are kept separate.
 

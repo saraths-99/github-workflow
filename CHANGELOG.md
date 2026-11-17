@@ -10,6 +10,16 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.4] - 2026-11-17
+
+### Changed
+- UI rule: new screens are built in Jetpack Compose; existing screens stay XML with View Binding and
+  aren't converted unless a ticket says so. `xml-ui.instructions.md` (which now also applies to
+  `compose/`), the `qatalyst-new-screen` skill and prompt, the key rule in `copilot-instructions.md`
+  and `docs/field-sources.md` no longer say "do not introduce Compose". A Compose screen with no
+  existing one to follow, or no Compose in the build, is reported as a plan mismatch rather than
+  guessed at.
+
 ## [0.3.3] - 2026-11-16
 
 ### Changed
