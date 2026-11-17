@@ -1,6 +1,7 @@
 ---
 mode: agent
 agent: qatalyst-log-analyser
+model: ['Claude Opus 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'GPT-5.6 Sol (copilot)', 'Claude Sonnet 5.5 (copilot)']
 description: Run the log-analysis loop on a bug ticket before Requirements. Usage: /log-analyser <ticket ID>
 ---
 

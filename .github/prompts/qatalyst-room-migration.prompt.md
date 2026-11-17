@@ -1,5 +1,6 @@
 ---
 mode: agent
+model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
 description: Add a Room entity/DAO change behind a version-bumped migration.
 ---
 

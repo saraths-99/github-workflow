@@ -232,6 +232,15 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 `tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
 `qatalyst-ask-developer` skill holds every question and its options.
 
+**Models.** You don't pick a model. Starting a ticket switches the chat to Claude Opus 5.5, which
+also runs log analysis and planning; `qatalyst-developer` and the reviewers run on Claude Sonnet 5.5,
+and most test writers on GPT-6 Luna — each agent's `model:` line sets it, and each list falls back
+across Claude and GPT models (the full table is in [docs/workflow-design.md](docs/workflow-design.md)
+§4). If a model isn't offered on your plan, the agent uses the next one in its list, or the chat's
+model. Don't switch the chat to a cheaper model partway through: VS Code won't start a sub-agent on
+a model that costs more than the chat's, and the step fails with "exceeds the current model's cost
+tier".
+
 **In Android Studio:** turn on Agent Skills first (Settings › GitHub Copilot › Chat › Agent; it's a
 preview feature) — the ticket flow, planning and the questions are all skills, and without them the
 agents run without their instructions. Android Studio's Copilot chat asks its questions with its

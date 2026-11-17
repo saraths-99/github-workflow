@@ -124,6 +124,14 @@ def _agents_check():
             if tool.endswith("/*") and tool[:-2] in server_names:
                 continue
             problems.append(f"{f.name}: unsupported or unconfigured tool '{tool}'")
+        # A pinned model is a quoted list of "<name> (<vendor>)" entries, the form VS Code resolves.
+        if "model" in fields:
+            models = re.findall(r"['\"]([^'\"]+)['\"]", fields["model"])
+            if not models or not all(re.fullmatch(r".+ \([a-z-]+\)", m) for m in models):
+                problems.append(f"{f.name}: model must be a quoted list of '<name> (<vendor>)' entries")
+        elif fields.get("user-invocable") == "true":
+            # A sub-agent can't run on a costlier model than its chat, so the entry agent sets the top tier.
+            problems.append(f"{f.name}: the user-invocable agent must pin a model")
     return (not problems), ("; ".join(problems) if problems else f"{len(files)} agents ok")
 
 

@@ -1,5 +1,6 @@
 ---
 mode: agent
+model: ['Claude Opus 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'GPT-5.6 Sol (copilot)', 'Claude Sonnet 5.5 (copilot)']
 description: Start a ticket and carry it through to its PRs — detects bug vs. feature, plans, implements and ships, with every stop a question to pick an answer for. Usage: /qatalyst-ticket-start <ticket ID>
 ---
 

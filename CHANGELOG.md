@@ -10,6 +10,25 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.3.5] - 2026-11-17
+
+### Added
+- A model per agent, in three tiers, set by `model:` in each agent's frontmatter as a list of
+  `<name> (copilot)` entries tried in order, mixing Claude and GPT models. Deep: the chat's model,
+  Claude Opus 5.5 (then GPT-6.1 Sol, GPT-5.6 Sol, Claude Sonnet 5.5), pinned by the `qatalyst-ticket`
+  agent and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts and
+  inherited by log analysis, planning and the security review. Standard, Claude Sonnet 5.5 (then
+  GPT-6.1 Sol, Claude Sonnet 5): the developer, the code and error-handling reviewers, the test
+  router, and the BLE-protocol and security test writers. Fast, GPT-6 Luna (then Claude Haiku 5.5,
+  GPT-5.6 Luna, Claude Haiku 4.5): log-ticket intake and the other test writers.
+- The other slash-command prompts pin Sonnet 5.5, because VS Code refuses to start a sub-agent on a
+  model that costs more than the chat's.
+- A static check for the `model:` format, and that the user-invocable agent pins one.
+
+### Changed
+- `copilot-instructions.md`'s Model section describes the tiers instead of one model for everything.
+  An app repo that already has that file keeps its old section; update it by hand.
+
 ## [0.3.4] - 2026-11-17
 
 ### Changed
