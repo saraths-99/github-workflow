@@ -169,7 +169,7 @@ def _instructions_check():
     return (not problems), ("; ".join(problems) if problems else f"{len(files)} instruction files ok")
 
 
-@check("hooks have version: 1 and real event names")
+@check("hooks use Copilot's native format, with real events and existing scripts")
 def _hooks_check():
     guards_path = ROOT / ".github/hooks/guards.json"
     if not guards_path.exists():
@@ -177,12 +177,22 @@ def _hooks_check():
     data = json.loads(guards_path.read_text(encoding="utf-8"))
     if data.get("version") != 1:
         return False, f"version is {data.get('version')!r}, expected 1"
+    hooks = data.get("hooks")
+    if not isinstance(hooks, dict):
+        return False, "hooks must be an object keyed by event name"
     real_events = {"preToolUse", "postToolUse"}
-    problems = []
-    for hook in data.get("hooks", []):
-        if hook.get("event") not in real_events:
-            problems.append(f"{hook.get('name')}: bad event {hook.get('event')!r}")
-    return (not problems), ("; ".join(problems) if problems else f"{len(data.get('hooks', []))} hooks ok")
+    problems, count = [], 0
+    for event, entries in hooks.items():
+        if event not in real_events:
+            problems.append(f"bad event {event!r}")
+        for entry in entries:
+            count += 1
+            script = entry.get("bash", "")
+            if entry.get("type") != "command" or not script:
+                problems.append(f"{event}: each entry needs type 'command' and a bash command")
+            elif not (ROOT / script).exists():
+                problems.append(f"{event}: {script} doesn't exist")
+    return (not problems), ("; ".join(problems) if problems else f"{count} hooks ok")
 
 
 @check("the tasks spec template exists")
