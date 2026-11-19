@@ -49,4 +49,4 @@ there was no log.
 
 ## Handoff
 
-Once `qatalyst-plan-ticket`'s gate clears, a feature branch is created and the ticket moves to In Progress.
+Once `qatalyst-plan-ticket`'s gate clears, a `bug/` branch is created and the ticket moves to In Progress.

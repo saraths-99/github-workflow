@@ -30,7 +30,8 @@ treat every step below as per-repo unless it says otherwise.
    which), the files that will be pushed in each, and each PR's title and description. Ask with
    options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7
    until they pick "push".
-5. On confirmation, commit, push `feature/<ticket ID>-<slug>` in each repo, and open one
+5. On confirmation, commit, push the ticket branch (`bug/<ticket ID>-<slug>` or `feature/<ticket ID>-<slug>`, as
+   `qatalyst-ticket-start` named it) in each repo, and open one
    cross-linked Bitbucket PR per repo, in merge order. When continuing a ship that a broken chat
    left partway, check each repo first and skip the push or PR it already has. The spec folder
    (`specs/<bug|feature>/<ticket ID>/`) ships in whichever repo owns it (see `architecture.md`'s

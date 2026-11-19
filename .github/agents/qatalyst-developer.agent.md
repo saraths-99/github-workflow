@@ -42,7 +42,7 @@ Delete the file when you tick that task, and when you stop to report a plan mism
 breaks partway through the task, this file is how the next `/qatalyst-ticket-start` knows.
 
 If you're started with "continue task N, keeping its changes", the task was partly done before a
-chat broke: look at `git status` and `git diff` on the feature branch first, keep what's right,
+chat broke: look at `git status` and `git diff` on the ticket branch first, keep what's right,
 and finish the task from there rather than redoing it.
 
 ## When something in the plan doesn't fit the real code

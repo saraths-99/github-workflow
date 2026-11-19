@@ -10,6 +10,19 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.6] - 2026-11-19
+
+### Fixed
+- A bug ticket's branch is now `bug/<ticket ID>-<slug>`; only a feature gets `feature/<ticket ID>-<slug>`.
+  Before, every ticket was branched as `feature/…`. The prefix is the same `bug`/`feature` word as the
+  ticket's spec folder (including a bug chosen by the no-matching-project default), the ship step
+  pushes whichever branch was created, and resuming looks for either prefix — a bug started before
+  this on `feature/<ticket ID>-*` keeps that branch rather than getting a second one. "The feature
+  branch" in the prose is now "the ticket branch".
+- Branch slugs are kept short: lowercase kebab-case from the summary, at most 3 words and 25
+  characters, filler words dropped, cut at a word boundary (`bug/HALOM-123-lock-retry-background`).
+  Before, the length was unspecified, so the whole summary could end up in the name.
+
 ## [0.4.5] - 2026-11-19
 
 ### Added
