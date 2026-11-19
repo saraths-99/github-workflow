@@ -219,13 +219,13 @@ handing off to another, never by picking it yourself.
    reads the ticket, its Confluence pages and Figma links, writes to the deterministic
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
    not three.
-3. Creates the feature branch and asks before moving the ticket to In Progress.
+3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) and asks before moving the ticket to In Progress.
 4. Runs `qatalyst-developer` through every task, then asks whether to ship now; picking "Ship it
    now" runs the shipping steps below in the same chat.
 
 **Picking up where it stopped.** If the chat breaks, or you stop at a question, run
 `/qatalyst-ticket-start <ticket ID>` again (in a new chat is fine). It works out where the ticket
-is from `tasks.md` and the feature branch: an unapproved draft goes back to the approval question,
+is from `tasks.md` and the ticket branch: an unapproved draft goes back to the approval question,
 a half-done ticket continues from the first unticked task, and a finished one goes to the ship
 question. Nothing is re-planned. If the last chat broke in the middle of a task (or of shipping),
 it tells you so — which task, when it started, how many files are changed — and asks whether to
@@ -314,7 +314,7 @@ summary and writes two files to `.logs/token-tracker/ABC-123/`:
   input, output and total tokens per agent, largest first), for feeding into other tools.
 
 **How a chat gets counted for a ticket:** `/qatalyst-ticket-start` and the CLI launcher record the
-ticket ID when they start, and any chat that ran on the ticket's feature branch counts too. A chat
+ticket ID when they start, and any chat that ran on the ticket's branch counts too. A chat
 that did neither (for example, planning started from the `qatalyst-ticket` picker that you abandoned
 before a branch was created) isn't counted; run
 `python3 .github/token-tracker/scripts/token_tracker.py mark ABC-123` at the start of such a chat to

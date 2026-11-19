@@ -30,4 +30,4 @@ the `qatalyst-plan-ticket` skill for the mechanics of building and gating that f
 
 ## Handoff
 
-Once `qatalyst-plan-ticket`'s gate clears, a feature branch is created and the ticket moves to In Progress.
+Once `qatalyst-plan-ticket`'s gate clears, a `feature/` branch is created and the ticket moves to In Progress.

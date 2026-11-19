@@ -280,7 +280,7 @@ workflow repo's README §2c.
 
 - **Developer approves every gate** — each spec file, every task, and the commit/push/PR step all
   wait for an explicit yes.
-- **Spec before code** — no feature branch exists until `tasks.md` is approved; `qatalyst-developer`
+- **Spec before code** — no ticket branch exists until `tasks.md` is approved; `qatalyst-developer`
   can't start a task the spec doesn't list.
 - **Context docs are read, not guessed** — `project-context.md`/`architecture.md` are drafted once
   from the real code, cited line-by-line, never regenerated once written.

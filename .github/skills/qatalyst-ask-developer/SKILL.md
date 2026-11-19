@@ -47,7 +47,7 @@ and runs you again with the answer.
 | `tasks.md` draft ready | Approve · Request changes (**needs text**: what to change) · Stop here |
 | Plan doesn't fit the code mid-task (updated `tasks.md`) | Approve the updated plan · Stop here |
 | Move the ticket to In Progress | Move to In Progress · Leave it where it is |
-| Resuming, but uncommitted changes block switching to the feature branch | Stash them and switch · Stop here |
+| Resuming, but uncommitted changes block switching to the ticket branch | Stash them and switch · Stop here |
 | Resuming after the last chat broke partway through task N (say so first) | Continue task N, keeping its changes · Restart task N (stash its changes first) · Stop here |
 | Resuming after the last chat broke partway through shipping (say so first) | Continue shipping · Stop here |
 | Every task ticked | Ship it now · Stop here, I'll ship later |

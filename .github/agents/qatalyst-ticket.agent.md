@@ -21,7 +21,7 @@ The agent-picker entry point for starting a ticket, as an alternative to typing
 only to let a developer start a ticket by selecting an agent instead of remembering a slash command;
 it has no procedure of its own beyond asking for what `qatalyst-ticket-start` needs. It needs
 `execute` for the steps `qatalyst-ticket-start` runs itself: the token-tracking mark, creating the
-feature branch, and pushing at ship time.
+ticket branch, and pushing at ship time.
 
 ## Hard scope rules
 

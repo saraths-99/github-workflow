@@ -7,7 +7,7 @@ description: >
   (checked against whichever configured project the ticket actually belongs
   to), hands off to the matching planner (bug-planner, after log-analyser
   runs if it hasn't already, or feature-planner), gets tasks.md approved,
-  creates the feature branch, runs qatalyst-developer through every task,
+  creates the ticket branch (bug/ or feature/), runs qatalyst-developer through every task,
   then runs qatalyst-ticket-ship. Every stop is a question with options.
 ---
 
@@ -39,7 +39,7 @@ Before step 0, if you can run terminal commands, run
 `python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>`. It only appends a line to
 `.logs/token-tracker/markers.jsonl`, so this chat's model calls can be linked to the ticket later.
 If you can't run commands, skip it without comment: the report still links this chat once one of
-its turns runs on the ticket's feature branch. Never let this step fail or delay the ticket.
+its turns runs on the ticket's branch. Never let this step fail or delay the ticket.
 
 ## Repowise check
 
@@ -107,15 +107,15 @@ Running `/qatalyst-ticket-start` again picks up where the ticket is, worked out 
 | What's there | Pick up at |
 |---|---|
 | No `tasks.md` | Step 0.4, as normal |
-| `tasks.md`, but no task ticked and no `feature/<ticket ID>-*` branch | Step 1's approval question, on the existing draft — don't re-plan |
-| A `feature/<ticket ID>-*` branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
+| `tasks.md`, but no task ticked and no `<bug\|feature>/<ticket ID>-*` branch | Step 1's approval question, on the existing draft — don't re-plan |
+| A `<bug\|feature>/<ticket ID>-*` branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
 | Every task ticked | Step 5, the ship question |
 
 **If the last chat broke midway.** `.logs/<ticket ID>/in-progress.json` exists only while a task
 or the ship step is running; a clean finish or a "Stop here" answer removes it. If it's there when
 you resume, the last chat stopped partway. Tell the developer so, plainly — which task (number and
 title) or that it was shipping, when it started, and how many files have uncommitted changes on the
-feature branch — then ask:
+ticket branch — then ask:
 
 - **A task:** continue task N, keeping its changes · restart task N (its uncommitted changes are
   stashed first, as `<ticket ID> task N partial`) · stop here. On "continue", start
@@ -123,7 +123,8 @@ feature branch — then ask:
 - **Shipping:** continue shipping · stop here. `qatalyst-ticket-ship` checks which repos already
   have a pushed branch or an open PR and doesn't repeat those.
 
-Before step 4 or 5, switch to the ticket's feature branch if you're not on it. If git refuses
+Before step 4 or 5, switch to the ticket's branch if you're not on it. (A bug started before 0.4.6
+may be on `feature/<ticket ID>-*`; that is its branch too — don't create a second one.) If git refuses
 because of uncommitted changes, ask: stash them and switch, or stop. Ask step 3's In Progress
 question only if the ticket isn't In Progress or further along already. Say in one line which step
 you're resuming from and why (for example, "3 of 7 tasks ticked — continuing with task 4").
@@ -141,8 +142,16 @@ planner again with the developer's text and ask again. Don't start step 2 until 
 
 ## 2. Branches
 
-Once `tasks.md` is approved, create `feature/<ticket ID>-<slug>`, branched from `base_branch` (in
-`copilot-instructions.md`'s settings block).
+Once `tasks.md` is approved, create the ticket branch, branched from `base_branch` (in
+`copilot-instructions.md`'s settings block): `bug/<ticket ID>-<slug>` when step 0 settled on a bug
+(including its default), `feature/<ticket ID>-<slug>` for a feature — the same `bug`/`feature` word
+as the spec folder, never a `feature/` branch for a bug.
+
+Keep the slug short: lowercase kebab-case from the ticket summary, at most 3 words and 25
+characters, dropping filler words (the, a, to, when, on, fix, issue). Cut at a word boundary, never
+mid-word. `HALOM-123 Lock keeps retrying when the app is backgrounded` becomes
+`bug/HALOM-123-lock-retry-background`, not the whole summary. Where the ticket ID alone already says
+enough, omit the slug: `bug/HALOM-123`.
 
 ## 3. Transition
 
@@ -175,6 +184,6 @@ skip the approval gate, and don't skip step 0's detection, even for a small tick
   `specs/<bug|feature>/<ticket ID>/`.
 - Never ask about the spec folder yourself, or let a planner ask — the path is deterministic from
   the ticket type and ID, so it's never asked about at all.
-- Never create a feature branch before `tasks.md` is approved.
+- Never create the ticket branch before `tasks.md` is approved.
 - Never move the Jira ticket's status without asking first.
 - Never ask an open-ended question — every stop is one of `qatalyst-ask-developer`'s questions.
