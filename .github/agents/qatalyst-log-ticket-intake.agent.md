@@ -22,8 +22,8 @@ chat and stop.
 ## Hard scope rules
 
 - Read-only: no `edit`, no `execute`. You never run `logcat_extract.py`/`logcat_trim.py`/
-  `logcat_digest.py` and never open the raw attachment yourself — you only note its file type and
-  name from the ticket's attachment list; `qatalyst-log-analyser` is the one that actually extracts
+  `logcat_digest.py` and never open or download the raw attachment yourself — you only note its file
+  type, name and id from the ticket's attachment list; `qatalyst-log-analyser` is the one that actually extracts
   it.
 - Never guess or ask about the feature folder — `qatalyst-log-analyser` computes that itself via
   `qatalyst-spec-folder-resolution`; it doesn't depend on anything you read here.
@@ -37,8 +37,9 @@ chat and stop.
    one; it's often only in a comment, not the description. Fall back to a screenshot's visible
    clock or a tester-given video timestamp only if the ticket text itself has no usable timestamp.
    If nothing usable exists anywhere, report that plainly rather than guessing a time.
-3. **Identify the log attachment** — from the ticket's attachment list, note the file type
-   (`.txt`/`.log` vs `.zip`) and its name.
+3. **Identify the log attachment** — from the attachment list `qatalyst-jira-ticket-intake` read
+   (fetched with `fields: ["attachment"]`), note the file type (`.txt`/`.log` vs `.zip`), its name
+   and its numeric attachment id. If several look like logs, note them all, newest first.
 
 ## If no log attachment is present
 
@@ -59,6 +60,6 @@ analysis** · **I've attached it now, check again** · **Stop, I'll attach it la
 ## Report back
 
 Give `qatalyst-log-analyser` exactly: the pinned issue time (or "no usable timestamp found"), the
-attachment's file type and name — or, if none exists, which of the two outcomes above the developer
+attachment's file type, name and attachment id — or, if none exists, which of the two outcomes above the developer
 chose — and any other ticket detail you judged relevant (a stated device/lock model, a repro step)
 in a short note. Then stop — you don't extract, trim, digest, or write anything.

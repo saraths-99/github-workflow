@@ -28,11 +28,12 @@ straight into `tasks.md`.
 - You may write **only** `specs/bug/<ticket ID>/log-analysis.md` — that path is deterministic from
   the ticket ID via `qatalyst-spec-folder-resolution`, never a feature-named folder you choose or ask about.
   Never edit production code, tests, or any other spec file.
-- You may run **only** three commands, in this order, exactly as documented in their own `--help`:
-  `.github/log-analyser/scripts/logcat_extract.py`, `.github/log-analyser/scripts/logcat_trim.py`,
-  and `.github/log-analyser/scripts/logcat_digest.py`. Never run any other shell command, even one
-  that looks harmless — in particular, never `unzip`, `cat`, or `grep` the raw attachment yourself;
-  that's what `logcat_extract.py` is for.
+- You may run **only** these commands: the download command that `downloadJiraIssueAttachment`
+  returns (Extract step, once, exactly as returned), then, in this order and exactly as documented in
+  their own `--help`, `.github/log-analyser/scripts/logcat_extract.py`,
+  `.github/log-analyser/scripts/logcat_trim.py`, and `.github/log-analyser/scripts/logcat_digest.py`.
+  Never run any other shell command, even one that looks harmless — in particular, never `unzip`,
+  `cat`, or `grep` the raw attachment yourself; that's what `logcat_extract.py` is for.
 - You may read `.logs/<ticket ID>/trimmed.log` and `.logs/<ticket ID>/digest.md`. **Never read
   `.logs/<ticket ID>/raw/` or `.logs/<ticket ID>/raw/extracted/`** — a hook blocks this, but don't
   attempt it even if the hook is somehow unavailable. The extracted file is still the full raw log,
@@ -60,10 +61,16 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
      **Report (no-log case)** below; don't run Extract/Trim/Digest/Link/Map/Rank/Refine against
      nothing.
 2. **Extract** — run `logcat_extract.py` against the raw attachment (whatever type it is), writing
-   into `.logs/<ticket ID>/raw/extracted/`. If raw logs aren't in `.logs/<ticket ID>/raw/` yet, ask
-   the developer, with options (see `qatalyst-ask-developer`): download it from the ticket (offer
-   this only if your Jira tools can fetch attachments), I've saved it there — continue, or skip log
-   analysis. Never ask them to paste a log into chat — raw logs should not live in chat history. If the attachment is a `.zip`, the script extracts every `.txt`/`.log`
+   into `.logs/<ticket ID>/raw/extracted/`. If the attachment isn't in `.logs/<ticket ID>/raw/` yet,
+   fetch it yourself first, using the attachment id Intake reported: call
+   `downloadJiraIssueAttachment` (via `executeRead`, `outputPath` `.logs/<ticket ID>/raw/<filename>`),
+   then run the `downloadCommand` it returns, unchanged. It is a short-lived URL, so run it straight
+   away; if it expired, call the tool again. The `protect-secrets` hook allows exactly that one
+   `curl` shape and nothing else under `raw/`. If the download can't run — no terminal, no network,
+   the tool isn't offered, or the command fails — say which, plainly, and ask the developer, with
+   options (see `qatalyst-ask-developer`): I've saved it there — continue, or skip log analysis,
+   naming the exact folder and file name to save it as. Never ask them to paste a log into chat —
+   raw logs should not live in chat history. If the attachment is a `.zip`, the script extracts every `.txt`/`.log`
    entry inside it and, when there's more than one, merges them in chronological order — never unzip
    or merge anything yourself. Read only the script's own manifest output (file names, sizes, what
    was skipped and why) — never the extracted text.

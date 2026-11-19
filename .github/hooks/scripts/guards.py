@@ -20,6 +20,10 @@ SENSITIVE_FILE = HOOKS_DIR / "sensitive-paths.txt"
 CONTEXT_DOCS = {"project-context.md", "architecture.md"}
 # The only commands allowed to name a raw log: the log analyser's own extract and trim scripts.
 RAW_LOG_SCRIPTS = re.compile(r"^\s*python3?\s+\S*\.github/log-analyser/scripts/logcat_(extract|trim)\.py\b")
+# Where a downloaded ticket attachment may be written: one file directly under a ticket's raw/ folder.
+RAW_DOWNLOAD_TARGET = re.compile(r"^(?:\./)?\.logs/[^/\s]+/raw/[^/\s]+$")
+CURL_FLAGS = re.compile(r"^-[fsSL]+$|^--(?:location|silent|show-error|fail|create-dirs)$")
+CURL_VALUE_FLAGS = {"--retry", "--max-time", "--connect-timeout"}
 EDIT_TOOL = re.compile(r"(?i)(edit|replace|create|write|patch|insert|delete|rename|move)")
 POSTING_TOOL = re.compile(r"(?i)(comment|pull.?request|issue|confluence|page|description)")
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.M)
@@ -85,14 +89,53 @@ def is_sensitive(path, patterns):
     return any(fnmatch.fnmatch(c, p) or fnmatch.fnmatch(c, "*/" + p) for c in candidates for p in patterns)
 
 
+def is_raw_download_target(path):
+    return bool(RAW_DOWNLOAD_TARGET.match(path)) and ".." not in path.split("/")
+
+
+def is_attachment_download(command):
+    """True only for the `curl` downloadJiraIssueAttachment hands back: one https URL, saved to one file
+    directly under .logs/<ticket>/raw/. Anything else (extra flags, a second target, chaining, a body to
+    upload) isn't, so it falls through to the normal raw-log rule and is denied."""
+    if re.search(r"[`\n]|\$\(", command):
+        return False
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        words = list(lexer)
+    except ValueError:
+        return False
+    if not words or words[0] != "curl" or any(re.fullmatch(r"[;&|()<>]+", w) for w in words):
+        return False
+    target, urls, i = None, [], 1
+    while i < len(words):
+        word = words[i]
+        if word in ("-o", "--output") and i + 1 < len(words) and target is None:
+            target, i = words[i + 1], i + 2
+        elif word in ("-H", "--header") and i + 1 < len(words) and not words[i + 1].startswith("@"):
+            i += 2
+        elif word in CURL_VALUE_FLAGS and i + 1 < len(words) and words[i + 1].isdigit():
+            i += 2
+        elif CURL_FLAGS.match(word):
+            i += 1
+        elif word.startswith("https://"):
+            urls.append(word)
+            i += 1
+        else:
+            return False
+    return target is not None and is_raw_download_target(target) and len(urls) == 1
+
+
 def protect_secrets(call):
     patterns = sensitive_patterns()
+    # downloadJiraIssueAttachment only builds the download command; it writes nothing itself.
+    download_call = "downloadJiraIssueAttachment" in call["text"]
     for p in call["paths"]:
-        if is_sensitive(p, patterns):
+        if is_sensitive(p, patterns) and not (download_call and is_raw_download_target(p)):
             decide("deny", f"{p} matches a sensitive-paths.txt entry, so Copilot can't touch it")
     command = call["command"]
     chained = re.search(r"[;&|`\n]|\$\(", command)
-    if command and (chained or not RAW_LOG_SCRIPTS.match(command)):
+    if command and not is_attachment_download(command) and (chained or not RAW_LOG_SCRIPTS.match(command)):
         try:
             words = shlex.split(command)
         except ValueError:

@@ -10,6 +10,24 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.4] - 2026-11-19
+
+### Changed
+- `qatalyst-ticket-start` no longer asks "treat it as a feature, treat it as a bug, or stop" when the
+  ticket's Jira project isn't in `jira_projects` (or has no `bug_issue_types`). The project key and
+  issue type are still read from Jira, but a ticket with no bug types to compare against now runs as
+  a bug, with one line saying why — this workflow is mainly run on bugs. The question is also gone
+  from `qatalyst-ask-developer`'s table.
+
+### Fixed
+- A log attached to the ticket (not pasted in a comment) is now actually fetched. Intake reads the
+  attachment list with `fields: ["attachment"]` (the compact ticket view left attachments out) and
+  passes the attachment id on; `qatalyst-log-analyser` downloads it with `downloadJiraIssueAttachment`
+  and its returned `curl` into `.logs/<ticket ID>/raw/`. The `protect-secrets` hook allows exactly that
+  `curl` (one https URL, one output file directly under `raw/`, no chaining or upload) and still
+  denies every other command that names `raw/`; `tests/test_guards.py` covers both. Where the
+  download can't run, the developer is told why and which file name to save it as.
+
 ## [0.4.3] - 2026-11-17
 
 ### Added
