@@ -155,7 +155,9 @@ site.
 
 Repowise gives the planners, developer, test writers and reviewers the app's call graph, change
 risk and hotspots (through `qatalyst-repowise-lookup`). Without it they fall back to plain file
-search, so nothing breaks — they just see less. Set it up once per developer machine:
+search, so nothing breaks — they just see less. `/qatalyst-ticket-start` checks it at the start of
+every ticket and, if it isn't ready, asks you to set it up, continue without it, or stop. Set it up
+once per developer machine:
 
 1. **Install it.** Needs Python 3.11 or newer.
 
@@ -169,6 +171,10 @@ search, so nothing breaks — they just see less. Set it up once per developer m
    repowise init --yes --no-prose --no-editor-setup
    ```
 
+   - **An app built from several repos** checked out side by side: run it once from the folder that
+     holds them all, not inside one repo. Repowise indexes each repo and links them, so a lookup
+     sees a change's callers in the other repos. Keep them current with `repowise update --workspace`
+     and check with `repowise status --workspace`.
    - `--no-prose` builds the index from the code alone: no model, no API key, and none of the
      app's code is sent anywhere.
    - `--no-editor-setup` keeps the run to `.repowise/` and nothing else. **Never leave it off.**

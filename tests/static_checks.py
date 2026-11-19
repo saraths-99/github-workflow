@@ -92,6 +92,9 @@ def _agents_check():
     # Android Studio's Copilot registers tools under these names instead of VS Code's groups.
     built_in_tools |= {"read_file", "list_dir", "get_errors", "grep_search", "file_search", "semantic_search",
                        "insert_edit_into_file", "create_file", "run_in_terminal", "get_terminal_output"}
+    # The Atlassian server's generic tools. `atlassian-rovo/*` doesn't expose them to a sub-agent, and
+    # `downloadJiraIssueAttachment` is only reachable through them, so an agent that downloads lists them.
+    built_in_tools |= {"executeRead", "executeWrite", "discover"}
     problems = []
     for f in files:
         fields, body = parse_frontmatter(f.read_text(encoding="utf-8"))

@@ -10,6 +10,39 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.5] - 2026-11-19
+
+### Added
+- `qatalyst-ticket-start` checks Repowise before step 0 and, if it isn't ready (not installed, not
+  indexed, or repos missing or behind), asks the developer to set it up, continue without it, or
+  stop, with the command to fix it in the question. It never runs the install or index commands
+  itself, and tells every agent it hands off to the outcome so none re-checks. The README's Repowise
+  section now covers an app built from several repos: one `repowise init` from the folder that holds
+  them, so lookups see callers across repos.
+
+### Fixed
+- `qatalyst-log-analyser` can now fetch a ticket's log attachment. Its `tools` lacked the Atlassian
+  `executeRead` tool, which is how `downloadJiraIssueAttachment` is reached (the `atlassian-rovo/*`
+  wildcard didn't expose it), so the agent reported the download tool as "not available". `tools`
+  now lists `executeRead` (confirmed to work) and `discover` (not yet confirmed). The Extract step
+  says to call `executeRead` with the operation name, fall back to `discover` if the server rejects
+  it, and name the exact step that failed if the download can't be done.
+
+- `qatalyst-ticket` (and so the ship step: opening the Bitbucket PRs, reading Pipelines runs, moving
+  the ticket to In Review) lists `executeRead`, `executeWrite` and `discover` in `tools`. Those
+  operations, and `listJiraIssueTransitions`, are only reachable through the Atlassian server's
+  generic tools.
+- `protect-secrets` now runs its JWT/token check on posts made through those generic tools. It used to
+  decide from the tool's own name, which for `executeWrite` says nothing, so a PR description or
+  comment sent that way skipped the check. Every `executeWrite`/`executeDestructive` call is now
+  checked, and so is any call whose `name` argument is a write-style operation on a comment, issue,
+  PR, page or description; read operations (`get…`, `list…`, `search…`, `download…`) are not.
+
+### Changed
+- `qatalyst-repowise-lookup` searches every repo in the workspace for callers, impact and change risk,
+  not just the repo being edited, and an agent that falls back to direct reads says so once in its
+  report, with the repos it covered.
+
 ## [0.4.4] - 2026-11-19
 
 ### Changed
@@ -26,7 +59,11 @@ changed since its last sync.
   and its returned `curl` into `.logs/<ticket ID>/raw/`. The `protect-secrets` hook allows exactly that
   `curl` (one https URL, one output file directly under `raw/`, no chaining or upload) and still
   denies every other command that names `raw/`; `tests/test_guards.py` covers both. Where the
-  download can't run, the developer is told why and which file name to save it as.
+  download can't run, the developer is told which step failed (no `discover`/`executeRead` tool, no
+  download operation found, the operation's error, no terminal, or the command blocked or failed)
+  and which file name to save it as. The analyser is told to run `discover` first:
+  `downloadJiraIssueAttachment` isn't in the tool list, and the server only allows operations it
+  listed or `discover` returned, so a model that skipped this reported the tool as "not available".
 
 ## [0.4.3] - 2026-11-17
 

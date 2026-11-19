@@ -27,6 +27,10 @@ CURL_VALUE_FLAGS = {"--retry", "--max-time", "--connect-timeout"}
 EDIT_TOOL = re.compile(r"(?i)(edit|replace|create|write|patch|insert|delete|rename|move)")
 POSTING_TOOL = re.compile(r"(?i)(comment|pull.?request|issue|confluence|page|description)")
 PATCH_FILE = re.compile(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", re.M)
+# The Atlassian server's generic write tools carry the real operation in their `name` argument, and
+# anything they send is published, so every call through them counts as posting.
+GENERIC_WRITE_TOOLS = {"executewrite", "executedestructive"}
+READ_OPERATION = re.compile(r"(?i)^(get|list|search|find|read|fetch|download|discover)")
 
 
 def read_call():
@@ -38,10 +42,10 @@ def read_call():
             args = json.loads(args)
         except ValueError:
             args = {"input": args}
-    paths, texts, command = [], [], ""
+    paths, texts, command, op = [], [], "", ""
 
     def walk(value, key=""):
-        nonlocal command
+        nonlocal command, op
         if isinstance(value, dict):
             for k, v in value.items():
                 walk(v, k)
@@ -51,6 +55,9 @@ def read_call():
         elif isinstance(value, str):
             if key == "command":
                 command = value
+            elif key == "name" and not op:
+                op = value
+                texts.append(value)
             elif re.search(r"(?i)(path|file|uri|dir)", key):
                 paths.append(value.removeprefix("file://"))
             else:
@@ -58,7 +65,16 @@ def read_call():
                 paths.extend(PATCH_FILE.findall(value))
 
     walk(args)
-    return {"tool": tool, "paths": paths, "command": command, "text": "\n".join(texts)}
+    return {"tool": tool, "op": op, "paths": paths, "command": command, "text": "\n".join(texts)}
+
+
+def is_posting(call):
+    op = call["op"]
+    return bool(
+        POSTING_TOOL.search(call["tool"])
+        or (POSTING_TOOL.search(op) and not READ_OPERATION.match(op))
+        or call["tool"].lower() in GENERIC_WRITE_TOOLS
+    )
 
 
 def decide(decision, reason):
@@ -144,7 +160,7 @@ def protect_secrets(call):
             if is_sensitive(word, patterns):
                 decide("deny", f"the command names {word}, which matches a sensitive-paths.txt entry")
     text = call["text"]
-    if text and POSTING_TOOL.search(call["tool"]):
+    if text and is_posting(call):
         jwt_re = re.compile(r"\b[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")
         token_re = re.compile(r"(?i)\b(token|auth(?:orization)?|bearer|api[_-]?key|secret)\b\s*[=:]\s*\S+")
         if jwt_re.search(text) or token_re.search(text):

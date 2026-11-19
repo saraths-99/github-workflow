@@ -41,6 +41,31 @@ Before step 0, if you can run terminal commands, run
 If you can't run commands, skip it without comment: the report still links this chat once one of
 its turns runs on the ticket's feature branch. Never let this step fail or delay the ticket.
 
+## Repowise check
+
+Before step 0, once per run (a resume too), check that Repowise is ready. The app is five
+repositories, and Repowise is what lets the planners, the log analyser and the reviewers see a
+change's callers in the other repos — without it they read only the files they're pointed at.
+
+1. If you can run terminal commands, run `repowise status --workspace` and read which repos are
+   missing or behind. Either way, call one cheap Repowise tool (`get_overview`): a "no index" reply
+   means not indexed; the tool not being offered, or a timeout, means Repowise isn't installed or its
+   MCP server didn't start.
+2. **Ready** — it answers, and every repo in `architecture.md`'s repository table is indexed and up
+   to date. Say so in one line ("Repowise ready — 5 repos indexed") and carry on.
+3. **Not ready** — say which of these it is, and ask (see `qatalyst-ask-developer`), putting the
+   command in the question:
+   - not installed: `pipx install repowise`
+   - not indexed, or repos missing: from the folder that holds all the repos side by side,
+     `repowise init --yes --no-prose --no-editor-setup`
+   - indexed but behind: `repowise update --workspace`
+
+   Options: I've set it up — check again · Continue without Repowise · Stop, I'll set it up.
+4. Never run `pipx install`, `repowise init` or `repowise update` yourself — they write to the
+   developer's machine, and `init` without `--no-editor-setup` writes into the repos.
+5. Tell every agent you hand off to the outcome ("Repowise: ready" or "Repowise: the developer
+   chose to continue without it"), so none of them re-checks or re-asks.
+
 ## 0. Detect whether this is a bug
 
 `jira_projects` (in `copilot-instructions.md`'s settings block) is a list, one entry per Jira
