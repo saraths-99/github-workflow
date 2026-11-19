@@ -10,6 +10,24 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.6.0] - 2026-11-19
+
+### Removed
+- `qatalyst-code-reviewer` agent. There's no dedicated reviewer agent left in this workflow — see
+  known gap #12 in `docs/workflow-design.md` §9 for the independent-review trade-off this accepts.
+
+### Changed
+- `qatalyst-developer` now checks its own diff against `tasks.md` (acceptance criteria, edge-case
+  tests, ticked tasks actually present) and the specs-only rule, once every task is ticked and
+  before reporting done — folded in from the removed `qatalyst-code-reviewer`.
+- `qatalyst-developer` also addresses Rovo PR Code Reviewer comments once a PR is open, via a new
+  "Addressing Rovo PR Code Reviewer comments" section.
+- `qatalyst-ticket-ship` drops the standalone review step and replaces its vague "wait for Rovo
+  comments to be resolved" with a concrete per-repo loop (up to 5 passes): wait for Pipelines and
+  Rovo's PR Code Reviewer, hand any open comments to `qatalyst-developer` to fix and push, and
+  re-check, before moving the ticket to In Review. After 5 passes with comments still open, it asks
+  the developer whether to keep iterating or stop and resolve by hand.
+
 ## [0.5.0] - 2026-11-19
 
 ### Removed
