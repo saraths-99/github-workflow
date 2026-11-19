@@ -39,5 +39,6 @@ applyTo: "**/test/**,**/androidTest/**"
   it did without running it.
 - **A green Gradle task is not a passing test run** where a module's build ignores test failures
   (`architecture.md`'s Testing conventions names them): read that module's test report for failures.
-- `qatalyst-code-reviewer` checks every acceptance criterion and every edge case in the ticket's
-  `tasks.md` against the tests added, not just against the production code.
+- `qatalyst-developer` checks every acceptance criterion and every edge case in the ticket's
+  `tasks.md` against the tests added, not just against the production code, once every task is
+  ticked.

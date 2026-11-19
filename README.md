@@ -15,7 +15,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | ----- | ----- |
 | **`.github/copilot-instructions.md`** | Settings block (Jira projects, base branch), module map, key rules, links to the context docs |
 | **`.github/instructions/`** | Path-scoped instructions: Kotlin, XML UI, Koin DI, BLE (Halo + GDO), data layer, testing, Gradle |
-| **`.github/agents/`** | The 17 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer`), review (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`qatalyst-unit-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-androidtest-writer`, `qatalyst-compatibility-test-writer`, `qatalyst-security-test-writer`, `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`, `qatalyst-performance-test-writer`, `qatalyst-chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
+| **`.github/agents/`** | The 16 agents: planning/build (`qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-developer` — which also checks its own diff against `tasks.md` once every task is ticked; everything else is Rovo's PR Code Reviewer, on the opened PR), and testing — `qatalyst-test-writer` routing to 9 specialized writers (`qatalyst-unit-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-androidtest-writer`, `qatalyst-compatibility-test-writer`, `qatalyst-security-test-writer`, `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`, `qatalyst-performance-test-writer`, `qatalyst-chaos-test-writer`) — the 9 specialized writers and the `qatalyst-` prefix migration are tracked separately; see docs/workflow-design.md §4 |
 | **`.github/skills/`** | Orchestration (`qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests`) and implementation skills (`qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration`) |
 | **`.github/prompts/`** | `*.prompt.md` files behind each slash command |
 | **`.github/hooks/`** | `guards.json` (Copilot's native hook format — VS Code and the Copilot CLI run it; Android Studio doesn't yet) + the guard scripts (format, force-push block, secret protection, context-doc guard) |
@@ -261,13 +261,12 @@ the flow asks whether to ship now.
 Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". If you picked
 "Stop here, I'll ship later", run it on its own with **`/qatalyst-ticket-ship`**.
 
-1. Confirms every task is ticked.
-2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
-   for flagged diffs) against
-   the spec.
-3. Builds and tests locally.
-4. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR,
-   waits on Pipelines where it's on, and moves the ticket to In Review.
+1. Confirms every task is ticked — `qatalyst-developer` already checked its own diff against the
+   spec before reporting done.
+2. Builds and tests locally.
+3. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR.
+4. Per repo, loops Pipelines and Rovo's PR Code Reviewer: open comments go back to
+   `qatalyst-developer` to fix and push, up to 5 passes, before moving the ticket to In Review.
 
 ### Token usage per ticket
 

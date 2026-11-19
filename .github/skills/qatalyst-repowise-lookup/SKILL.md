@@ -2,15 +2,14 @@
 name: qatalyst-repowise-lookup
 description: >
   How to use Repowise, with its fallback — the shared check-once-per-task
-  pattern repeated across planners, developer, reviewers, and log analysis.
+  pattern repeated across planners, developer, and log analysis.
 ---
 
 # qatalyst-repowise-lookup
 
 Used by every agent that cites "Repowise, or a direct read if unavailable" — `qatalyst-bug-planner`,
-`qatalyst-feature-planner`, `qatalyst-developer`, `qatalyst-log-analyser`, `qatalyst-code-reviewer`,
-`qatalyst-security-reviewer`, and `qatalyst-error-handling-reviewer`. This skill is the mechanics;
-each caller states only *what* it's looking up.
+`qatalyst-feature-planner`, `qatalyst-developer`, and `qatalyst-log-analyser`. This skill is the
+mechanics; each caller states only *what* it's looking up.
 
 ## Steps
 
@@ -24,4 +23,6 @@ each caller states only *what* it's looking up.
 ## What this skill is not
 
 Repowise's dead-code/health findings are advisory only — never block a ticket on those alone; that
-rule belongs to the caller (`qatalyst-code-reviewer`), not this skill.
+rule belongs to whichever caller runs the lookup, not this skill. Repowise's own change-risk
+reporting (hotspots, dependents) is no longer checked by an agent in this workflow — Rovo's PR Code
+Reviewer covers general code quality on the opened PR instead.

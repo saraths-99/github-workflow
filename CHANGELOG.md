@@ -10,6 +10,25 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.5.0] - 2026-11-19
+
+### Removed
+- `qatalyst-security-reviewer` and `qatalyst-error-handling-reviewer` agents, and their
+  `review-security`/`review-error-handling` skill logic. General code quality, security-sensitive
+  patterns, and failure-handling correctness are now Rovo's PR Code Reviewer's job, run
+  automatically on the opened Bitbucket PR, instead of a reviewer agent in this workflow.
+
+### Changed
+- `qatalyst-code-reviewer` is narrowed to only what Rovo's PR reviewer can't see: `tasks.md`
+  conformance (acceptance criteria, edge cases, ticked tasks) and the specs-only rule. It lost the
+  `agent` and `repowise/*` tools along with the change-risk check and the two reviewers it used to
+  flag.
+- `qatalyst-ticket-ship` waits on Rovo's PR Code Reviewer per repo, the same way it already waits on
+  Bitbucket Pipelines, before moving a ticket to In Review.
+- `qatalyst-test-writer`'s routing to `qatalyst-security-test-writer` no longer depends on
+  `qatalyst-code-reviewer` flagging a diff — it routes directly from the task touching tokens,
+  SQLCipher, Tink, a BLE secure channel, or permissions.
+
 ## [0.4.3] - 2026-11-17
 
 ### Added

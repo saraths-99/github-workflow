@@ -29,7 +29,7 @@ back. You don't pick which task is next; that's whoever handed you the task's ca
 | A BLE command (Halo or GDO) | `qatalyst-ble-protocol-test-writer` |
 | A Fragment, layout, or nav destination | `qatalyst-androidtest-writer` |
 | A lock-model capability check, or support for a new model | `qatalyst-compatibility-test-writer` |
-| Anything `qatalyst-code-reviewer` flags as security-sensitive (tokens, SQLCipher, Tink, a BLE secure channel, permissions) | `qatalyst-security-test-writer` |
+| A task touching tokens, SQLCipher, Tink, a BLE secure channel, or permissions | `qatalyst-security-test-writer` |
 | A BLE command, secure channel, or lock-model support change | `qatalyst-interop-test-writer` (plan only) |
 | A change under the OTAU/firmware-update modules | `qatalyst-ota-test-writer` (plan only) |
 | A change to BLE scanning, the geofencing service, or other background work | `qatalyst-performance-test-writer` (plan only) |

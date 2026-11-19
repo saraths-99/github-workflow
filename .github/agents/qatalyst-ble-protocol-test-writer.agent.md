@@ -29,8 +29,8 @@ for existing coverage before writing anything — this agent adds the BLE-specif
 - The happy path.
 - The command's timeout.
 - At least one failure path mapped into `Result<T, ModuleError>` — confirm no bare GATT callback
-  reaches the test's assertions, the same thing `qatalyst-error-handling-reviewer` checks in the
-  diff.
+  reaches the test's assertions, the same thing Rovo's PR Code Reviewer checks in the diff once the
+  PR is open.
 - For a command whose behavior differs by model capability (see the ala-carte capability interfaces
   named in `ble-halo.instructions.md`), a case for a model that lacks the capability, where that
   distinction matters.

@@ -54,7 +54,7 @@ by two different agents — that meant asking the developer to approve three tim
 ask for the feature folder name along the way (one agent resolved it, the next one re-confirmed
 it). `tasks.md` now carries what the old `requirements.md` and `design.md` covered — what the ticket
 is for, acceptance criteria, edge cases, approach/risks — as sections ahead of the task checklist, in
-the single file `qatalyst-code-reviewer` and `qatalyst-test-writer` check against. For a bug, the first
+the single file `qatalyst-developer` and `qatalyst-test-writer` check against. For a bug, the first
 acceptance criterion is the reported scenario itself, so the fix is planned with a test that
 reproduces it; each edge case is tied to the task whose test covers it.
 
@@ -152,8 +152,8 @@ it.
 
 | Tier | Models, in order (the first one in the developer's picker is used) | Agents |
 |---|---|---|
-| Deep | Claude Opus 5.5 → GPT-6.1 Sol → GPT-5.6 Sol → Claude Sonnet 5.5; set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts | Unpinned, so they run on the chat's model: `qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-security-reviewer` |
-| Standard | Claude Sonnet 5.5 → GPT-6.1 Sol → Claude Sonnet 5 | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
+| Deep | Claude Opus 5.5 → GPT-6.1 Sol → GPT-5.6 Sol → Claude Sonnet 5.5; set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts | Unpinned, so they run on the chat's model: `qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner` |
+| Standard | Claude Sonnet 5.5 → GPT-6.1 Sol → Claude Sonnet 5 | `qatalyst-developer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
 | Fast | GPT-6 Luna → Claude Haiku 5.5 → GPT-5.6 Luna → Claude Haiku 4.5 | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
 
 The lists mix vendors so the workflow still runs on a plan that lacks one vendor's models. Each tier
@@ -188,29 +188,26 @@ by a skill of its own.
 | `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; the loop is its own procedure | read, edit, search, execute, agent, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
 | `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used |
 | `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about |
-| `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
+| `qatalyst-developer` | Implements `tasks.md`; once every task is ticked, checks its own diff against `tasks.md` and the specs-only rule, and addresses Rovo PR Code Reviewer comments once a PR is open | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
 | `qatalyst-test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search, agent, repowise/* | Pure router — no `edit`/`execute` itself; writes nothing |
 | `qatalyst-unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
 | `qatalyst-ble-protocol-test-writer` | Fake-device BLE command tests | read, edit, search, execute, repowise/* | Edits only test files; never a real lock/GDO unit |
 | `qatalyst-androidtest-writer` | Instrumented UI tests | read, edit, search, execute, repowise/* | Edits only `**/androidTest/**` |
 | `qatalyst-compatibility-test-writer` | Lock-model capability-matrix tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
-| `qatalyst-security-test-writer` | Tests for security-sensitive logic | read, edit, search, execute, repowise/* | Edits only test files; only runs when flagged by `qatalyst-code-reviewer` |
+| `qatalyst-security-test-writer` | Tests for security-sensitive logic | read, edit, search, execute, repowise/* | Edits only test files; routed to by `qatalyst-test-writer` on task content, not a reviewer flag |
 | `qatalyst-interop-test-writer` | Hardware-in-the-loop interop test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/interop.md`, never code |
 | `qatalyst-ota-test-writer` | Firmware OTA test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/ota.md`, never code |
 | `qatalyst-performance-test-writer` | Performance/battery test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/performance.md`, never code |
 | `qatalyst-chaos-test-writer` | Resilience/fault-injection test plan | read, edit, search, repowise/* | Plan only — writes `test-plans/chaos.md`, never code |
-| `qatalyst-code-reviewer` | Reviews diff vs. spec; checklist is its own procedure | read, search, agent, repowise/* | Read-only; checks the specs-only rule on every diff |
-| `qatalyst-security-reviewer` | Reviews sensitive-area diffs; checklist is its own procedure | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
-| `qatalyst-error-handling-reviewer` | Reviews failure-handling in services/repos/BLE/API diffs; checklist is its own procedure | read, search, repowise/* | Read-only; only runs when flagged by `qatalyst-code-reviewer` |
 
-Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `edit` outright); the
-*written* half — "only these files," "only these commands" — lives in each agent's own blueprint.
-`qatalyst-code-reviewer` is the backstop that actually checks the written half was followed.
+There's no dedicated reviewer agent any more. Tool lists are still the *mechanical* half of scope
+enforcement (Copilot can strip `edit` outright); the *written* half — "only these files," "only
+these commands" — lives in each agent's own blueprint. `qatalyst-developer` is now the backstop
+that checks its own written half was followed — against `tasks.md` and the specs-only rule — once
+every task is ticked; everything that used to be a separate reviewer's job beyond that (general
+code quality, security-sensitive patterns, failure-handling correctness) is Rovo's PR Code
+Reviewer's, on the opened PR.
 
-- **Why reviewers get no edit tool.** Removing `edit` from the tool list is the one scope rule
-  Copilot *can* enforce mechanically — so `qatalyst-code-reviewer`, `qatalyst-security-reviewer`,
-  and `qatalyst-error-handling-reviewer` all have it removed outright, instead of relying on a
-  written instruction alone.
 - **Why `qatalyst-test-writer` itself has no `edit` tool.** It's a pure router now — the nine
   specialized writers it hands off to do the actual writing, so `qatalyst-test-writer` needs
   nothing more than `read` and `search` to decide where a task's tests belong.
@@ -221,9 +218,9 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 - **Why `qatalyst-log-analyser`'s command scope is written, not mechanical.** Copilot has no
   per-command allowlist in a tool list — "can run commands" is all-or-nothing. So
   `qatalyst-log-analyser`'s blueprint states explicitly that it may only invoke the three named
-  scripts; `qatalyst-code-reviewer` isn't the backstop here (its phase is before any code diff
-  exists) — the backstop is the developer reviewing `log-analysis.md` and the redacted Jira comment
-  it posts.
+  scripts; `qatalyst-developer`'s own final check isn't the backstop here either (it runs after
+  implementation, and log analysis happens before any code diff exists) — the backstop is the
+  developer reviewing `log-analysis.md` and the redacted Jira comment it posts.
 - **Every `repowise` grant needs its own usage + fallback line.** Granting `repowise/*` in an agent's
   `tools` list isn't self-explanatory — Copilot's tool list has no way to express "try this, then
   fall back," so that behavior is written into the agent's own body: what it uses Repowise for, and
@@ -237,7 +234,7 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
 |---|---|
 | **Orchestration** | `qatalyst-ticket-start`, `qatalyst-ticket-ship`, `qatalyst-write-tests` (routes to `qatalyst-test-writer` for a standalone test-only task, same as a ticket task) |
 | **Implementation** | `qatalyst-new-feature`, `qatalyst-new-screen`, `qatalyst-new-ble-command`, `qatalyst-new-api-call`, `qatalyst-room-migration` |
-| **Agent-support** (not a slash command — delegated to by the agents it backs) | `qatalyst-plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`) — the only agent-support skill left; `review-diff`, `review-security`, `review-error-handling`, and `analyse-logs` were folded directly into their one respective caller's own agent body (`qatalyst-code-reviewer`, `qatalyst-security-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-log-analyser`) since each had exactly one caller and no sharing to preserve |
+| **Agent-support** (not a slash command — delegated to by the agents it backs) | `qatalyst-plan-ticket` (`qatalyst-bug-planner`, `qatalyst-feature-planner`) — the only agent-support skill left; `review-diff`, `review-security`, `review-error-handling`, and `analyse-logs` were folded directly into their one respective caller's own agent body since each had exactly one caller and no sharing to preserve. `review-security` and `review-error-handling` (and their callers, `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`) were later removed outright — that review now runs as Rovo's PR Code Reviewer, on the opened PR. `review-diff` and its caller `qatalyst-code-reviewer` were removed too; `review-diff`'s remaining checks (`tasks.md` conformance, the specs-only rule) were folded straight into `qatalyst-developer`'s own body rather than kept as a separate skill, since it's the only caller |
 | **Cross-cutting** (shared mechanics, referenced by multiple agents/skills above rather than restated) | `qatalyst-jira-ticket-intake` (reading a Jira ticket in full, with an issue-time-pinning extension), `qatalyst-spec-folder-resolution` (computing the deterministic `specs/<bug\|feature>/<ticket ID>/` path — no listing, no asking), `qatalyst-repowise-lookup` (the Repowise-then-fallback, check-once pattern), `qatalyst-ask-developer` (every stop is a question with options — `vscode/askQuestions` in VS Code, `ask_questions` in Android Studio, `ask_user` in the Copilot CLI, numbered options where none exists — never an open-ended prompt), `qatalyst-koin-wiring` (registering a binding in `AppModule.kt`) |
 
 `qatalyst-ticket` is a `user-invocable: true` agent-picker entry point that wraps `qatalyst-ticket-start` with
@@ -276,6 +273,12 @@ Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoi
 30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
 workflow repo's README §2c.
 
+Rovo's **PR Code Reviewer** is a separate, Bitbucket-side feature — not an MCP tool this workflow
+calls. It runs automatically once `qatalyst-ticket-ship` opens a PR, and covers everything no agent
+in this workflow checks any more: general code quality, security-sensitive patterns, and
+failure-handling correctness. `qatalyst-ticket-ship` loops its comments back through
+`qatalyst-developer` — fix, push, re-check — the same way it waits on Pipelines, for each repo's PR.
+
 ## 8. Safety & control principles
 
 - **Developer approves every gate** — each spec file, every task, and the commit/push/PR step all
@@ -286,9 +289,10 @@ workflow repo's README §2c.
   from the real code, cited line-by-line, never regenerated once written.
 - **Redact before sharing** — raw logs stay in a git-ignored `.logs/` folder; everything else sees
   only trimmed/digested/redacted output.
-- **Mechanical enforcement where possible, written rules elsewhere** — reviewers lose the `edit`
-  tool outright; path-scoping ("specs only," "scripts only") is a written rule, checked by
-  `qatalyst-code-reviewer`.
+- **Mechanical enforcement where possible, written rules elsewhere** — path-scoping ("specs only,"
+  "scripts only") is a written rule, checked by `qatalyst-developer` against its own diff once
+  every task is ticked. General code quality, security, and error-handling review are enforced
+  outside this workflow entirely, by Rovo's PR Code Reviewer on the opened PR.
 - **No secrets in the repo** — both MCP files ship with an empty token slot; `protect-secrets`
   blocks the paths that would leak one.
 - **A model per job** — the ticket chat, log analysis and planning run on the strongest model, since
@@ -309,21 +313,34 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
    nothing requires a screen to handle or test a failure/loading/empty state.
 3. **No retry cap for `qatalyst-developer`/`qatalyst-test-writer`** — unlike
    `qatalyst-log-analyser`'s 5-pass cap, nothing
-   says "stop and report" after N failed attempts at a task.
+   says "stop and report" after N failed attempts at a task. (The Rovo review loop in
+   `qatalyst-ticket-ship` does have a 5-pass cap — see item 12.)
 4. **Silent hook degradation** — a timed-out guard "falls back to normal permissions" with no
    requirement that the agent notice or disclose it.
-5. **"Resolved" is undefined** for review comments — unclear if a developer override counts.
+5. **"Resolved" is undefined** for review comments — unclear if a developer override counts. This
+   applies to Rovo's PR Code Reviewer's comments, the only review comments left in this workflow.
 6. **Ticket reclassified after `qatalyst-ticket-start` runs** — issue type is read once; a later
    feature→bug (or reverse) reclassification isn't re-checked.
-7. **Technically-passing-but-wrong-approach implementations** — `qatalyst-code-reviewer` checks
-   criteria are
-   met, not that the approach matches `tasks.md`'s Approach section's intent.
+7. **Technically-passing-but-wrong-approach implementations** — `qatalyst-developer`'s own final
+   check (and Rovo's PR Code Reviewer) checks criteria are met, not that the approach matches
+   `tasks.md`'s Approach section's intent.
 8. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
 9. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
 10. **Plan-only test categories have no execution gate** — `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`,
     `qatalyst-performance-test-writer`, and `qatalyst-chaos-test-writer` only guarantee a plan file exists and is
     current; nothing in this workflow checks that a human actually ran it against real hardware
     before the ticket ships, or records the result anywhere `qatalyst-ticket-ship` can see.
+11. **Rovo's PR Code Reviewer is outside this workflow's control** — `qatalyst-ticket-ship` waits
+    for it, but can't configure its checklist, confirm it actually ran (vs. was skipped/rate-limited),
+    or re-trigger it on demand the way it used to re-run a reviewer agent. If it's off, misconfigured,
+    or silently fails for a repo, general code quality, security-sensitive patterns, and
+    failure-handling correctness go unchecked for that PR — no agent in this workflow checks any of
+    that any more.
+12. **No independent code review left** — `qatalyst-developer` checks its own diff against
+    `tasks.md` and the specs-only rule; the one agent that wrote the code is now also the only
+    agent in this workflow checking it against spec, which is weaker than a separate reviewer
+    re-reading the diff fresh. Rovo's PR Code Reviewer is independent, but only for what it
+    covers (item 11) — it doesn't know `tasks.md` exists.
 
 ## 10. Folder structure
 
@@ -363,7 +380,7 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-log-analyser.agent.md
     │   ├── qatalyst-bug-planner.agent.md
     │   ├── qatalyst-feature-planner.agent.md
-    │   ├── qatalyst-developer.agent.md
+    │   ├── qatalyst-developer.agent.md       also the tasks.md/specs-only check and the Rovo review loop's fixer — no reviewer agent left
     │   ├── qatalyst-test-writer.agent.md     router only — see below
     │   ├── qatalyst-unit-test-writer.agent.md
     │   ├── qatalyst-ble-protocol-test-writer.agent.md
@@ -373,10 +390,7 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-interop-test-writer.agent.md     plan only
     │   ├── qatalyst-ota-test-writer.agent.md         plan only
     │   ├── qatalyst-performance-test-writer.agent.md plan only
-    │   ├── qatalyst-chaos-test-writer.agent.md       plan only
-    │   ├── qatalyst-code-reviewer.agent.md
-    │   ├── qatalyst-security-reviewer.agent.md
-    │   └── qatalyst-error-handling-reviewer.agent.md
+    │   └── qatalyst-chaos-test-writer.agent.md       plan only
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py
