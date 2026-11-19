@@ -20,10 +20,14 @@ Used by `qatalyst-bug-planner`, `qatalyst-feature-planner` (via `qatalyst-plan-t
    Testers and reporters often add the detail that actually matters — an issue time, a repro step,
    a linked design — in a comment rather than the description, so never stop at the first relevant-
    looking text.
-3. Note any linked Confluence pages and Figma designs for the caller to fetch separately.
+3. Read the ticket's attachments: call `getJiraIssue` with `fields: ["attachment"]` — its default
+   compact view leaves attachments out, so without it a ticket with a log attached looks like it has
+   none. Note each attachment's numeric `id`, `filename`, `size` and `mimeType`; the id is what
+   `downloadJiraIssueAttachment` needs, and it is not the media UUID inside a comment's body.
+4. Note any linked Confluence pages and Figma designs for the caller to fetch separately.
 
 ## Done means
 
-The caller has the ticket's project key, issue type, and full text — without re-reading the ticket
+The caller has the ticket's project key, issue type, full text and attachment list — without re-reading the ticket
 a second time later in its own flow. `qatalyst-log-ticket-intake` pins an issue time on top of this as its
 own next step; that's not part of this skill.

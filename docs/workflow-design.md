@@ -434,7 +434,7 @@ specs/<bug|feature>/<ticket-id>/
     └── chaos.md           written by qatalyst-chaos-test-writer
 
 .logs/<ticket-id>/
-├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads
+├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads; the one write it allows is the attachment download (a single https `curl -o` into this folder)
 │   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 ├── digest.md             error groups with counts and first/last times

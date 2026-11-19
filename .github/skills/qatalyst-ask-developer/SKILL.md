@@ -39,9 +39,8 @@ and runs you again with the answer.
 | Stop | Options |
 |---|---|
 | No ticket ID given | The developer's own open Jira tickets (`assignee = currentUser() AND statusCategory != Done`, newest first, up to 4: "`ABC-123` — summary"). The tool's free-text answer is the only way to give another ID. |
-| Ticket's Jira project isn't in `jira_projects` | Treat it as a feature · Treat it as a bug · Stop, I'll add the project to the settings |
 | Bug ticket has no log attachment | UI-only issue — skip log analysis · I've attached it now — check again · Stop, I'll attach it later |
-| Raw log isn't in `.logs/<ticket ID>/raw/` | Download it from the ticket (only if your Jira tools can) · I've saved it there — continue · Skip log analysis |
+| Raw log isn't in `.logs/<ticket ID>/raw/` and the download from the ticket couldn't run or failed (say why, and the exact folder and file name to save it as) | I've saved it there — continue · Skip log analysis |
 | Trimmed log came out nearly empty | Widen the time window · Use the whole log · Wrong attachment — stop |
 | `log-analysis.md` has two candidate root causes | Fix cause A (name it) · Fix cause B (name it) · Fix both |
 | `tasks.md` draft ready | Approve · Request changes (**needs text**: what to change) · Stop here |

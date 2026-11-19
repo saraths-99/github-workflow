@@ -51,20 +51,23 @@ so there's no single shared `bug_issue_types` to check against.
 1. Read the ticket's Jira `issuetype` field **and its project key** via `qatalyst-jira-ticket-intake` —
    never parsed from the ticket ID string.
 2. Match that project key against `jira_projects`. If none matches, or the matched entry's
-   `bug_issue_types` is empty, **ask the developer**: treat it as a feature, treat it as a bug, or
-   stop so they can add the project to the settings. Don't guess which entry's `bug_issue_types` to
-   fall back to.
-3. Compare the ticket's `issuetype` against *that matched project's* `bug_issue_types`. Then check
-   **Resuming** below before going on — if this ticket was started before, it says which step to
-   pick up from instead of 0.4.
-4. **If it matches a bug type** (or the developer chose "treat it as a bug"):
+   `bug_issue_types` is empty, there's no bug type to compare against, so **the ticket is treated as
+   a bug** — this workflow is mainly run on bugs, so that's the default. Don't ask the developer,
+   and don't fall back to another entry's `bug_issue_types`. Say in one line that it's being run as
+   a bug and why (project key not in `jira_projects`, or no `bug_issue_types` set for it), then
+   carry on.
+3. Otherwise compare the ticket's `issuetype` against *that matched project's* `bug_issue_types`.
+   Either way, check **Resuming** below before going on — if this ticket was started before, it says
+   which step to pick up from instead of 0.4.
+4. **If it matches a bug type, or step 2 defaulted it to a bug:**
    - If `specs/bug/<ticket ID>/log-analysis.md` already exists, hand off straight to
      `qatalyst-bug-planner` — it's already been analyzed (via a manual `/log-analyser` run, or a
      previous pass of this same step).
    - Otherwise, hand off to the `qatalyst-log-analyser` agent yourself, exactly as
      `/log-analyser <ticket ID>` would, wait for it to write `log-analysis.md`, then hand off to
      `qatalyst-bug-planner`.
-5. **If it doesn't match a bug type**, hand off straight to `qatalyst-feature-planner`.
+5. **If the matched project's `bug_issue_types` doesn't include the ticket's type**, hand off
+   straight to `qatalyst-feature-planner`.
 
 A developer can still run `/log-analyser <ticket ID>` manually and ahead of time if they want to
 look at the logs before deciding to start the ticket at all — in that case step 0.4's "already
