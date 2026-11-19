@@ -9,7 +9,7 @@ description: >
   automatically by qatalyst-ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
-tools: ['read', 'edit', 'search', 'execute', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
+tools: ['read', 'edit', 'search', 'execute', 'executeRead', 'discover', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -62,17 +62,26 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
      nothing.
 2. **Extract** — run `logcat_extract.py` against the raw attachment (whatever type it is), writing
    into `.logs/<ticket ID>/raw/extracted/`. If the attachment isn't in `.logs/<ticket ID>/raw/` yet,
-   fetch it yourself first, using the attachment id Intake reported: call
-   `downloadJiraIssueAttachment` (via `executeRead`, `outputPath` `.logs/<ticket ID>/raw/<filename>`),
-   then run the `downloadCommand` it returns, unchanged. It is a short-lived URL, so run it straight
-   away; if it expired, call the tool again. The `protect-secrets` hook allows exactly that one
-   `curl` shape and nothing else under `raw/`. If the download can't run — no terminal, no network,
-   the tool isn't offered, or the command fails — say which, plainly, and ask the developer, with
-   options (see `qatalyst-ask-developer`): I've saved it there — continue, or skip log analysis,
-   naming the exact folder and file name to save it as. Never ask them to paste a log into chat —
-   raw logs should not live in chat history. If the attachment is a `.zip`, the script extracts every `.txt`/`.log`
-   entry inside it and, when there's more than one, merges them in chronological order — never unzip
-   or merge anything yourself. Read only the script's own manifest output (file names, sizes, what
+   fetch it yourself first, using the attachment id Intake reported:
+   1. `downloadJiraIssueAttachment` is not in your tool list — it is reached through the Atlassian
+      `executeRead` tool, which is why `executeRead` (and `discover`) are in your `tools`. Call
+      `executeRead` with that operation name, the attachment id and `outputPath`
+      `.logs/<ticket ID>/raw/<filename>`. If the server rejects the name, call `discover` with
+      "download a jira issue attachment" and use the operation and execute tool it names. Don't
+      conclude the tool is missing before you've done this.
+   2. Run the `downloadCommand` it returns, unchanged. It is a short-lived URL, so run it straight
+      away; if it expired, call the operation again. The `protect-secrets` hook allows exactly that
+      one `curl` shape and nothing else under `raw/`.
+   3. If it can't be done, name the step that failed, in these words: **no Atlassian `executeRead`
+      tool** · **the server found no download operation** · **the operation returned an error**
+      (quote the error) · **no terminal to run the command** · **the command was blocked or failed**
+      (quote the hook or `curl` message). Then ask the developer, with options (see
+      `qatalyst-ask-developer`): I've saved it there — continue, or skip log analysis, naming the
+      exact folder and file name to save it as.
+
+   Never ask them to paste a log into chat — raw logs should not live in chat history. If the
+   attachment is a `.zip`, the script extracts every `.txt`/`.log` entry inside it and, when there's
+   more than one, merges them in chronological order — never unzip or merge anything yourself. Read only the script's own manifest output (file names, sizes, what
    was skipped and why) — never the extracted text.
 3. **Trim** — run `logcat_trim.py` against the extracted log from step 2, with the pinned issue
    time. First check its own `# logcat_trim: N lines -> ...` header line: if it trimmed to 0 (or

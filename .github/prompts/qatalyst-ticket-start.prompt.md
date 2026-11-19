@@ -8,6 +8,8 @@ Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
 
 0. Run `python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>` so this chat's
    token usage is linked to the ticket (skip silently if it can't run).
+   Then check Repowise is ready (installed, and every repo indexed and current); if not, ask the
+   developer to set it up, continue without it, or stop — see the skill's "Repowise check".
 1. Read the ticket's Jira issue type and project key, match the project key against this repo's
    configured `jira_projects`, and compare the issue type against that project's own
    `bug_issue_types`. If it's a bug and `log-analysis.md` doesn't exist yet, hand off to

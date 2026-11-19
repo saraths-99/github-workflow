@@ -63,7 +63,7 @@ both and reads, from the tool's arguments:
 
 | Guard | Event | Does |
 |---|---|---|
-| `protect-secrets` | `preToolUse` | Denies a call whose paths match `sensitive-paths.txt`, or a command naming one — except the log analyser's own `logcat_extract.py` / `logcat_trim.py` run on their own (no `;`, `&&`, `|`, `` ` `` or `$(`). Denies Jira/Confluence/PR text that looks like a JWT or token |
+| `protect-secrets` | `preToolUse` | Denies a call whose paths match `sensitive-paths.txt`, or a command naming one — except the log analyser's own `logcat_extract.py` / `logcat_trim.py` run on their own (no `;`, `&&`, `|`, `` ` `` or `$(`), and the one `curl` that saves a ticket attachment (one https URL, one `-o` file directly under `.logs/<ticket>/raw/`). Denies Jira/Confluence/PR text that looks like a JWT or token, including text sent through the Atlassian `executeWrite`/`executeDestructive` tools or a write-style operation named in a call's `name` argument |
 | `block-force-push` | `preToolUse` | Denies `git push` with `--force`, `-f` or `--force-with-lease` |
 | `guard-context-docs` | `preToolUse` | Asks before an edit to, or a command naming, `project-context.md` / `architecture.md` |
 | `format-kotlin` | `postToolUse` | After a `.kt`/`.kts` edit, runs `./gradlew ktlintFormat` (or `spotlessApply`) if the repo has one |

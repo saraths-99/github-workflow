@@ -60,5 +60,23 @@ class AttachmentDownload(unittest.TestCase):
         self.assertEqual(decision("executeRead", other_call), "deny")
 
 
+class PostedText(unittest.TestCase):
+    def test_token_in_text_sent_through_executewrite_is_denied(self):
+        body = {"name": "someBitbucketOperation", "inputs": {"description": "debug with token: abc123xyz"}}
+        self.assertEqual(decision("executeWrite", body), "deny")
+
+    def test_clean_text_through_executewrite_is_allowed(self):
+        body = {"name": "someBitbucketOperation", "inputs": {"description": "Fixes the lock retry loop"}}
+        self.assertIsNone(decision("executeWrite", body))
+
+    def test_posting_operation_named_in_args_is_checked_even_via_executeread(self):
+        body = {"name": "addOrEditJiraIssueComment", "inputs": {"body": "Authorization: Bearer abc123"}}
+        self.assertEqual(decision("executeRead", body), "deny")
+
+    def test_reads_with_token_looking_text_are_not_blocked(self):
+        body = {"name": "getJiraIssue", "inputs": {"issueIdOrKey": "HALOM-1", "note": "token: abc"}}
+        self.assertIsNone(decision("executeRead", body))
+
+
 if __name__ == "__main__":
     unittest.main()
