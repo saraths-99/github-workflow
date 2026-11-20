@@ -77,6 +77,18 @@ anywhere, and prompt or code content is never captured.
 | Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
 | Android Studio's Copilot chat panel | none: the JetBrains plugin (checked at 1.21.0) has no trace export | nothing |
 
+- **Turning it on in VS Code.** The setting isn't listed in the Settings screen, so searching for it
+  there finds nothing; it goes in a settings JSON file. VS Code reads it from only two places: the
+  app repo's own `.vscode/settings.json` (the folder open in VS Code, not this workflow repo), or
+  the user settings (**Preferences: Open User Settings (JSON)**). `.github/token-tracker/vscode-settings.json`
+  is only the template `install.sh` copies into a new `.vscode/settings.json`; editing it changes
+  nothing. Add `"github.copilot.chat.otel.dbSpanExporter.enabled": true`, run **Developer: Reload
+  Window**, send one chat message, and check that `agent-traces.db` now exists
+  (`~/.config/Code/User/globalStorage/github.copilot-chat/` on Linux,
+  `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/` on macOS). If the
+  setting shows "Unknown configuration setting", the installed Copilot Chat extension is too old to
+  have it.
+
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
   `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, and
   the CLI launcher does it on start), or, failing that, when any turn in it ran on a branch named
