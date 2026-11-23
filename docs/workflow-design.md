@@ -64,7 +64,9 @@ admin turning on the Bitbucket tools — nothing this workflow controls. Without
 never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
 `qatalyst-ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
 
-### Token usage per ticket
+### Token usage per ticket (Beta — works in VS Code)
+
+This feature is in beta: it is only confirmed to work in VS Code.
 
 `.github/token-tracker/scripts/token_tracker.py` reports how many tokens a ticket used, one row per
 model call: `ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`, `timestamp`, plus a
@@ -74,8 +76,7 @@ anywhere, and prompt or code content is never captured.
 | Where the developer works | Trace source | What's available |
 |---|---|---|
 | VS Code Copilot Chat | `agent-traces.db` in VS Code's storage for the Copilot Chat extension, turned on by `github.copilot.chat.otel.dbSpanExporter.enabled` | every model call, by agent and sub-agent |
-| Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
-| Android Studio's Copilot chat panel | none: the JetBrains plugin (checked at 1.21.0) has no trace export | nothing |
+| Copilot CLI | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
 
 - **Turning it on in VS Code.** The setting isn't listed in the Settings screen, so searching for it
   there finds nothing; it goes in a settings JSON file. VS Code reads it from only two places: the

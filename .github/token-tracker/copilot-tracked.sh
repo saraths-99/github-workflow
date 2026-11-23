@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Starts the Copilot CLI with token tracking on, for one ticket. Use it in place of `copilot`,
-# e.g. from Android Studio's terminal:
+# Starts the Copilot CLI with token tracking on, for one ticket. Use it in place of `copilot`:
 #   .github/token-tracker/copilot-tracked.sh ABC-123 [any copilot arguments]
 # Writes the CLI's trace (names, models, token counts, timings; never prompt or code content) to
 # .logs/token-tracker/copilot-cli-otel.jsonl, which token_tracker.py reads.
