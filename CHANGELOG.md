@@ -10,6 +10,15 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.7] - 2026-11-20
+
+### Fixed
+- The `/log-analyser` prompt now matches the agent: it reads the attachment list and downloads the
+  log attachment with `downloadJiraIssueAttachment`. Before, it said no shell command other than the
+  three log scripts could run, which ruled out the download when `/log-analyser` was run directly.
+- `docs/workflow-design.md` says where VS Code reads the token-tracing setting from and how to check
+  that tracing is on.
+
 ## [0.4.6] - 2026-11-19
 
 ### Fixed

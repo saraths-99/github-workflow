@@ -11,10 +11,15 @@ you want to look at the logs before deciding to start the ticket at all.
 
 Run the `qatalyst-log-analyser` agent on the ticket ID given as an argument:
 
-1. Intake the ticket **in full** via Atlassian Rovo MCP — description and every comment, since the
-   issue time is often only in a comment — and pin the issue time. Note whether the log attachment
-   is a plain text file or a `.zip`.
-2. Run `logcat_extract.py`, then `logcat_trim.py`, then `logcat_digest.py` — no other shell command.
+1. Intake the ticket **in full** via Atlassian Rovo MCP — description, every comment and the
+   attachment list, since the issue time is often only in a comment and the log is usually an
+   attachment — and pin the issue time. Note the log attachment's id, name, and whether it is a
+   plain text file or a `.zip`.
+2. If the attachment isn't in `.logs/<ticket ID>/raw/` yet, fetch it with
+   `downloadJiraIssueAttachment` (through the Atlassian `executeRead` tool) and run the `curl` it
+   returns, unchanged. If that can't be done, say which step failed and ask the developer to save it
+   there. Then run `logcat_extract.py`, `logcat_trim.py` and `logcat_digest.py` — no other shell
+   command.
 3. Link, Map and Rank root-cause hypotheses — Map uses `qatalyst-repowise-lookup` to locate the real class
    and module each error tag belongs to, grounding the fix in actual code. Re-run from Link as
    needed, up to 5 passes.
