@@ -11,7 +11,7 @@ applyTo: "**/services/**,**/repository/**,**/datasource/**"
 - Network and database models are mapped to domain models explicitly — don't leak a Retrofit DTO or
   a Room entity past the repository boundary.
 - Local storage goes through Room with SQLCipher; tokens and keys are only ever stored encrypted,
-  never in `SharedPreferences` or plain files — see the `protect-secrets` hook, which also blocks
-  reads/edits of `local.properties` and keystore files.
+  never in `SharedPreferences` or plain files. Don't read or edit `local.properties` or keystore
+  files.
 - A new API call or Room change gets a mocked/migration test — see the `qatalyst-new-api-call` and
   `qatalyst-room-migration` project skills and `testing.instructions.md`.

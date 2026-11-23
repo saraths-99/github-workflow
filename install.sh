@@ -13,15 +13,15 @@
 #
 # What it does:
 #   - Downloads this repo (a shallow clone of REPO_URL@BRANCH) into a temp dir.
-#   - Overwrites the *mechanism* files (agents, instructions, skills, prompts, hooks scripts,
-#     guards.json, log-analyser scripts, token-tracker) with the latest from this repo -- these
+#   - Overwrites the *mechanism* files (agents, instructions, skills, prompts,
+#     log-analyser scripts, token-tracker) with the latest from this repo -- these
 #     are maintained here, not hand-edited per app repo, so a later re-run is how you pick up a fix.
 #   - Never overwrites the *project data* files if they already exist: copilot-instructions.md
-#     (your settings block, module map, key rules), hooks/sensitive-paths.txt (grows over
-#     time), project-context.md, architecture.md,
+#     (your settings block, module map, key rules),
+#     project-context.md, architecture.md,
 #     .mcp.json (which may contain other project servers), and anything under specs/ (ticket data).
 #   - Installs only what the workflow uses in the app repo. Reference material -- the JetBrains MCP
-#     snippet, docs/field-sources.md, hooks/hook-protocol.md -- stays in this repo, and copies
+#     snippet, docs/field-sources.md -- stays in this repo, and copies
 #     left by an older install are removed.
 #   - Leaves everything git-tracked in the target repo, so `git status`/`git diff` shows exactly
 #     what changed and the run is trivially reversible.
@@ -76,9 +76,6 @@ sync_dir .github/skills
 sync_dir .github/prompts
 sync_dir .github/log-analyser/scripts
 sync_dir .github/token-tracker
-mkdir -p "$TARGET/.github/hooks/scripts"
-cp "$SRC/.github/hooks/guards.json" "$TARGET/.github/hooks/guards.json"
-cp -R "$SRC/.github/hooks/scripts/." "$TARGET/.github/hooks/scripts/"
 mkdir -p "$TARGET/specs/.templates"
 cp -R "$SRC/specs/.templates/." "$TARGET/specs/.templates/"
 mkdir -p "$TARGET/docs"
@@ -86,15 +83,18 @@ cp "$SRC/docs/workflow-design.md" "$TARGET/docs/workflow-design.md"
 
 # Reference material an older install copied in; it stays in this repo now.
 rm -rf "$TARGET/.github/mcp"
-rm -f "$TARGET/.github/hooks/hook-protocol.md" "$TARGET/docs/field-sources.md"
-# Windows versions of the hook scripts, from before the workflow went macOS/Linux only.
+rm -f "$TARGET/docs/field-sources.md"
+# The workflow no longer ships guard hooks; remove the files an older install copied in. A
+# hooks/sensitive-paths.txt is left alone (it is the app repo's own data) and can be deleted by hand.
+rm -f "$TARGET/.github/hooks/guards.json" "$TARGET/.github/hooks/hook-protocol.md"
 for guard in format-kotlin block-force-push protect-secrets guard-context-docs; do
-  rm -f "$TARGET/.github/hooks/scripts/$guard.ps1"
+  rm -f "$TARGET/.github/hooks/scripts/$guard.sh" "$TARGET/.github/hooks/scripts/$guard.ps1"
 done
+rm -f "$TARGET/.github/hooks/scripts/guards.py"
+rmdir "$TARGET/.github/hooks/scripts" "$TARGET/.github/hooks" 2>/dev/null || true
 
 echo "Preserving project data (only added if missing) ..."
 keep_if_present .github/copilot-instructions.md
-keep_if_present .github/hooks/sensitive-paths.txt
 keep_if_present .mcp.json
 keep_if_present project-context.md
 keep_if_present architecture.md

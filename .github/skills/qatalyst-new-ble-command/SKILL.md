@@ -29,4 +29,4 @@ The Halo and GDO stacks are never mixed — pick the one the task's `tasks.md` e
 ## Done means
 
 The command works against the fake device test harness, respects the existing queue and secure
-channel, and the `protect-secrets` hook would find nothing to flag in the diff.
+channel, and no key material, token or raw payload appears in a log statement.

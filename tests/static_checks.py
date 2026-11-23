@@ -172,32 +172,6 @@ def _instructions_check():
     return (not problems), ("; ".join(problems) if problems else f"{len(files)} instruction files ok")
 
 
-@check("hooks use Copilot's native format, with real events and existing scripts")
-def _hooks_check():
-    guards_path = ROOT / ".github/hooks/guards.json"
-    if not guards_path.exists():
-        return False, "guards.json not found"
-    data = json.loads(guards_path.read_text(encoding="utf-8"))
-    if data.get("version") != 1:
-        return False, f"version is {data.get('version')!r}, expected 1"
-    hooks = data.get("hooks")
-    if not isinstance(hooks, dict):
-        return False, "hooks must be an object keyed by event name"
-    real_events = {"preToolUse", "postToolUse"}
-    problems, count = [], 0
-    for event, entries in hooks.items():
-        if event not in real_events:
-            problems.append(f"bad event {event!r}")
-        for entry in entries:
-            count += 1
-            script = entry.get("bash", "")
-            if entry.get("type") != "command" or not script:
-                problems.append(f"{event}: each entry needs type 'command' and a bash command")
-            elif not (ROOT / script).exists():
-                problems.append(f"{event}: {script} doesn't exist")
-    return (not problems), ("; ".join(problems) if problems else f"{count} hooks ok")
-
-
 @check("the tasks spec template exists")
 def _spec_templates_check():
     tmpl_dir = ROOT / "specs/.templates"
@@ -240,16 +214,6 @@ def _mcp_files_check():
         problems.extend(f"{f}: {p}" for p in file_problems)
 
     return (not problems), ("; ".join(problems) if problems else "all files valid, no tokens")
-
-
-@check("sensitive-paths.txt exists and lists the sensitive paths")
-def _sensitive_paths_check():
-    f = ROOT / ".github/hooks/sensitive-paths.txt"
-    if not f.exists():
-        return False, "file not found"
-    lines = [l.strip() for l in f.read_text(encoding="utf-8").splitlines()]
-    entries = [l for l in lines if l and not l.startswith("#")]
-    return (len(entries) >= 5), f"{len(entries)} entries"
 
 
 @check("no leftover generator/bootstrap references")
