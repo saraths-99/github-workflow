@@ -10,14 +10,9 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
-## [0.4.8] - 2026-11-23
+## [0.4.9] - 2026-11-23
 
 ### Changed
-- Per-ticket token tracking is marked beta, confirmed to work in VS Code only. The Android Studio
-  guidance is removed from its docs. `README.md` and `docs/workflow-design.md` say so in the section
-  heading.
-- `README.md` has a per-IDE guide (§2d): a table of what differs between VS Code, Android Studio
-  and the Copilot CLI, and a short setup checklist for each, with places marked for screenshots.
 - A bug no longer reuses an existing `feature/<ticket ID>-*` branch (this reverses the 0.4.6
   rule that kept it). `qatalyst-ticket-start` ignores that branch and uses a `bug/<ticket ID>-*`
   branch if one exists.
@@ -68,6 +63,17 @@ changed since its last sync.
 ### Removed
 - The Copilot CLI launcher `.github/token-tracker/copilot-tracked.sh`, and its mentions in the docs
   and the script's messages. The script still reads a CLI trace file if one is present.
+
+## [0.4.8] - 2026-11-23
+
+### Changed
+- Per-ticket token tracking is marked beta, confirmed to work in VS Code only. The Android Studio
+  guidance is removed from its docs, and the Copilot CLI launcher (`copilot-tracked.sh`) is labelled
+  untested. `README.md` and `docs/workflow-design.md` say so in the section heading.
+- `README.md` has a per-IDE guide (§2d): a table of what differs between VS Code, Android Studio
+  and the Copilot CLI, and a short setup checklist for each, with places marked for screenshots.
+
+### Removed
 - The four guard hooks (`.github/hooks/`: `guards.json`, the format, force-push, secret-protection
   and context-doc scripts, `sensitive-paths.txt`, `hook-protocol.md`) and `tests/test_guards.py`.
   `install.sh` no longer copies them and deletes the ones an older install left in an app repo; a
