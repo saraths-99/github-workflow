@@ -35,8 +35,8 @@ straight into `tasks.md`.
   Never run any other shell command, even one that looks harmless — in particular, never `unzip`,
   `cat`, or `grep` the raw attachment yourself; that's what `logcat_extract.py` is for.
 - You may read `.logs/<ticket ID>/trimmed.log` and `.logs/<ticket ID>/digest.md`. **Never read
-  `.logs/<ticket ID>/raw/` or `.logs/<ticket ID>/raw/extracted/`** — a hook blocks this, but don't
-  attempt it even if the hook is somehow unavailable. The extracted file is still the full raw log,
+  `.logs/<ticket ID>/raw/` or `.logs/<ticket ID>/raw/extracted/`** — nothing enforces this but you,
+  so don't attempt it. The extracted file is still the full raw log,
   just normalized to plain text; only `logcat_trim.py` may read it.
 - **Before writing anything, locate the real code this bug touches** — use `qatalyst-repowise-lookup`
   against the digest's suspect tags/classes (the Map step below). That's what grounds the fix, not a
@@ -70,12 +70,12 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
       "download a jira issue attachment" and use the operation and execute tool it names. Don't
       conclude the tool is missing before you've done this.
    2. Run the `downloadCommand` it returns, unchanged. It is a short-lived URL, so run it straight
-      away; if it expired, call the operation again. The `protect-secrets` hook allows exactly that
-      one `curl` shape and nothing else under `raw/`.
+      away; if it expired, call the operation again. Run only that command, and don't open
+      the file it saves.
    3. If it can't be done, name the step that failed, in these words: **no Atlassian `executeRead`
       tool** · **the server found no download operation** · **the operation returned an error**
       (quote the error) · **no terminal to run the command** · **the command was blocked or failed**
-      (quote the hook or `curl` message). Then ask the developer, with options (see
+      (quote the `curl` message). Then ask the developer, with options (see
       `qatalyst-ask-developer`): I've saved it there — continue, or skip log analysis, naming the
       exact folder and file name to save it as.
 

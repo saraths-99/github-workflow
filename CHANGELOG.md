@@ -16,6 +16,24 @@ changed since its last sync.
 - Per-ticket token tracking is marked beta, confirmed to work in VS Code only. The Android Studio
   guidance is removed from its docs, and the Copilot CLI launcher (`copilot-tracked.sh`) is labelled
   untested. `README.md` and `docs/workflow-design.md` say so in the section heading.
+- `README.md` has a per-IDE guide (§2d): a table of what differs between VS Code, Android Studio
+  and the Copilot CLI, and a short setup checklist for each, with places marked for screenshots.
+
+### Removed
+- The four guard hooks (`.github/hooks/`: `guards.json`, the format, force-push, secret-protection
+  and context-doc scripts, `sensitive-paths.txt`, `hook-protocol.md`) and `tests/test_guards.py`.
+  `install.sh` no longer copies them and deletes the ones an older install left in an app repo; a
+  `hooks/sensitive-paths.txt` there is left in place and can be deleted by hand. The README, the
+  design doc (§6, §8, §9 and the folder tree), the instruction files, `qatalyst-new-ble-command`
+  and `qatalyst-log-analyser` no longer point to a hook, and the static checks for hooks and
+  `sensitive-paths.txt` are gone. The written rules in each agent stay as the only guard, and the
+  design doc lists the gap in §9.
+
+### Fixed
+- Docs matched to the repo: the README's agent count (19), skill list and prompt list; the README's
+  and design doc's section references; the README's 2a/2b/2c order and "three things" count;
+  `docs/workflow-design.md` now shows the log-attachment download in the log-analysis loop and the
+  Repowise check at ticket start.
 
 ## [0.4.7] - 2026-11-20
 

@@ -555,8 +555,8 @@ def render_html(summary, sources):
             )
         parts += [
             "</tbody></table></div>",
-            "<footer>Skills and hooks make no model calls of their own: a skill's text is counted in the input "
-            "tokens of the agent that loaded it, and hooks are scripts that use no tokens. Same data as "
+            "<footer>Skills make no model calls of their own: a skill's text is counted in the input "
+            "tokens of the agent that loaded it. Same data as "
             "<code>token-usage.json</code> in this folder.</footer>",
         ]
     parts.append("</main></body></html>\n")
@@ -645,8 +645,8 @@ def cmd_report(root, ticket, open_page=False):
             _table(["Model", "Calls", "Input tokens", "Output tokens"],
                    [(m, n, f"{i:,}", f"{o:,}") for m, (n, i, o) in sorted(per_model.items(), key=lambda kv: -(kv[1][1] + kv[1][2]))]),
             "",
-            "Skills and hooks make no model calls of their own: a skill's text is counted in the input tokens of "
-            "the agent that loaded it, and hooks are scripts that use no tokens. Per-call rows are in "
+            "Skills make no model calls of their own: a skill's text is counted in the input tokens of "
+            "the agent that loaded it. Per-call rows are in "
             "`token-usage.html` and `token-usage.json`.",
         ]
     page = out_dir / "token-usage.html"

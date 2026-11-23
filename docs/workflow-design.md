@@ -1,14 +1,14 @@
 # Agentic AI-SDLC workflow — implementation reference
 
 Design reference for what actually runs inside this repo: the daily ticket pipeline, the
-log-analysis loop, the safety mechanisms wrapping all of it, and — in §11 — exactly where every one
+log-analysis loop, the safety mechanisms wrapping all of it, and — in §10 — exactly where every one
 of those files lives. Each skill's own `SKILL.md` is the authoritative source for its own
 behavior — this document is a synthesis for a single-page view, not a replacement.
 
 This workflow's files are edited directly, in place — there's no wizard, no templating, no
 detection logic. The one remaining moving part is `install.sh` (see
 [README.md §2](../README.md#2-one-time-setup)): a plain file sync, run from inside the actual app
-repo, that pulls the latest agents/skills/instructions/hooks/prompts/mcp config from this repo and
+repo, that pulls the latest agents/skills/instructions/prompts/mcp config from this repo and
 overwrites them there — a one-way copy, not a generator run against detected app-repo state.
 
 ## 1. One-time manual fill-ins
@@ -98,7 +98,7 @@ anywhere, and prompt or code content is never captured.
 - **Agent names.** An agent picked from the picker is recorded by Copilot as "GitHub Copilot Chat"
   with its own name in a separate attribute; the tracker uses that name. A chat with no custom agent
   shows as "GitHub Copilot Chat".
-- **Skills and hooks** make no model calls of their own, so they have no rows: a skill's text is
+- **Skills** make no model calls of their own, so they have no rows: a skill's text is
   counted in the input tokens of the agent that loaded it.
 - **Retention.** Copilot deletes its own trace rows after 7 days, so every `collect`/`report` run
   copies new calls into `.logs/token-tracker/calls.jsonl` (git-ignored), and reports are built from
@@ -119,7 +119,8 @@ per-agent `byAgent` breakdown). Both come from the same data.
 
 ```mermaid
 flowchart TD
-    A([Intake: read ticket + every<br/>comment, pin issue time]) --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
+    A([Intake: read ticket + every<br/>comment, pin issue time]) --> W[Fetch: download the attached log<br/>into .logs/ticket-id/raw/]
+    W --> X[Extract: logcat_extract.py<br/>.txt passthrough / .zip merge]
     X --> B[Trim: logcat_trim.py]
     B --> BW{Trimmed to ~0 lines?}
     BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
@@ -133,6 +134,11 @@ flowchart TD
     I --> B
     G -- no, pass = 5 --> H
 ```
+
+A log attached to the ticket (rather than pasted in a comment) is downloaded by `qatalyst-log-analyser`
+through the Atlassian server's `downloadJiraIssueAttachment` operation, into `.logs/<ticket ID>/raw/`.
+If the download can't run, the developer is told which step failed and
+which file name to save the log as.
 
 Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.py` normalizes the
 raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted and, if it
@@ -259,23 +265,13 @@ replacement for it; the two must be kept in sync if `qatalyst-ticket-start`'s fl
 
 ## 6. Hooks
 
-`guards.json` is in GitHub Copilot's native hook format (`version: 1`, `hooks` keyed by
-`preToolUse` / `postToolUse`, `bash` command entries), so VS Code and the Copilot CLI run it as-is.
-Android Studio's Copilot plugin (1.21) doesn't load hook files yet; there, the agents' written rules
-are the only guard.
+This workflow ships no hooks. An earlier version had four guard hooks (a Kotlin formatter, a
+force-push block, a secret and sensitive-path guard, and a context-doc guard). They were removed
+in 0.4.8, and `install.sh` deletes the copies an older install left in an app repo.
 
-| Hook | Event | Denies / does |
-|---|---|---|
-| `format-kotlin` | `postToolUse` | Runs the formatter on an edited `.kt`/`.kts` file (never denies — event fires after the fact) |
-| `block-force-push` | `preToolUse` | Denies a shell command containing `git push` + `--force`/`--force-with-lease`/`-f` |
-| `protect-secrets` | `preToolUse` | Denies reads/edits/commands naming a `sensitive-paths.txt` entry (the log analyser's own extract/trim scripts excepted); denies Jira/PR text containing a JWT or token-shaped string |
-| `guard-context-docs` | `preToolUse` | Asks before `project-context.md`/`architecture.md` is edited; `ask` becomes `deny` in CLI autopilot |
-
-Each `.sh` hands off to `scripts/guards.py`, which reads either IDE's payload from stdin and prints
-nothing to let a call through (printing `allow` would auto-approve it in VS Code) or one
-`permissionDecision` object to deny or ask. A crash denies the call; a 30-second timeout lets it
-through (open item 4 in §9). Full protocol: [`.github/hooks/hook-protocol.md`](https://github.com/saraths-99/github-workflow/blob/develop/.github/hooks/hook-protocol.md)
-(in the workflow repo; not installed into the app repo).
+Without them, the guards are the mechanical tool lists (reviewers have no `edit` tool) and the
+written rules in each agent and instruction file, checked by `qatalyst-code-reviewer`. Commands and
+edits are covered only by Copilot's own approval prompts, so read them before you allow them.
 
 ## 7. MCP servers
 
@@ -284,6 +280,11 @@ through (open item 4 in §9). Full protocol: [`.github/hooks/hook-protocol.md`](
 | Atlassian Rovo MCP | Jira, Confluence, Bitbucket Cloud | OAuth (Jira/Confluence); Basic auth API token (Bitbucket) |
 | Figma MCP | Linked designs, read-only | Developer's Figma sign-in |
 | Repowise | Code map, risk, dead-code (advisory only) | None — local, optional |
+
+`/qatalyst-ticket-start` checks Repowise at the start of every ticket. If it isn't ready (not
+installed, not indexed, or repos missing or behind), it asks the developer to set it up, continue
+without it, or stop, and tells every agent it hands off to the outcome so none re-checks. It never
+runs the install or index commands itself.
 
 Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoint was retired on
 30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
@@ -302,8 +303,7 @@ workflow repo's README §2c.
 - **Mechanical enforcement where possible, written rules elsewhere** — reviewers lose the `edit`
   tool outright; path-scoping ("specs only," "scripts only") is a written rule, checked by
   `qatalyst-code-reviewer`.
-- **No secrets in the repo** — both MCP files ship with an empty token slot; `protect-secrets`
-  blocks the paths that would leak one.
+- **No secrets in the repo** — both MCP files ship with an empty token slot.
 - **A model per job** — the ticket chat, log analysis and planning run on the strongest model, since
   a weaker one is more likely to skip an approval gate or misclassify a ticket than to be caught
   doing so; implementation and review run a tier below, and most test writing on a fast model (see
@@ -323,20 +323,21 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
 3. **No retry cap for `qatalyst-developer`/`qatalyst-test-writer`** — unlike
    `qatalyst-log-analyser`'s 5-pass cap, nothing
    says "stop and report" after N failed attempts at a task.
-4. **Silent hook degradation** — a timed-out guard "falls back to normal permissions" with no
-   requirement that the agent notice or disclose it.
-5. **"Resolved" is undefined** for review comments — unclear if a developer override counts.
-6. **Ticket reclassified after `qatalyst-ticket-start` runs** — issue type is read once; a later
+4. **"Resolved" is undefined** for review comments — unclear if a developer override counts.
+5. **Ticket reclassified after `qatalyst-ticket-start` runs** — issue type is read once; a later
    feature→bug (or reverse) reclassification isn't re-checked.
-7. **Technically-passing-but-wrong-approach implementations** — `qatalyst-code-reviewer` checks
+6. **Technically-passing-but-wrong-approach implementations** — `qatalyst-code-reviewer` checks
    criteria are
    met, not that the approach matches `tasks.md`'s Approach section's intent.
-8. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
-9. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
-10. **Plan-only test categories have no execution gate** — `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`,
+7. **Flaky test passes** — the gate is "passed locally, once"; no rule addresses intermittent tests.
+8. **Branch/feature-folder collisions** — no rule for two tickets proposing the same slug.
+9. **Plan-only test categories have no execution gate** — `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`,
     `qatalyst-performance-test-writer`, and `qatalyst-chaos-test-writer` only guarantee a plan file exists and is
     current; nothing in this workflow checks that a human actually ran it against real hardware
     before the ticket ships, or records the result anywhere `qatalyst-ticket-ship` can see.
+10. **No guard on commands or secrets** — with the hooks gone, nothing mechanical stops an agent
+    from running `git push --force`, reading a keystore or the raw logs, or posting a token in a
+    Jira or PR comment; only the written rules and Copilot's own approval prompts stand in the way.
 
 ## 10. Folder structure
 
@@ -421,10 +422,6 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-write-tests.prompt.md
     │   ├── qatalyst-ticket-start.prompt.md
     │   └── qatalyst-ticket-ship.prompt.md
-    ├── hooks/
-    │   ├── guards.json
-    │   ├── sensitive-paths.txt
-    │   └── scripts/  (format-kotlin, block-force-push, protect-secrets, guard-context-docs — each a .sh)
     └── token-tracker/
         ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
         ├── copilot-tracked.sh         starts the Copilot CLI with tracing on
@@ -447,8 +444,8 @@ specs/<bug|feature>/<ticket-id>/
     └── chaos.md           written by qatalyst-chaos-test-writer
 
 .logs/<ticket-id>/
-├── raw/                 as captured (.txt/.log, or a .zip) — protect-secrets hook blocks Copilot reads; the one write it allows is the attachment download (a single https `curl -o` into this folder)
-│   └── extracted/        logcat_extract.py's output — same hook applies, still the full raw log
+├── raw/                 as captured (.txt/.log, or a .zip) — qatalyst-log-analyser's rules say never read it; the attachment download (a single https `curl -o`) writes here
+│   └── extracted/        logcat_extract.py's output — still the full raw log, so the same rule applies
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 ├── digest.md             error groups with counts and first/last times
 └── in-progress.json      only while a task or the ship step runs; still there on resume = the last chat broke midway
@@ -480,7 +477,6 @@ by this workflow; GitHub Copilot has no knowledge of any of these and assigns th
 | `.github/prompts/*.prompt.md` | GitHub Copilot specification | Slash-command shortcuts |
 | `.github/agents/*.md` | Location per specification; `.agent.md` suffix is a project convention | The specification requires only that the file reside in `.github/agents/`; the `.agent.md` suffix is applied by this workflow for readability and is not required by GitHub Copilot |
 | `.github/skills/<name>/SKILL.md` | GitHub Copilot specification | Also valid under `.claude/skills/` or `.agents/skills/`; this workflow does not write to either location |
-| `.github/hooks/*.json` | GitHub Copilot specification | This workflow consolidates all hooks into a single `guards.json`; the specification also permits multiple hook files |
 | `.github/workflow-sync.md` | Project-specific convention | Not a GitHub Copilot concept; written fresh by every `install.sh` run, never hand-edited |
 | `.github/token-tracker/` | Project-specific convention | Not a GitHub Copilot concept; scripts that read Copilot's local traces. Only the setting it relies on, `github.copilot.chat.otel.dbSpanExporter.enabled`, is Copilot's own |
 | `specs/<bug\|feature>/<ticket-id>/` | Project-specific convention | Not a GitHub Copilot concept; the path is computed deterministically (never asked about) and honored by `qatalyst-bug-planner`, `qatalyst-feature-planner`, and `qatalyst-log-analyser` |
