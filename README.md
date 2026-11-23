@@ -22,7 +22,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`); stays in this repo, not installed |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts |
-| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launchers, and the VS Code setting it needs (see §3, "Token usage per ticket") |
+| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launcher, and the VS Code setting it needs (see §3, "Token usage per ticket") |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
@@ -275,9 +275,10 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
 4. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR,
    waits on Pipelines where it's on, and moves the ticket to In Review.
 
-### Token usage per ticket
+### Token usage per ticket (Beta — works in VS Code)
 
 The workflow can report how many tokens a ticket used, split by agent and sub-agent and by model.
+This feature is in beta: it is only confirmed to work in VS Code.
 It reads only what Copilot records on your own machine; nothing is uploaded, and your prompts and
 code are never recorded. Requires Python 3.9 or newer.
 
@@ -287,9 +288,7 @@ code are never recorded. Requires Python 3.9 or newer.
   adds it to `.vscode/settings.json` for you if that file didn't exist; otherwise add it yourself,
   in that file or your user settings. Tracking also stops if VS Code's own `telemetry.telemetryLevel`
   is `off`.
-- **Android Studio:** its Copilot chat panel can't record token usage yet (the plugin has no trace
-  export). Use the Copilot CLI in Android Studio's terminal instead, started through the launcher so
-  tracking is on:
+- **Copilot CLI (untested):** start it through the launcher so tracking is on:
 
   ```bash
   .github/token-tracker/copilot-tracked.sh ABC-123

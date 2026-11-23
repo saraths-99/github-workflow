@@ -230,14 +230,13 @@ changed since its last sync.
 ## [0.2.0] - 2026-11-16
 
 ### Added
-- Per-ticket token tracking (`.github/token-tracker/`): `token_tracker.py mark/collect/report`
+- Per-ticket token tracking, beta (works in VS Code) (`.github/token-tracker/`): `token_tracker.py mark/collect/report`
   writes one row per model call (`ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`,
   `timestamp`) plus totals by agent and model to `.logs/token-tracker/<ticket ID>/`, as
   `token-usage.html` (self-contained page, opened in the browser by `report --open`) and
   `token-usage.json` (rows plus `totals` and `byAgent`). Reads VS Code
-  Copilot Chat's local trace database and the Copilot CLI's trace file; the Android Studio chat
-  panel has no trace export, so Android Studio users run the Copilot CLI through
-  `copilot-tracked.sh`/`.ps1`.
+  Copilot Chat's local trace database and the Copilot CLI's trace file (the CLI path, started
+  through `copilot-tracked.sh`, is untested). macOS and Linux only.
 - `qatalyst-ticket-start` marks the ticket for tracking first; `qatalyst-developer` shows the
   ticket's token usage and opens the HTML report once every task in `tasks.md` is ticked.
 - `install.sh`/`install.ps1` sync `.github/token-tracker/` and create `.vscode/settings.json` with
