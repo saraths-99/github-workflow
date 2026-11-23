@@ -62,7 +62,9 @@ admin turning on the Bitbucket tools — nothing this workflow controls. Without
 never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
 `qatalyst-ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
 
-### Token usage per ticket
+### Token usage per ticket (Beta — works in VS Code)
+
+This feature is in beta: it is only confirmed to work in VS Code.
 
 `.github/token-tracker/scripts/token_tracker.py` reports how many tokens a ticket used, one row per
 model call: `ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`, `timestamp`, plus a
@@ -72,8 +74,7 @@ anywhere, and prompt or code content is never captured.
 | Where the developer works | Trace source | What's available |
 |---|---|---|
 | VS Code Copilot Chat | `agent-traces.db` in VS Code's storage for the Copilot Chat extension, turned on by `github.copilot.chat.otel.dbSpanExporter.enabled` | every model call, by agent and sub-agent |
-| Copilot CLI (e.g. Android Studio's terminal) | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh`/`.ps1` | same, once the CLI's record layout is confirmed on a real run |
-| Android Studio's Copilot chat panel | none: the JetBrains plugin (checked at 1.21.0) has no trace export | nothing |
+| Copilot CLI | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
 
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
   `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, and
@@ -374,8 +375,7 @@ versus a convention this workflow invented for itself.
     ├── mcp/jetbrains-mcp.example.json
     └── token-tracker/
         ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
-        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on (+ .ps1)
-        ├── copilot-tracked.ps1
+        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on
         └── vscode-settings.json       the one VS Code setting tracing needs; copied to .vscode/settings.json if the app repo has none
 ```
 
@@ -403,7 +403,7 @@ specs/<bug|feature>/<ticket-id>/
 .logs/token-tracker/
 ├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time
 ├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
-├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh/.ps1
+├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh
 └── <ticket-id>/
     ├── token-usage.html  the report as a page; opened by report --open
     └── token-usage.json  ticketId, agentName, model, inputTokens, outputTokens, timestamp per call,

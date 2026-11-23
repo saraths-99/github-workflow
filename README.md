@@ -22,7 +22,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`) |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts and `log-signatures.md` |
-| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launchers, and the VS Code setting it needs (see §3, "Token usage per ticket") |
+| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launcher, and the VS Code setting it needs (see §3, "Token usage per ticket") |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
@@ -156,9 +156,10 @@ tells you it's ready to ship.
 4. Asks once, then commits, pushes, opens the Bitbucket PR, waits on Pipelines where it's on, and
    moves the ticket to In Review.
 
-### Token usage per ticket
+### Token usage per ticket (Beta — works in VS Code)
 
 The workflow can report how many tokens a ticket used, split by agent and sub-agent and by model.
+This feature is in beta: it is only confirmed to work in VS Code.
 It reads only what Copilot records on your own machine; nothing is uploaded, and your prompts and
 code are never recorded. Requires Python 3.9 or newer.
 
@@ -168,15 +169,11 @@ code are never recorded. Requires Python 3.9 or newer.
   adds it to `.vscode/settings.json` for you if that file didn't exist; otherwise add it yourself,
   in that file or your user settings. Tracking also stops if VS Code's own `telemetry.telemetryLevel`
   is `off`.
-- **Android Studio:** its Copilot chat panel can't record token usage yet (the plugin has no trace
-  export). Use the Copilot CLI in Android Studio's terminal instead, started through the launcher so
-  tracking is on:
+- **Copilot CLI (untested):** start it through the launcher so tracking is on:
 
   ```bash
   .github/token-tracker/copilot-tracked.sh ABC-123
   ```
-
-  On Windows: `.github\token-tracker\copilot-tracked.ps1 ABC-123`.
 
 **Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
 and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
@@ -186,7 +183,7 @@ shipping to include the review and ship steps), run:
 python3 .github/token-tracker/scripts/token_tracker.py report ABC-123 --open
 ```
 
-(`py` instead of `python3` on Windows; leave out `--open` to skip the browser.) It prints the
+(Leave out `--open` to skip the browser.) It prints the
 summary and writes two files to `.logs/token-tracker/ABC-123/`:
 
 - `token-usage.html`: the report as a page: totals, a bar per agent and per model, and every model

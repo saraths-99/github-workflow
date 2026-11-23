@@ -9,7 +9,7 @@
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
-file (written when the CLI is started through copilot-tracked.sh / copilot-tracked.ps1).
+file (written when the CLI is started through copilot-tracked.sh).
 Standard library only.
 """
 import argparse
