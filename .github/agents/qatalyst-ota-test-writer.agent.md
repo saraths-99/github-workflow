@@ -5,7 +5,7 @@ description: >
   OTAU modules (TI, Nordic, Darwin/mcumgr) — a checklist for manual QA on
   real hardware, not runnable code. Routed to by test-writer.
 tools: ['read', 'edit', 'search', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file']
-model: ['GPT-6 Luna (copilot)', 'Claude Haiku 5.5 (copilot)', 'GPT-5.6 Luna (copilot)', 'Claude Haiku 4.5 (copilot)']
+model: ['Claude Haiku 5.5 (copilot)', 'Claude Haiku 4.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

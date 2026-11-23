@@ -6,18 +6,15 @@ project-context.md, or a path instruction file under .github/instructions/.
 
 ## Model
 
-Each agent's `model:` frontmatter sets its tier; an agent without one runs on the model of whatever
-started it.
+Each agent's `model:` frontmatter sets its tier, from the one provider chosen at install (Claude
+or GPT; `.github/workflow-sync.md` records which). An agent without one runs on the model of
+whatever started it.
 
-- **Deep — Claude Opus 5.5, else GPT-6.1 Sol, GPT-5.6 Sol or Claude Sonnet 5.5:** the ticket chat
-  itself (`/qatalyst-ticket-start`, `/log-analyser`, `/qatalyst-ticket-ship` and the `qatalyst-ticket`
-  agent switch the chat to it), and with it log analysis, planning and the security review. The
-  approval gates and ticket-type detection run here and assume strong instruction-following; a weaker
-  model is more likely to skip a gate or misclassify a ticket.
-- **Standard — Claude Sonnet 5.5, else GPT-6.1 Sol or Claude Sonnet 5:** implementation, code and
-  error-handling review, the test router, BLE-protocol and security tests.
-- **Fast — GPT-6 Luna, else Claude Haiku 5.5, GPT-5.6 Luna or Claude Haiku 4.5:** log-ticket intake
-  and the other test writers.
+| Tier | Claude | GPT | Used for |
+|---|---|---|---|
+| Deep | Opus 5.5, else Sonnet 5.5 | GPT-5.6 Sol, else GPT-6.1 Sol | the ticket chat itself (`/qatalyst-ticket-start`, `/log-analyser`, `/qatalyst-ticket-ship` and the `qatalyst-ticket` agent switch the chat to it), and with it log analysis, planning and the security review. The approval gates and ticket-type detection run here and assume strong instruction-following; a weaker model is more likely to skip a gate or misclassify a ticket. |
+| Standard | Sonnet 5.5, else Sonnet 5 | GPT-6.1 Sol | implementation, code and error-handling review, the test router, BLE-protocol and security tests |
+| Fast | Haiku 5.5, else Haiku 4.5 | GPT-6 Luna, else GPT-5.6 Luna | log-ticket intake and the other test writers |
 
 A sub-agent can't run on a model that costs more than the chat that started it, so don't switch the
 chat to a cheaper model partway through a ticket. Where an IDE ignores `model:`, pick the deep-tier

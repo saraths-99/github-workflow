@@ -172,6 +172,22 @@ def _instructions_check():
     return (not problems), ("; ".join(problems) if problems else f"{len(files)} instruction files ok")
 
 
+@check("every model: line is one of models.json's tier lists, and every provider has every tier")
+def _models_check():
+    table = json.loads((ROOT / "models.json").read_text(encoding="utf-8"))["providers"]
+    tiers = {"deep", "standard", "fast"}
+    problems = [f"{p}: tiers {sorted(t)}" for p, t in ((p, set(v)) for p, v in table.items()) if t != tiers]
+    allowed = {"[" + ", ".join(f"'{n} (copilot)'" for n in names) + "]" for names in table["claude"].values()}
+    files = list((ROOT / ".github/agents").glob("*.agent.md")) + list((ROOT / ".github/prompts").glob("*.prompt.md"))
+    count = 0
+    for f in files:
+        for m in re.finditer(r"^model: (\[.*\])\s*$", f.read_text(encoding="utf-8"), re.M):
+            count += 1
+            if m.group(1) not in allowed:
+                problems.append(f"{f.name}: {m.group(1)} isn't a claude tier list")
+    return (not problems), ("; ".join(problems) if problems else f"{count} model lines ok")
+
+
 @check("the tasks spec template exists")
 def _spec_templates_check():
     tmpl_dir = ROOT / "specs/.templates"

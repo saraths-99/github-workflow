@@ -1,0 +1,20 @@
+{
+  "_comment": "The models each agent runs on, by provider and tier, in the order they are tried. install.sh copies the lists for the chosen provider into every agent's and prompt's `model:` line (see set-models.py). The files in this repo carry the claude lists. Every name gets ' (copilot)' added.",
+  "tiers": {
+    "deep": "the ticket chat, log analysis, planning and the security review",
+    "standard": "implementation, code and error-handling review, the test router, BLE-protocol and security tests",
+    "fast": "log-ticket intake and the other test writers"
+  },
+  "providers": {
+    "claude": {
+      "deep": ["Claude Opus 5.5", "Claude Sonnet 5.5"],
+      "standard": ["Claude Sonnet 5.5", "Claude Sonnet 5"],
+      "fast": ["Claude Haiku 5.5", "Claude Haiku 4.5"]
+    },
+    "gpt": {
+      "deep": ["GPT-5.6 Sol", "GPT-6.1 Sol"],
+      "standard": ["GPT-6.1 Sol"],
+      "fast": ["GPT-6 Luna", "GPT-5.6 Luna"]
+    }
+  }
+}

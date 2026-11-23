@@ -14,12 +14,60 @@ changed since its last sync.
 
 ### Changed
 - Per-ticket token tracking is marked beta, confirmed to work in VS Code only. The Android Studio
-  guidance is removed from its docs, and the Copilot CLI launcher (`copilot-tracked.sh`) is labelled
-  untested. `README.md` and `docs/workflow-design.md` say so in the section heading.
+  guidance is removed from its docs. `README.md` and `docs/workflow-design.md` say so in the section
+  heading.
 - `README.md` has a per-IDE guide (§2d): a table of what differs between VS Code, Android Studio
   and the Copilot CLI, and a short setup checklist for each, with places marked for screenshots.
+- A bug no longer reuses an existing `feature/<ticket ID>-*` branch (this reverses the 0.4.6
+  rule that kept it). `qatalyst-ticket-start` ignores that branch and uses a `bug/<ticket ID>-*`
+  branch if one exists.
+- A new ticket branch is no longer always cut from `base_branch`: `qatalyst-ticket-start` asks which
+  branch to create it from (`base_branch`, the branch you're on, the old `feature/` branch's tip
+  for a bug that has one with commits, or another you name). The question is in
+  `qatalyst-ask-developer`'s table.
+- Shipping asks which tests to run (`qatalyst-ticket-ship` step 3, row added to
+  `qatalyst-ask-developer`'s table): unit tests in the modules touched, all tests including
+  instrumented (checks a device is connected), only this ticket's tests, or skip. Skipping is noted
+  in every PR's description, and a failing test stops the push.
+- Log analysis no longer guesses when a bug ticket has a log but no issue time. Intake
+  (`qatalyst-log-ticket-intake`) asks the developer for the time, or to use the whole log with no
+  time window, or to stop and add it to the ticket; `qatalyst-log-analyser` trims with the time
+  given, without `--at` for the whole log, or stops. The question is in `qatalyst-ask-developer`'s
+  table.
+- Log analysis no longer ranks a cause from an empty digest. When the trimmed log has lines but no
+  warnings or errors, `qatalyst-log-analyser` asks the developer: widen the time window, use the
+  whole log, report it as inconclusive, or stop. "Inconclusive" writes a short `log-analysis.md`
+  stub (no cause, no fix, no Jira comment) that tells the planner to ground the cause in the code.
+  The question is in `qatalyst-ask-developer`'s table.
+- A workflow report: when every task is ticked, `qatalyst-developer` writes
+  `.logs/<ticket ID>/workflow-report.md`. For a bug it says how many of the 5 allowed analysis passes
+  it took to reach a confident fix, with a line per pass (`qatalyst-log-analyser` now counts passes
+  and ends `log-analysis.md` with an "Analysis passes" section, and puts the count in its Jira
+  comment; a re-run of Trim, including one the developer asks for, counts as a pass). It also holds
+  the blast radius (changed files and symbols, dependents in every repo, change
+  risk, tests around the change, and whether each changed file is current in Repowise's index) and
+  tells the developer whether Repowise's index was used, naming stale files and the command to
+  refresh them. Without Repowise it falls back to direct searches and says so. The ship
+  confirmation shows the summary. Steps are in `qatalyst-repowise-lookup`.
+- Token tracking runs in VS Code only. `qatalyst-ticket-start` runs `mark` only when it has the
+  `vscode/askQuestions` tool, and tells the agents it hands off to "Token tracking: on" or "off";
+  `qatalyst-developer` writes the token report only when told "on". In Android Studio and the Copilot
+  CLI nothing is run or created.
+- The developer chooses one model provider, Claude or GPT, and every agent and prompt runs on it.
+  `install.sh` asks on a first install (or takes `--provider claude|gpt`, or reuses the choice kept in
+  `.github/workflow-sync.md`) and `set-models.py` copies that provider's tier lists from the new
+  `models.json` into each `model:` line. The files here now carry the Claude lists, so the mixed
+  Claude/GPT fallback lists are gone: a plan needs the chosen provider's models. Gemini isn't offered,
+  as its model names aren't known. `tests/test_set_models.py` and a static check cover the lists.
+- Repowise's commit hook is installed for the developer. After the Repowise check says ready,
+  `qatalyst-ticket-start` runs `repowise hook status --workspace` and `repowise hook install <repo>`
+  in each repo without it (skipping a repo that has its own post-commit hook, and never using
+  `--security`), so the index re-builds after every commit. It still never runs `repowise init` or
+  `repowise update`.
 
 ### Removed
+- The Copilot CLI launcher `.github/token-tracker/copilot-tracked.sh`, and its mentions in the docs
+  and the script's messages. The script still reads a CLI trace file if one is present.
 - The four guard hooks (`.github/hooks/`: `guards.json`, the format, force-push, secret-protection
   and context-doc scripts, `sensitive-paths.txt`, `hook-protocol.md`) and `tests/test_guards.py`.
   `install.sh` no longer copies them and deletes the ones an older install left in an app repo; a

@@ -21,11 +21,11 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.github/mcp/`** | Reference MCP server snippet for JetBrains (copy into your own local JetBrains `mcp.json`); stays in this repo, not installed |
 | **`.mcp.json`** | Portable workspace MCP server config — the one file VS Code Copilot and the Copilot CLI both actually auto-discover |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts |
-| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, the Copilot CLI launcher, and the VS Code setting it needs (see §3, "Token usage per ticket") |
+| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py` and the VS Code setting it needs (VS Code only) (see §3, "Token usage per ticket") |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |
-| **`install.sh`** | Downloads this repo and syncs its workflow files into the app repo (see §2) |
+| **`install.sh`**, **`models.json`**, **`set-models.py`** | Downloads this repo and syncs its workflow files into the app repo, setting every agent to the chosen provider's models (see §2) |
 | **`VERSION`**, **`CHANGELOG.md`** | This workflow's own version and change history — bumped and entered for every change that lands here; `install.sh` reads both at sync time (see §2) |
 
 ## 2. One-time setup
@@ -36,6 +36,17 @@ doesn't support Windows):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash
 ```
+
+The first install asks which models the agents should run on, **Claude** or **GPT**, and sets every
+agent and prompt to that provider's models (the lists are in `models.json`). To skip the question or
+change the choice later, run it again with `--provider claude` or `--provider gpt`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash -s -- --provider gpt
+```
+
+With no terminal to ask on, it uses Claude. Later runs reuse the choice recorded in
+`.github/workflow-sync.md`.
 
 This downloads this repo and copies `.github/` (agents, skills, instructions, prompts,
 log-analyser scripts, token tracker), `.mcp.json` if the app repo doesn't already have one,
@@ -77,13 +88,15 @@ extracted folder:
   copy these **only if the app repo doesn't already have them**. If it does, leave them alone;
   they hold that app's own settings and data, not this repo's.
 - Add `.logs/` to the app repo's `.gitignore` if it's not already there.
+- The copied agents and prompts run on Claude's models. For GPT, run
+  `python3 set-models.py gpt <path to the app repo>` from this repo after copying (it needs Python 3).
 - Copy `.github/token-tracker/vscode-settings.json` to `.vscode/settings.json` only if the app repo
   has no such file; otherwise add its one line to the existing file.
 - If your file manager ever offers to "keep both" on a naming conflict instead of replacing,
   decline it — that's how literal duplicate files (`name (1).md`) end up committed by accident.
 
-**Never copy** `README.md`, `install.sh`, `VERSION`, `CHANGELOG.md`, `tests/`,
-`.github/mcp/` or `docs/field-sources.md` — those describe and
+**Never copy** `README.md`, `install.sh`, `models.json`, `set-models.py`, `VERSION`, `CHANGELOG.md`,
+`tests/`, `.github/mcp/` or `docs/field-sources.md` — those describe and
 maintain this source repo, or are reference material read from here, and have no place in the app
 repo. This is
 exactly what `install.sh` automates; use it instead of this section whenever
@@ -134,14 +147,18 @@ once per developer machine:
      second entry in `.vscode/mcp.json` starts it twice, and `AGENTS.md` would compete with
      `copilot-instructions.md`.
 
-3. **Keep the index current** after every commit:
+3. **Keep the index current** after every commit. `/qatalyst-ticket-start` does this for you: once
+   Repowise is ready it checks `repowise hook status --workspace` and, in each repo without the
+   hook (and without a post-commit hook of its own), runs `repowise hook install <repo>`. To do it
+   yourself:
 
    ```bash
-   repowise hook install
+   repowise hook install --workspace
    ```
 
-   This adds a git post-commit hook that runs `repowise update`. If you'd rather not, run
-   `repowise update` yourself before starting a ticket.
+   This adds a git post-commit hook that runs `repowise update`. It lives in each repo's
+   `.git/hooks`, not in the repo's tracked files. If you remove it with `repowise hook uninstall`,
+   the next ticket puts it back; keep your own `.git/hooks/post-commit` in a repo to stop that.
 
 4. **Keep `.repowise/` out of git** — it's a per-machine index. Add `.repowise/` to the app repo's
    `.gitignore` if it isn't there.
@@ -209,7 +226,7 @@ the detail behind each row is in the sections named.
 | **How it asks you** | `askQuestions` (click an option) | `ask_questions` (click an option) | `ask_user` |
 | **Agent picker** | Only `qatalyst-ticket` shows | Only `qatalyst-ticket` shows | n/a |
 | **`model:` pinning** | Works | Not confirmed; if ignored, pick the deep-tier model in the chat yourself | Not confirmed |
-| **Token tracking (beta)** | Works | Not available | Not confirmed (launcher untested) |
+| **Token tracking (beta)** | Works | Skipped (VS Code only) | Skipped (VS Code only) |
 
 "Not confirmed" means the docs don't know yet, not that it fails. If you find out on a real run,
 update that cell.
@@ -231,8 +248,8 @@ update that cell.
 3. If the MCP servers don't appear, add them from
    [`.github/mcp/jetbrains-mcp.example.json`](.github/mcp/jetbrains-mcp.example.json) and sign in
    to Atlassian (§2c).
-4. Pick the deep-tier model (Claude Opus 5.5) in the chat's model picker before starting, since
-   `model:` pinning isn't confirmed here.
+4. Pick the deep-tier model of the provider you installed (Claude Opus 5.5, or GPT-5.6 Sol) in the
+   chat's model picker before starting, since `model:` pinning isn't confirmed here.
 5. Expect no token report; review commands and edits yourself.
 6. Start a ticket the same way: `/qatalyst-ticket-start <ticket ID>` or the `qatalyst-ticket` agent.
 
@@ -243,8 +260,6 @@ update that cell.
 1. Run the install (§2). The CLI reads `.mcp.json` by itself.
 2. Start it from the app repo's root and begin a ticket with `/qatalyst-ticket-start <ticket ID>`;
    the questions come as `ask_user` prompts.
-3. To try token tracking, start it through `.github/token-tracker/copilot-tracked.sh <ticket ID>`
-   (untested).
 
 ## 3. Daily operational workflow
 
@@ -265,7 +280,8 @@ handing off to another, never by picking it yourself.
    reads the ticket, its Confluence pages and Figma links, writes to the deterministic
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
    not three.
-3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) and asks before moving the ticket to In Progress.
+3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
+   Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
 4. Runs `qatalyst-developer` through every task, then asks whether to ship now; picking "Ship it
    now" runs the shipping steps below in the same chat.
 
@@ -284,14 +300,15 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 `tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
 `qatalyst-ask-developer` skill holds every question and its options.
 
-**Models.** You don't pick a model. Starting a ticket switches the chat to Claude Opus 5.5, which
-also runs log analysis and planning; `qatalyst-developer` and the reviewers run on Claude Sonnet 5.5,
-and most test writers on GPT-6 Luna — each agent's `model:` line sets it, and each list falls back
-across Claude and GPT models (the full table is in [docs/workflow-design.md](docs/workflow-design.md)
-§4). If a model isn't offered on your plan, the agent uses the next one in its list, or the chat's
-model. Don't switch the chat to a cheaper model partway through: VS Code won't start a sub-agent on
-a model that costs more than the chat's, and the step fails with "exceeds the current model's cost
-tier".
+**Models.** You don't pick a model, only a provider, once, when you install (§2). With Claude,
+starting a ticket switches the chat to Claude Opus 5.5, which also runs log analysis and planning;
+`qatalyst-developer` and the reviewers run on Claude Sonnet 5.5, and most test writers on Claude
+Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
+agent's `model:` line sets it (the full table is in [docs/workflow-design.md](docs/workflow-design.md)
+§4). Every agent runs on the chosen provider only, so your Copilot plan must include its models; if a
+model isn't offered, the agent uses the next one in its list, or the chat's model. Don't switch the
+chat to a cheaper model partway through: VS Code won't start a sub-agent on a model that costs more
+than the chat's, and the step fails with "exceeds the current model's cost tier".
 
 **In Android Studio:** turn on Agent Skills first (Settings › GitHub Copilot › Chat › Agent; it's a
 preview feature) — the ticket flow, planning and the questions are all skills, and without them the
@@ -305,8 +322,13 @@ Developers work `tasks.md` one task at a time. `qatalyst-developer` implements; 
 covers it with
 tests. Project skills (`/qatalyst-new-screen`, `/qatalyst-new-ble-command`, `/qatalyst-new-api-call`, `/qatalyst-room-migration`) handle
 the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a task that spans the stack.
-Once the last task is ticked, `qatalyst-developer` shows the ticket's token usage (see below), and
-the flow asks whether to ship now.
+Once the last task is ticked, `qatalyst-developer` writes a workflow report to
+`.logs/<ticket ID>/workflow-report.md`: for a bug, how many passes the log analysis took to reach
+its fix; then what changed, who depends on it across the repos (the blast radius), the change risk,
+and the tests around it. It tells you whether Repowise's index was used for it, and which
+changed files the index had out of date (run `repowise update --working-tree`, then ask for the
+report again). Without Repowise it still writes the report from direct searches and says so. It then
+shows the ticket's token usage (see below), and the flow asks whether to ship now.
 
 ### Shipping
 
@@ -317,14 +339,17 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
 2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
    for flagged diffs) against
    the spec.
-3. Builds and tests locally.
+3. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
+   instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
+   test stops the push; skipping tests is allowed, and the PRs then say they weren't run.
 4. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR,
    waits on Pipelines where it's on, and moves the ticket to In Review.
 
 ### Token usage per ticket (Beta — works in VS Code)
 
 The workflow can report how many tokens a ticket used, split by agent and sub-agent and by model.
-This feature is in beta: it is only confirmed to work in VS Code.
+This feature is in beta and runs in VS Code only: in Android Studio or the Copilot CLI the workflow
+skips it and creates no tracker files.
 It reads only what Copilot records on your own machine; nothing is uploaded, and your prompts and
 code are never recorded. Requires Python 3.9 or newer.
 
@@ -334,11 +359,6 @@ code are never recorded. Requires Python 3.9 or newer.
   adds it to `.vscode/settings.json` for you if that file didn't exist; otherwise add it yourself,
   in that file or your user settings. Tracking also stops if VS Code's own `telemetry.telemetryLevel`
   is `off`.
-- **Copilot CLI (untested):** start it through the launcher so tracking is on:
-
-  ```bash
-  .github/token-tracker/copilot-tracked.sh ABC-123
-  ```
 
 **Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
 and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
@@ -358,8 +378,8 @@ summary and writes two files to `.logs/token-tracker/ABC-123/`:
   `inputTokens`, `outputTokens`, `timestamp`), plus `totals` and a `byAgent` breakdown (calls,
   input, output and total tokens per agent, largest first), for feeding into other tools.
 
-**How a chat gets counted for a ticket:** `/qatalyst-ticket-start` and the CLI launcher record the
-ticket ID when they start, and any chat that ran on the ticket's branch counts too. A chat
+**How a chat gets counted for a ticket:** `/qatalyst-ticket-start` records the
+ticket ID when it starts, and any chat that ran on the ticket's branch counts too. A chat
 that did neither (for example, planning started from the `qatalyst-ticket` picker that you abandoned
 before a branch was created) isn't counted; run
 `python3 .github/token-tracker/scripts/token_tracker.py mark ABC-123` at the start of such a chat to
