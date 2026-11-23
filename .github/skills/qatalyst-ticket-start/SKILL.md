@@ -35,11 +35,18 @@ If no ticket ID was given, ask for one first (the developer's own open tickets a
 
 ## Token tracking
 
-Before step 0, if you can run terminal commands, run
-`python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>`. It only appends a line to
-`.logs/token-tracker/markers.jsonl`, so this chat's model calls can be linked to the ticket later.
-If you can't run commands, skip it without comment: the report still links this chat once one of
-its turns runs on the ticket's branch. Never let this step fail or delay the ticket.
+Token tracking runs in VS Code only. Before step 0, check where you are: you're in VS Code if you
+have the `vscode/askQuestions` tool (Android Studio's chat has `ask_questions`, the Copilot CLI
+`ask_user`).
+
+- **In VS Code**, and you can run terminal commands: run
+  `python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>`. It only appends a line
+  to `.logs/token-tracker/markers.jsonl`, so this chat's model calls can be linked to the ticket
+  later. Then tell every agent you hand off to "Token tracking: on".
+- **Anywhere else**, or if you can't run commands: do nothing and say nothing. Create no files, and
+  tell every agent you hand off to "Token tracking: off".
+
+Never let this step fail or delay the ticket.
 
 ## Repowise check
 
@@ -52,7 +59,18 @@ change's callers in the other repos — without it they read only the files they
    means not indexed; the tool not being offered, or a timeout, means Repowise isn't installed or its
    MCP server didn't start.
 2. **Ready** — it answers, and every repo in `architecture.md`'s repository table is indexed and up
-   to date. Say so in one line ("Repowise ready — 5 repos indexed") and carry on.
+   to date. Say so in one line ("Repowise ready — 5 repos indexed"), then make sure the commit hook
+   is in place (below), and carry on.
+
+   **The commit hook.** Repowise can re-index a repo after every commit, which keeps the index
+   current through the ticket. If you can run terminal commands, run `repowise hook status
+   --workspace` (it only reads). For each repo it reports without the hook: if that repo's
+   `.git/hooks/post-commit` already exists, it's someone else's hook, so leave it alone and say so;
+   otherwise run `repowise hook install <that repo's path>`. Never add `--security`: it installs a
+   pre-commit check that can block commits. Say in one line what happened ("Repowise commit hook
+   installed in 3 repos", "already in place", or "left alone in <repo>: it has its own post-commit
+   hook"). If a command fails, say so in one line and carry on; this never blocks the ticket. Skip it
+   when you can't run commands or the developer chose to continue without Repowise.
 3. **Not ready** — say which of these it is, and ask (see `qatalyst-ask-developer`), putting the
    command in the question:
    - not installed: `pipx install repowise`
@@ -62,7 +80,8 @@ change's callers in the other repos — without it they read only the files they
 
    Options: I've set it up — check again · Continue without Repowise · Stop, I'll set it up.
 4. Never run `pipx install`, `repowise init` or `repowise update` yourself — they write to the
-   developer's machine, and `init` without `--no-editor-setup` writes into the repos.
+   developer's machine, and `init` without `--no-editor-setup` writes into the repos. The commit
+   hook above is the one thing you do install.
 5. Tell every agent you hand off to the outcome ("Repowise: ready" or "Repowise: the developer
    chose to continue without it"), so none of them re-checks or re-asks.
 
@@ -107,8 +126,8 @@ Running `/qatalyst-ticket-start` again picks up where the ticket is, worked out 
 | What's there | Pick up at |
 |---|---|
 | No `tasks.md` | Step 0.4, as normal |
-| `tasks.md`, but no task ticked and no `<bug\|feature>/<ticket ID>-*` branch | Step 1's approval question, on the existing draft — don't re-plan |
-| A `<bug\|feature>/<ticket ID>-*` branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
+| `tasks.md`, but no task ticked and no ticket branch (see "Branches" in step 2) | Step 1's approval question, on the existing draft — don't re-plan |
+| A ticket branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
 | Every task ticked | Step 5, the ship question |
 
 **If the last chat broke midway.** `.logs/<ticket ID>/in-progress.json` exists only while a task
@@ -123,8 +142,9 @@ ticket branch — then ask:
 - **Shipping:** continue shipping · stop here. `qatalyst-ticket-ship` checks which repos already
   have a pushed branch or an open PR and doesn't repeat those.
 
-Before step 4 or 5, switch to the ticket's branch if you're not on it. (A bug started before 0.4.6
-may be on `feature/<ticket ID>-*`; that is its branch too — don't create a second one.) If git refuses
+Before step 4 or 5, switch to the ticket's branch if you're not on it. If the ticket is a bug and
+the only branch for it is an old `feature/<ticket ID>-*`, don't switch to it: step 2 says what to do
+instead. If git refuses
 because of uncommitted changes, ask: stash them and switch, or stop. Ask step 3's In Progress
 question only if the ticket isn't In Progress or further along already. Say in one line which step
 you're resuming from and why (for example, "3 of 7 tasks ticked — continuing with task 4").
@@ -142,10 +162,28 @@ planner again with the developer's text and ask again. Don't start step 2 until 
 
 ## 2. Branches
 
-Once `tasks.md` is approved, create the ticket branch, branched from `base_branch` (in
-`copilot-instructions.md`'s settings block): `bug/<ticket ID>-<slug>` when step 0 settled on a bug
-(including its default), `feature/<ticket ID>-<slug>` for a feature — the same `bug`/`feature` word
-as the spec folder, never a `feature/` branch for a bug.
+Once `tasks.md` is approved, create the ticket branch: `bug/<ticket ID>-<slug>` when step 0 settled
+on a bug (including its default), `feature/<ticket ID>-<slug>` for a feature — the same
+`bug`/`feature` word as the spec folder, never a `feature/` branch for a bug.
+
+**The ticket's branch is the one whose prefix matches its type** (`bug/` for a bug, `feature/` for a
+feature), with the ticket ID after it. A bug's old `feature/<ticket ID>-*` branch (from before
+0.4.6, or created by hand) is not its branch: never switch to it, commit to it or push it. If a
+ticket branch already exists, use it and skip the question below.
+
+**Ask which branch to create it from.** Never assume `base_branch`. Ask (see
+`qatalyst-ask-developer`) with these options, leaving out any that don't apply:
+
+- `base_branch` (from `copilot-instructions.md`'s settings block), first, as the recommended one.
+- The branch the developer is on now, named, if it isn't `base_branch`.
+- The tip of the bug's old `feature/<ticket ID>-*` branch, if it has commits beyond `base_branch`
+  (say so: that work comes with the new branch, and the `feature/` branch itself stays untouched).
+- Another branch (**needs text**: its name).
+
+Create the new branch from the one they pick; if it exists only on the remote, from its remote
+copy. If the name they give doesn't exist, say so and ask again. Say in one line which branch was
+created from which, and, for a bug with an old `feature/` branch, that the `feature/` branch was
+left alone.
 
 Keep the slug short: lowercase kebab-case from the ticket summary, at most 3 words and 25
 characters, dropping filler words (the, a, to, when, on, fix, issue). Cut at a word boundary, never

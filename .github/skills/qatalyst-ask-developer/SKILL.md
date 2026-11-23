@@ -41,16 +41,20 @@ and runs you again with the answer.
 | No ticket ID given | The developer's own open Jira tickets (`assignee = currentUser() AND statusCategory != Done`, newest first, up to 4: "`ABC-123` — summary"). The tool's free-text answer is the only way to give another ID. |
 | Repowise isn't ready at ticket start (say which: not installed · not indexed · repos missing or behind, naming them — with the command to fix it) | I've set it up — check again · Continue without Repowise · Stop, I'll set it up |
 | Bug ticket has no log attachment | UI-only issue — skip log analysis · I've attached it now — check again · Stop, I'll attach it later |
+| Bug ticket has a log but no issue time | I'll give the time (**needs text**: `HH:MM:SS`, plus the date if the log spans days) · Use the whole log, no time window · Stop, I'll add the time to the ticket |
 | Raw log isn't in `.logs/<ticket ID>/raw/` and the download from the ticket couldn't run or failed (say why, and the exact folder and file name to save it as) | I've saved it there — continue · Skip log analysis |
+| Digest has no warnings or errors (the window has lines, but nothing to analyse) | Widen the time window · Use the whole log · The log shows nothing for this issue — report it as inconclusive · Wrong attachment — stop |
 | Trimmed log came out nearly empty | Widen the time window · Use the whole log · Wrong attachment — stop |
 | `log-analysis.md` has two candidate root causes | Fix cause A (name it) · Fix cause B (name it) · Fix both |
 | `tasks.md` draft ready | Approve · Request changes (**needs text**: what to change) · Stop here |
 | Plan doesn't fit the code mid-task (updated `tasks.md`) | Approve the updated plan · Stop here |
+| Creating the ticket branch (after `tasks.md` is approved, and no ticket branch exists yet) | `base_branch`, named (recommended) · The branch you're on now, named (only if it isn't `base_branch`) · The tip of the old `feature/<ticket ID>-*` branch (bugs only, only if it has commits beyond `base_branch`) · Another branch (**needs text**: its name) |
 | Move the ticket to In Progress | Move to In Progress · Leave it where it is |
 | Resuming, but uncommitted changes block switching to the ticket branch | Stash them and switch · Stop here |
 | Resuming after the last chat broke partway through task N (say so first) | Continue task N, keeping its changes · Restart task N (stash its changes first) · Stop here |
 | Resuming after the last chat broke partway through shipping (say so first) | Continue shipping · Stop here |
 | Every task ticked | Ship it now · Stop here, I'll ship later |
+| Which tests to run before pushing (ship step 3, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the PRs say tests weren't run) |
 | Push and open the PRs | Push and open the PRs · Cancel |
 
 Approving a terminal command or tool call (Allow / Allow all) is Copilot's own prompt, not a

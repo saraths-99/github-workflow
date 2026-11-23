@@ -1,13 +1,13 @@
 ---
 mode: agent
-model: ['Claude Opus 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'GPT-5.6 Sol (copilot)', 'Claude Sonnet 5.5 (copilot)']
+model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
 description: Start a ticket and carry it through to its PRs — detects bug vs. feature, plans, implements and ships, with every stop a question to pick an answer for. Usage: /qatalyst-ticket-start <ticket ID>
 ---
 
 Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
 
-0. Run `python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>` so this chat's
-   token usage is linked to the ticket (skip silently if it can't run).
+0. Only in VS Code, run `python3 .github/token-tracker/scripts/token_tracker.py mark <ticket ID>` so
+   this chat's token usage is linked to the ticket (skip silently anywhere else, or if it can't run).
    Then check Repowise is ready (installed, and every repo indexed and current); if not, ask the
    developer to set it up, continue without it, or stop — see the skill's "Repowise check".
 1. Read the ticket's Jira issue type and project key, match the project key against this repo's
@@ -20,7 +20,7 @@ Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
    deterministic `specs/<bug|feature>/<ticket ID>/tasks.md` path (same path `qatalyst-log-analyser`
    already used, for a bug). Ask for approval: approve, request changes, or stop.
 3. Create the ticket branch once `tasks.md` is approved — `bug/<ticket ID>-<slug>` for a bug,
-   `feature/<ticket ID>-<slug>` for a feature.
+   `feature/<ticket ID>-<slug>` for a feature — after asking which branch to create it from.
 4. Ask whether to move the ticket to In Progress.
 5. Hand off to `qatalyst-developer` to work every task; if the plan stops fitting, get it updated
    and re-approved.

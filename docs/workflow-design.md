@@ -64,9 +64,25 @@ admin turning on the Bitbucket tools — nothing this workflow controls. Without
 never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
 `qatalyst-ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
 
+### Workflow report
+
+When every task is ticked, `qatalyst-developer` follows `qatalyst-repowise-lookup`'s "Workflow
+report" steps and writes `.logs/<ticket ID>/workflow-report.md`. For a bug it starts with how many of
+the 5 allowed analysis passes it took to reach a confident fix (copied from `log-analysis.md`'s
+"Analysis passes" section, one line per pass and how it ended). It then covers the blast radius: the
+files and symbols the ticket changed, their dependents in every repo of the workspace, the change risk, the tests around the
+change, and whether each changed file is current in Repowise's index. It tells the developer in chat
+whether the index was used (every lookup, some, or none and why) and names any stale files. Without
+Repowise it still writes the report from direct searches and marks every row as such. The ship
+step shows the summary in its confirmation. The report covers only its own lookups and the
+ticket-start status, not lookups made earlier by the planners or the log analyser.
+
 ### Token usage per ticket (Beta — works in VS Code)
 
-This feature is in beta: it is only confirmed to work in VS Code.
+This feature is in beta and runs in VS Code only. `qatalyst-ticket-start` checks which IDE it is in
+(VS Code has the `vscode/askQuestions` tool), runs `mark` only there, and tells the agents it hands
+off to "Token tracking: on" or "off"; `qatalyst-developer` writes the report only when told "on".
+Elsewhere nothing is created.
 
 `.github/token-tracker/scripts/token_tracker.py` reports how many tokens a ticket used, one row per
 model call: `ticketId`, `agentName`, `model`, `inputTokens`, `outputTokens`, `timestamp`, plus a
@@ -76,7 +92,6 @@ anywhere, and prompt or code content is never captured.
 | Where the developer works | Trace source | What's available |
 |---|---|---|
 | VS Code Copilot Chat | `agent-traces.db` in VS Code's storage for the Copilot Chat extension, turned on by `github.copilot.chat.otel.dbSpanExporter.enabled` | every model call, by agent and sub-agent |
-| Copilot CLI | `.logs/token-tracker/copilot-cli-otel.jsonl`, written when the CLI is started with `copilot-tracked.sh` | same, once the CLI's record layout is confirmed on a real run |
 
 - **Turning it on in VS Code.** The setting isn't listed in the Settings screen, so searching for it
   there finds nothing; it goes in a settings JSON file. VS Code reads it from only two places: the
@@ -91,8 +106,8 @@ anywhere, and prompt or code content is never captured.
   have it.
 
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
-  `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, and
-  the CLI launcher does it on start), or, failing that, when any turn in it ran on a branch named
+  `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, in
+  VS Code only), or, failing that, when any turn in it ran on a branch named
   for the ticket. The `qatalyst-ticket` picker agent has no terminal tool, so its chats rely on the
   branch rule.
 - **Agent names.** An agent picked from the picker is recorded by Copilot as "GitHub Copilot Chat"
@@ -125,7 +140,9 @@ flowchart TD
     B --> BW{Trimmed to ~0 lines?}
     BW -- yes --> BWX([Stop: ask developer —<br/>wrong file or window, not actually clean])
     BW -- no --> C[Digest: logcat_digest.py]
-    C --> D[Link: group related entries]
+    C --> CW{Any warnings<br/>or errors?}
+    CW -- no --> CWX([Ask developer: widen window,<br/>whole log, report inconclusive, or stop])
+    CW -- yes --> D[Link: group related entries]
     D --> E[Map: Repowise class/module lookup]
     E --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
@@ -134,6 +151,9 @@ flowchart TD
     I --> B
     G -- no, pass = 5 --> H
 ```
+
+If the ticket has a log but gives no time for the issue, Intake asks the developer for one instead of
+guessing: a time of day, the whole log with no time window, or stop until the ticket has it.
 
 A log attached to the ticket (rather than pasted in a comment) is downloaded by `qatalyst-log-analyser`
 through the Atlassian server's `downloadJiraIssueAttachment` operation, into `.logs/<ticket ID>/raw/`.
@@ -169,24 +189,33 @@ delegation there still depends on `agent` being recognised; `x-github-copilot-in
 `<name> (copilot)` entries tried in order; an agent without one runs on the model of whatever started
 it.
 
-| Tier | Models, in order (the first one in the developer's picker is used) | Agents |
-|---|---|---|
-| Deep | Claude Opus 5.5 → GPT-6.1 Sol → GPT-5.6 Sol → Claude Sonnet 5.5; set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts | Unpinned, so they run on the chat's model: `qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-security-reviewer` |
-| Standard | Claude Sonnet 5.5 → GPT-6.1 Sol → Claude Sonnet 5 | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
-| Fast | GPT-6 Luna → Claude Haiku 5.5 → GPT-5.6 Luna → Claude Haiku 4.5 | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
+| Tier | Claude, in order | GPT, in order | Agents |
+|---|---|---|---|
+| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
+| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`, `qatalyst-security-reviewer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
+| Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
 
-The lists mix vendors so the workflow still runs on a plan that lacks one vendor's models. Each tier
-stays inside one of Copilot's own categories (Powerful, Versatile, Lightweight) at a similar token
-price: GPT-6.1 Sol is rated Powerful at $2 in / $10 out per million tokens, the same price as Sonnet
-5.5; GPT-5.6 Sol matches Opus 5.5 at $4 / $20. The fast tier leads with GPT-6 Luna ($0.10 / $0.50, the
-same as Haiku 5.5) because its long-context surcharge starts at 272K input tokens rather than 100K,
-which matters for test writers that read a lot of code. GPT-6 Astra ($10 / $50) is left out: it costs
-2.5× Opus 5.5, and a sub-agent can't run on a costlier model than its chat. Gemini, Grok and
-MAI-Code aren't listed; a name added to a list works the same way.
+**One provider throughout.** The developer chooses Claude or GPT when installing (`install.sh
+--provider claude|gpt`, or the question it asks on a first install; the choice is kept in
+`.github/workflow-sync.md` and reused on later runs). The lists live in `models.json`, and
+`set-models.py` copies the chosen provider's list for each tier into every agent's and prompt's
+`model:` line in the app repo. The files in this repo carry the Claude lists; `models.json` and
+`set-models.py` stay here and aren't installed. Because every agent then runs on one provider's
+models, the plan must include that provider's models; there is no fallback to the other vendor. The
+choice is per app repo and changes by re-running the install with the other `--provider`. Where an
+IDE ignores `model:` (Android Studio isn't confirmed to read it), every agent runs on whichever
+model is picked in the chat, so pick one from the same provider.
+
+Each tier stays inside one of Copilot's own categories (Powerful, Versatile, Lightweight) at a
+similar token price across the two providers: GPT-6.1 Sol is rated Powerful at $2 in / $10 out per
+million tokens, the same price as Sonnet 5.5; GPT-5.6 Sol matches Opus 5.5 at $4 / $20; GPT-6 Luna
+($0.10 / $0.50) matches Haiku 5.5. GPT-6 Astra ($10 / $50) is left out: it costs 2.5× Opus 5.5, and a
+sub-agent can't run on a costlier model than its chat. Gemini, Grok and MAI-Code aren't listed;
+adding a provider means adding a block to `models.json` with the same three tiers.
 
 VS Code refuses to start a sub-agent on a model that costs more than the model of the chat (or
 agent) that started it, so cost only ever steps down along a chain: chat → `qatalyst-developer` →
-`qatalyst-test-writer` → a test writer. That is why the deep agents are left unpinned and the entry
+`qatalyst-test-writer` → a test writer. That is why the two planners are left unpinned and the entry
 points carry the top pin, and why every prompt that starts a pinned agent pins at least that tier
 itself. VS Code checks that rule against the first name it finds, so an entry that costs more than
 the chat fails instead of moving on to the next. If none of an agent's names is in a developer's
@@ -284,7 +313,11 @@ edits are covered only by Copilot's own approval prompts, so read them before yo
 `/qatalyst-ticket-start` checks Repowise at the start of every ticket. If it isn't ready (not
 installed, not indexed, or repos missing or behind), it asks the developer to set it up, continue
 without it, or stop, and tells every agent it hands off to the outcome so none re-checks. It never
-runs the install or index commands itself.
+runs the install or index commands itself. Once Repowise is ready it also checks `repowise hook
+status --workspace` and installs the post-commit hook (`repowise hook install <repo>`, never
+`--security`) in each repo that lacks it and has no post-commit hook of its own, so the index is
+re-built after every commit. This is a local git hook, not one of the Copilot guard hooks removed
+from this workflow.
 
 Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoint was retired on
 30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
@@ -424,7 +457,6 @@ versus a convention this workflow invented for itself.
     │   └── qatalyst-ticket-ship.prompt.md
     └── token-tracker/
         ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
-        ├── copilot-tracked.sh         starts the Copilot CLI with tracing on
         └── vscode-settings.json       the one VS Code setting tracing needs; copied to .vscode/settings.json if the app repo has none
 ```
 
@@ -448,12 +480,12 @@ specs/<bug|feature>/<ticket-id>/
 │   └── extracted/        logcat_extract.py's output — still the full raw log, so the same rule applies
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 ├── digest.md             error groups with counts and first/last times
+├── workflow-report.md    written when every task is ticked: analysis passes (bugs), what changed, who depends on it, risk, and whether Repowise's index was used
 └── in-progress.json      only while a task or the ship step runs; still there on resume = the last chat broke midway
 
 .logs/token-tracker/
 ├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time
 ├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
-├── copilot-cli-otel.jsonl  Copilot CLI trace, when started via copilot-tracked.sh
 └── <ticket-id>/
     ├── token-usage.html  the report as a page; opened by report --open
     └── token-usage.json  ticketId, agentName, model, inputTokens, outputTokens, timestamp per call,

@@ -23,11 +23,25 @@ treat every step below as per-repo unless it says otherwise.
    `qatalyst-security-reviewer` too if `qatalyst-code-reviewer` flagged a sensitive area, and
    `qatalyst-error-handling-reviewer` too if it flagged a layer where functions can fail. All must
    pass with no open comments, in every repo.
-3. Build and run tests locally with `isLocalBuild=true`, in every repo touched. Where a module's
-   build ignores test failures (see `testing.instructions.md`), read its test report instead of
-   trusting the exit code.
+3. Build locally with `isLocalBuild=true`, in every repo touched, then **ask the developer which
+   tests to run** (see `qatalyst-ask-developer`) and run them the same way, using the commands in
+   `project-context.md`'s "Build and test commands". If those are still marked TBD, say which
+   command you're about to run before running it. The options:
+   - **Unit tests** in every module touched (recommended).
+   - **All tests**: unit tests, then the instrumented (`androidTest`) tests. These need an emulator
+     or device; check one is connected first (`adb devices`), and if none is, say so and ask again
+     rather than skipping them.
+   - **Only this ticket's tests**: the test classes the diff added or changed, in their modules.
+   - **Skip tests**: build only. Say "tests were not run locally" in every PR's description, and
+     never report them as passing.
+
+   Where a module's build ignores test failures (see `testing.instructions.md`), read its test
+   report instead of trusting the exit code. Plan-only tests (interop, OTA, performance, chaos) have
+   no Gradle task; they aren't part of this choice. If tests fail, show which and stop; don't push.
 4. **Ask the developer once**, showing: the planned PRs and their merge order (which repo depends on
-   which), the files that will be pushed in each, and each PR's title and description. Ask with
+   which), the files that will be pushed in each, each PR's title and description, and the workflow
+   report's summary (the analysis passes, the blast radius) and its "Repowise:" line from
+   `.logs/<ticket ID>/workflow-report.md` (if that file isn't there, say so). Ask with
    options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7
    until they pick "push".
 5. On confirmation, commit, push the ticket branch (`bug/<ticket ID>-<slug>` or `feature/<ticket ID>-<slug>`, as

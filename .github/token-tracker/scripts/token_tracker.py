@@ -9,7 +9,7 @@
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
-file (written when the CLI is started through copilot-tracked.sh). macOS and Linux only.
+file, if one is present. Meant for VS Code only; the workflow runs it nowhere else. macOS and Linux only.
 Standard library only.
 """
 import argparse
@@ -383,7 +383,7 @@ def collect(root, quiet=False):
         print(f"Model calls stored: {len(rows)} ({len(rows) - before} new)")
         if not sources:
             print("No Copilot traces found. In VS Code, set github.copilot.chat.otel.dbSpanExporter.enabled "
-                  "to true; for the Copilot CLI, start it with .github/token-tracker/copilot-tracked.sh.")
+                  "to true.")
     for n in notes:
         print(f"warning: {n}", file=sys.stderr)
     return rows

@@ -5,7 +5,12 @@
 #   curl -fsSL https://raw.githubusercontent.com/saraths-99/github-workflow/develop/install.sh | bash
 #
 # Or, with a local checkout of this repo:
-#   /path/to/github-workflow/install.sh [target-repo-path]   # defaults to the current directory
+#   /path/to/github-workflow/install.sh [--provider claude|gpt] [target-repo-path]
+#   (the target defaults to the current directory)
+#
+# --provider chooses which models the agents run on: Claude's or GPT's (models.json lists them).
+# Without it, the last install's choice is reused; a first install asks, or uses claude where there
+# is no terminal to ask on. With curl: `... | bash -s -- --provider gpt`.
 #
 # Can't run this script at all (no shell, or this repo is only a downloaded .zip)? See README.md
 # §2a for exactly which files to copy by hand instead -- don't just copy the whole extracted
@@ -25,20 +30,57 @@
 #     left by an older install are removed.
 #   - Leaves everything git-tracked in the target repo, so `git status`/`git diff` shows exactly
 #     what changed and the run is trivially reversible.
-#   - Writes .github/workflow-sync.md every run, recording the synced version, commit SHA, and
-#     timestamp -- check this file to see what an app repo is currently running, and this repo's
+#   - Points every agent's and prompt's `model:` line at the chosen provider (set-models.py).
+#   - Writes .github/workflow-sync.md every run, recording the synced version, commit SHA,
+#     provider and timestamp -- check this file to see what an app repo is currently running, and this repo's
 #     CHANGELOG.md to see what changed since.
 set -euo pipefail
 
 REPO_URL="https://github.com/saraths-99/github-workflow.git"
 BRANCH="develop"
 
-TARGET="${1:-$(pwd)}"
+PROVIDER="${WORKFLOW_PROVIDER:-}"
+TARGET_ARG=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --provider)
+      [ $# -ge 2 ] || { echo "error: --provider needs claude or gpt" >&2; exit 1; }
+      PROVIDER="$2"; shift 2 ;;
+    --provider=*) PROVIDER="${1#*=}"; shift ;;
+    *) TARGET_ARG="$1"; shift ;;
+  esac
+done
+TARGET="${TARGET_ARG:-$(pwd)}"
 TARGET="$(cd "$TARGET" && pwd)"
 
 if ! git -C "$TARGET" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "error: $TARGET is not a git repo. Run this from inside the app repo you want to install into." >&2
   exit 1
+fi
+
+valid_provider() { [ "$1" = "claude" ] || [ "$1" = "gpt" ]; }
+
+if [ -n "$PROVIDER" ] && ! valid_provider "$PROVIDER"; then
+  echo "error: unknown provider '$PROVIDER'; choose claude or gpt." >&2
+  exit 1
+fi
+if [ -z "$PROVIDER" ] && [ -f "$TARGET/.github/workflow-sync.md" ]; then
+  PROVIDER="$(sed -n 's/^- Provider: //p' "$TARGET/.github/workflow-sync.md" | head -n 1)"
+  if valid_provider "$PROVIDER"; then
+    echo "Using model provider '$PROVIDER' from the last install (pass --provider claude|gpt to change it)."
+  else
+    PROVIDER=""
+  fi
+fi
+if [ -z "$PROVIDER" ]; then
+  if (: </dev/tty) 2>/dev/null; then
+    printf 'Which models should the agents run on?\n  1) Claude\n  2) GPT\nChoose [1]: ' >/dev/tty
+    read -r answer </dev/tty || answer=""
+    case "$answer" in 2|gpt|GPT|Gpt) PROVIDER="gpt" ;; *) PROVIDER="claude" ;; esac
+  else
+    PROVIDER="claude"
+    echo "No terminal to ask on; using claude. Pass --provider gpt to use GPT models."
+  fi
 fi
 
 TMP="$(mktemp -d)"
@@ -76,6 +118,12 @@ sync_dir .github/skills
 sync_dir .github/prompts
 sync_dir .github/log-analyser/scripts
 sync_dir .github/token-tracker
+# The files here carry Claude's models; switch them to GPT's when that was chosen.
+if [ "$PROVIDER" != "claude" ]; then
+  command -v python3 >/dev/null 2>&1 || { echo "error: python3 is needed to switch the agents to $PROVIDER models." >&2; exit 1; }
+  python3 "$SRC/set-models.py" "$PROVIDER" "$TARGET"
+fi
+echo "Model provider: $PROVIDER"
 mkdir -p "$TARGET/specs/.templates"
 cp -R "$SRC/specs/.templates/." "$TARGET/specs/.templates/"
 mkdir -p "$TARGET/docs"
@@ -122,6 +170,7 @@ Do not edit by hand — every run of install.sh overwrites this file.
 - Source: $REPO_URL@$BRANCH
 - Version: $WORKFLOW_VERSION
 - Commit: $WORKFLOW_COMMIT
+- Provider: $PROVIDER
 - Synced at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 See this repo's CHANGELOG.md for what changed since a prior sync.

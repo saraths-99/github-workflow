@@ -6,7 +6,7 @@ description: >
   location. The Intake step `qatalyst-log-analyser` hands off to before
   running any log script.
 tools: ['read', 'search', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
-model: ['GPT-6 Luna (copilot)', 'Claude Haiku 5.5 (copilot)', 'GPT-5.6 Luna (copilot)', 'Claude Haiku 4.5 (copilot)']
+model: ['Claude Haiku 5.5 (copilot)', 'Claude Haiku 4.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -36,7 +36,8 @@ chat and stop.
 2. **Pin the issue time** — scan the whole ticket text from step 1 for a timestamp before picking
    one; it's often only in a comment, not the description. Fall back to a screenshot's visible
    clock or a tester-given video timestamp only if the ticket text itself has no usable timestamp.
-   If nothing usable exists anywhere, report that plainly rather than guessing a time.
+   If nothing usable exists anywhere, never guess a time: if the ticket has a log attachment, ask the
+   developer (see "If there's a log but no issue time" below); if it has none, report that plainly.
 3. **Identify the log attachment** — from the attachment list `qatalyst-jira-ticket-intake` read
    (fetched with `fields: ["attachment"]`), note the file type (`.txt`/`.log` vs `.zip`), its name
    and its numeric attachment id. If several look like logs, note them all, newest first.
@@ -57,9 +58,28 @@ analysis** · **I've attached it now, check again** · **Stop, I'll attach it la
   yourself from the ticket text alone, even if it reads as obviously visual (a wrong color, a
   misaligned view) — the developer confirms it, every time.
 
+## If there's a log but no issue time
+
+When the ticket has a log attachment (step 3) but step 2 found no usable timestamp, don't carry on
+without one and don't invent one. Ask the developer, with options (see `qatalyst-ask-developer`):
+*"There's a log on this ticket but no time for the issue."* — **I'll give the time** (**needs
+text**: the time of day as the device clock showed it, `HH:MM:SS`, and the date too if the log spans
+more than one day) · **Use the whole log, no time window** · **Stop, I'll add the time to the
+ticket**.
+
+- **I'll give the time** — use it as the pinned issue time, and report that the developer gave it.
+- **Use the whole log** — report "no time window, by developer choice", so the log is trimmed by
+  process and noise only. A whole-log run is larger and less focused; say so in one line.
+- **Stop, I'll add the time** — report back to `qatalyst-log-analyser` that the run is blocked on a
+  missing issue time, and stop. Running `/qatalyst-ticket-start` again later picks it up.
+
+Ask this only after the attachment question is settled: if the ticket has no attachment, that
+question comes first, and this one only if an attachment then turns up.
+
 ## Report back
 
-Give `qatalyst-log-analyser` exactly: the pinned issue time (or "no usable timestamp found"), the
+Give `qatalyst-log-analyser` exactly: the pinned issue time (and whether it came from the ticket or
+the developer), or "no time window, by developer choice", or "blocked on a missing issue time", the
 attachment's file type, name and attachment id — or, if none exists, which of the two outcomes above the developer
 chose — and any other ticket detail you judged relevant (a stated device/lock model, a repro step)
 in a short note. Then stop — you don't extract, trim, digest, or write anything.

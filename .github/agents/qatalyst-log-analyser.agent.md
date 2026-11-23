@@ -10,6 +10,7 @@ description: >
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
 tools: ['read', 'edit', 'search', 'execute', 'executeRead', 'discover', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
+model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -45,7 +46,12 @@ straight into `tasks.md`.
 
 ## The loop
 
-Follow these steps in order, re-running from Refine as needed, up to five passes total:
+Follow these steps in order, re-running from Refine as needed, up to five passes total. **Keep a
+count as you go.** A pass is one run from Trim through Rank, and the first run is pass 1. Every
+re-run of Trim, whether Refine or a developer's answer (widen the window, use the whole log) caused
+it, starts a new pass. For each pass, note in a line what you changed and where it left the
+confidence in the top cause (for example, "pass 2: widened the window to 5 minutes before; top
+cause went from medium to high"). `log-analysis.md` records the count.
 
 1. **Intake** — hand off to `qatalyst-log-ticket-intake` and wait for it to report back. Never read the
    ticket's comments yourself, and never decide on your own that a ticket doesn't need logs — both
@@ -54,6 +60,8 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    outcomes come back:
    - **Attachment found** — you have the pinned issue time and the attachment's file type
      (`.txt`/`.log` vs `.zip`); continue to Extract below.
+   - **Blocked on a missing issue time** (a log exists, the ticket gives no time and the developer
+     will add one) — stop here entirely, the same way as a missing attachment.
    - **Blocked on a missing attachment** (developer will attach one) — stop here entirely. Don't
      write `log-analysis.md` and don't hand off to `qatalyst-bug-planner`; the developer re-runs
      once the attachment exists.
@@ -84,7 +92,8 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    more than one, merges them in chronological order — never unzip or merge anything yourself. Read only the script's own manifest output (file names, sizes, what
    was skipped and why) — never the extracted text.
 3. **Trim** — run `logcat_trim.py` against the extracted log from step 2, with the pinned issue
-   time. First check its own `# logcat_trim: N lines -> ...` header line: if it trimmed to 0 (or
+   time (the developer's, if Intake asked for it). If Intake reported "no time window, by developer
+   choice", run it without `--at`, and say in the report that the whole log was used. First check its own `# logcat_trim: N lines -> ...` header line: if it trimmed to 0 (or
    near-0) lines, don't treat that as "no errors in the window" — it usually means either the
    attachment's own dates don't actually cover the ticket's stated issue time (testers sometimes
    attach the wrong capture, or the ticket's timestamp is in a different timezone than the device
@@ -92,7 +101,12 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    date/time range against the issue time pinned in step 1, widen the window if it's just too
    narrow, and otherwise ask the developer — widen the time window, use the whole log, or wrong
    attachment, stop — rather than reporting a root cause built on an empty digest.
-4. **Digest** — run `logcat_digest.py` against the trimmed log.
+4. **Digest** — run `logcat_digest.py` against the trimmed log. If its table has no rows (the window
+   has lines, but no warnings or errors), an empty digest is not a root cause, and not "all clear":
+   don't Link, Map or Rank on nothing. Ask the developer, with options (see `qatalyst-ask-developer`):
+   widen the time window (then re-run Trim, which counts as a pass) · use the whole log (re-run Trim
+   without `--at`) · the log shows nothing for this issue, report it as inconclusive · wrong
+   attachment, stop. On "report it as inconclusive", go to **Report (no errors in the log)** below.
 5. **Link** — group digest entries that fire in the same burst or thread, or share an exception
    cause.
 6. **Map** — use `qatalyst-repowise-lookup` to find the real class and module behind each tag/message, and
@@ -108,13 +122,17 @@ Follow these steps in order, re-running from Refine as needed, up to five passes
    instead of forcing a best guess — an honest "inconclusive, here's what's missing" is better input
    to Planning than a root cause the logs don't actually support.
 9. **Report** — write `specs/bug/<ticket ID>/log-analysis.md`: the chain from cause to effects,
-   noise excluded, suspect classes, and anything still unexplained. If one cause clearly dominates,
+   noise excluded, suspect classes, and anything still unexplained. End it with an **Analysis passes**
+   section: how many of the 5 allowed passes it took, one line per pass as noted above, and how it
+   ended: one clear cause · two close candidates · inconclusive at the cap. Say why each extra pass
+   was needed. `qatalyst-developer`'s workflow report copies this section, so keep it self-contained. If one cause clearly dominates,
    report it alone: root cause, confidence, and **a suggested fix**. If the top two hypotheses
    remain close after the refine cap, report **both** — each with its own evidence, confidence, and
    suggested fix — rather than picking one arbitrarily; `qatalyst-bug-planner` decides with the
    developer which to implement, it's not your call. Either way, this is what lets
    `qatalyst-bug-planner` move on to Planning without a second investigation. Then post a redacted
-   comment on the Jira ticket via Atlassian Rovo MCP. Never post anything containing a token, JWT,
+   comment on the Jira ticket via Atlassian Rovo MCP, with the pass count in it ("found in 2 of 5
+   passes"). Never post anything containing a token, JWT,
    or email — `logcat_trim.py` already redacts these, but re-check before posting.
 
 ## Report (no-log case)
@@ -124,11 +142,22 @@ instead of the usual chain-of-evidence report: state plainly that there was no l
 developer confirmed this is a UI-only issue, and log analysis was skipped — no root cause, no
 suggested fix. Flag explicitly that `qatalyst-bug-planner` must ground the root cause itself (via
 `qatalyst-repowise-lookup` against the real UI code) rather than fold one in from this file, since there
-isn't one. Skip the Jira comment step — there's nothing from a log to post.
+isn't one. Skip the Jira comment step — there's nothing from a log to post. End with an **Analysis passes**
+section saying "0: no log was analysed".
+
+## Report (no errors in the log)
+
+When the developer says the log shows nothing for this issue, write `log-analysis.md` as a short
+stub: the attachment's name, the time window used (or "whole log"), that the digest had no warnings
+or errors, and that there is no root cause and no suggested fix. End with an **Analysis passes**
+section: how many passes it took (one per window tried) and a line for each. Flag explicitly that
+`qatalyst-bug-planner` must ground the root cause itself (via `qatalyst-repowise-lookup` against the
+real code) and not read this file as evidence for or against any cause. Skip the Jira comment — there
+is nothing from the log to post.
 
 ## Handing off
 
-Once `log-analysis.md` is written (either the full report or the no-log stub):
+Once `log-analysis.md` is written (the full report or either stub):
 
 - If started by `qatalyst-ticket-start`'s own detection step, just finish — it's waiting and hands off to
   `qatalyst-bug-planner` next.

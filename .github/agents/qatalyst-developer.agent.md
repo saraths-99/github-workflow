@@ -5,7 +5,7 @@ description: >
   for each task, and ticks each task off as it's completed. Runs local
   builds and tests with isLocalBuild=true.
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
-model: ['Claude Sonnet 5.5 (copilot)', 'GPT-6.1 Sol (copilot)', 'Claude Sonnet 5 (copilot)']
+model: ['Claude Sonnet 5.5 (copilot)', 'Claude Sonnet 5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]
@@ -60,10 +60,16 @@ task's test before ticking it. Don't tick a task on the strength of production c
 
 ## When every task is ticked
 
-1. Run `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID> --open` and show
+1. Write the workflow report with `qatalyst-repowise-lookup`'s "Workflow report" steps, to
+   `.logs/<ticket ID>/workflow-report.md`, and tell the developer its summary, how many passes the
+   bug analysis took, and whether Repowise's index was used for it. If the developer asks for it again later, for example after running
+   `repowise update --working-tree`, write it again.
+2. Only if you were told "Token tracking: on" (VS Code), run
+   `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID> --open` and show
    the developer the summary it prints: the ticket's total tokens and the split by agent and model.
    It reads local trace files only, writes to `.logs/token-tracker/<ticket ID>/` (gitignored, never
    committed), and opens the HTML version, `token-usage.html`, in the developer's browser; where it
-   can't open one, it prints the file's path instead, so pass that on. If it fails or finds no calls, say so in one line and carry on.
-2. Report back that every task is ticked — you do not run the ship step yourself;
+   can't open one, it prints the file's path instead, so pass that on. If it fails or finds no calls, say so in one line and carry on. If you were told "Token tracking:
+   off", or told nothing, skip this step without comment and create no files.
+3. Report back that every task is ticked — you do not run the ship step yourself;
    `qatalyst-ticket-start` asks the developer whether to ship now.
