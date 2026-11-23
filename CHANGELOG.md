@@ -10,6 +10,13 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.8] - 2026-11-23
+
+### Changed
+- Per-ticket token tracking is marked beta, confirmed to work in VS Code only. The Android Studio
+  guidance is removed from its docs, and the Copilot CLI launcher (`copilot-tracked.sh`) is labelled
+  untested. `README.md` and `docs/workflow-design.md` say so in the section heading.
+
 ## [0.4.7] - 2026-11-20
 
 ### Fixed
