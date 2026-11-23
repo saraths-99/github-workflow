@@ -302,7 +302,7 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 
 **Models.** You don't pick a model, only a provider, once, when you install (§2). With Claude,
 starting a ticket switches the chat to Claude Opus 5.5, which also runs log analysis and planning;
-`qatalyst-developer` and the reviewers run on Claude Sonnet 5.5, and most test writers on Claude
+`qatalyst-developer` and the reviewers (security included) run on Claude Sonnet 5.5, and most test writers on Claude
 Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
 agent's `model:` line sets it (the full table is in [docs/workflow-design.md](docs/workflow-design.md)
 §4). Every agent runs on the chosen provider only, so your Copilot plan must include its models; if a

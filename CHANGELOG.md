@@ -59,6 +59,10 @@ changed since its last sync.
   in each repo without it (skipping a repo that has its own post-commit hook, and never using
   `--security`), so the index re-builds after every commit. It still never runs `repowise init` or
   `repowise update`.
+- `qatalyst-log-analyser` is pinned to the deep tier, and `qatalyst-security-reviewer` to the standard
+  tier (it ran on the chat's model before). The security reviewer is started by the code reviewer and
+  the ship step, both at or above standard, so the cost rule still holds. Only the two planners are
+  left unpinned.
 
 ### Removed
 - The Copilot CLI launcher `.github/token-tracker/copilot-tracked.sh`, and its mentions in the docs

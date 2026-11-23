@@ -191,8 +191,8 @@ it.
 
 | Tier | Claude, in order | GPT, in order | Agents |
 |---|---|---|---|
-| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts. Unpinned, so they run on the chat's model: `qatalyst-log-analyser`, `qatalyst-bug-planner`, `qatalyst-feature-planner`, `qatalyst-security-reviewer` |
-| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
+| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
+| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`, `qatalyst-security-reviewer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
 | Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
 
 **One provider throughout.** The developer chooses Claude or GPT when installing (`install.sh
@@ -215,7 +215,7 @@ adding a provider means adding a block to `models.json` with the same three tier
 
 VS Code refuses to start a sub-agent on a model that costs more than the model of the chat (or
 agent) that started it, so cost only ever steps down along a chain: chat → `qatalyst-developer` →
-`qatalyst-test-writer` → a test writer. That is why the deep agents are left unpinned and the entry
+`qatalyst-test-writer` → a test writer. That is why the two planners are left unpinned and the entry
 points carry the top pin, and why every prompt that starts a pinned agent pins at least that tier
 itself. VS Code checks that rule against the first name it finds, so an entry that costs more than
 the chat fails instead of moving on to the next. If none of an agent's names is in a developer's
