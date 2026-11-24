@@ -108,8 +108,16 @@ anywhere, and prompt or code content is never captured.
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
   `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, in
   VS Code only), or, failing that, when any turn in it ran on a branch named
-  for the ticket. The `qatalyst-ticket` picker agent has no terminal tool, so its chats rely on the
-  branch rule.
+  for the ticket and the chat is in this repo (a same-named branch in another project doesn't
+  count; a `mark` is written in this repo, so a marked chat counts whatever repo it names). The
+  `qatalyst-ticket` picker agent has no terminal tool, so it can't write a marker or have a
+  branch yet: an unlinked picker chat that ended within an hour before a marker for the ticket is
+  counted for that ticket (`PICKER_GAP_MS`). Only picker chats get this rule, so unrelated chats are
+  never swept in.
+- **Diagnosing an empty report.** `token_tracker.py doctor [ticket ID]` runs `collect` and prints the
+  trace sources found, how many calls and chats are stored, the markers and branches seen, chats in
+  a different repo, and a "most likely cause". `report` prints and renders the same lines when a
+  ticket has no calls.
 - **Agent names.** An agent picked from the picker is recorded by Copilot as "GitHub Copilot Chat"
   with its own name in a separate attribute; the tracker uses that name. A chat with no custom agent
   shows as "GitHub Copilot Chat".
@@ -117,7 +125,7 @@ anywhere, and prompt or code content is never captured.
   counted in the input tokens of the agent that loaded it.
 - **Retention.** Copilot deletes its own trace rows after 7 days, so every `collect`/`report` run
   copies new calls into `.logs/token-tracker/calls.jsonl` (git-ignored), and reports are built from
-  that copy. Calls recorded against a different repo's remote URL are skipped.
+  that copy. Calls from every repo are kept; the repo check is applied when linking (see above).
 - **Why not Copilot's `file` exporter in VS Code.** As of Copilot Chat's current source, its file
   exporter serializes span objects directly, which fails on a circular reference and writes `{}`
   for every span (reproduced with OpenTelemetry SDK 2.5.1 and 2.12.1). The SQLite store converts

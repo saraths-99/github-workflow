@@ -6,6 +6,8 @@
   token_tracker.py report <ticket ID> [--open]
                                         collect, then write that ticket's usage report
                                         (.html, .json); --open shows the HTML page
+  token_tracker.py doctor [ticket ID]   collect, then print what the tracker can see and, for a ticket
+                                        with no calls, which link to its chats is missing
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
@@ -34,6 +36,10 @@ MARKERS_FILE = "markers.jsonl"
 CLI_TRACE_FILE = "copilot-cli-otel.jsonl"
 # A marker counts for a chat if it was written while that chat was active, give or take this much.
 SESSION_SLACK_MS = 10 * 60 * 1000
+# The picker agent (qatalyst-ticket) has no terminal, so it can't run `mark`. A picker chat that ended up to this
+# long before a ticket's marker (written by the next chat, /qatalyst-ticket-start) is counted for that ticket.
+PICKER_AGENT = "qatalyst-ticket"
+PICKER_GAP_MS = 60 * 60 * 1000
 
 ATTR_MODE = "copilot_chat.mode_name"
 ATTR_BRANCH = "copilot_chat.repo.head_branch_name"
@@ -342,9 +348,12 @@ def write_jsonl(path, rows):
     os.replace(tmp, path)
 
 
-def collect(root, quiet=False):
+def collect_with_stats(root, quiet=False):
+    """Copies every model call from the trace sources into calls.jsonl. Returns (rows, stats).
+
+    Chats from another repo are kept too: whether one belongs to a ticket is decided in calls_for_ticket,
+    because a chat in a multi-repo workspace can name a different repo than the one `mark` ran in."""
     tdir = tracker_dir(root)
-    this_repo = current_remote(root)
     calls_path = tdir / CALLS_FILE
     stored = {c["id"]: c for c in load_jsonl(calls_path)}
     before = len(stored)
@@ -356,6 +365,7 @@ def collect(root, quiet=False):
         cli_paths.append(Path(os.environ["TOKEN_TRACKER_CLI_TRACE"]))
     sources += [(p, "cli") for p in cli_paths if p.is_file()]
 
+    spans_read = 0
     for path, kind in sources:
         try:
             if kind == "vscode":
@@ -367,12 +377,8 @@ def collect(root, quiet=False):
         except (sqlite3.Error, OSError) as e:
             notes.append(f"{path}: could not read ({e})")
             continue
-        calls = spans_to_calls(spans, kind)
-        sessions_elsewhere = {c["session"] for c in calls if this_repo and c["remote"] and c["remote"] != this_repo}
-        sessions_here = {c["session"] for c in calls if this_repo and c["remote"] == this_repo}
-        for c in calls:
-            if c["session"] in sessions_elsewhere and c["session"] not in sessions_here:
-                continue
+        spans_read += len(spans)
+        for c in spans_to_calls(spans, kind):
             stored[c["id"]] = c
 
     rows = sorted(stored.values(), key=lambda c: (c["timestamp_ms"], c["id"]))
@@ -386,7 +392,11 @@ def collect(root, quiet=False):
                   "to true.")
     for n in notes:
         print(f"warning: {n}", file=sys.stderr)
-    return rows
+    return rows, {"sources": sources, "spans_read": spans_read, "notes": notes}
+
+
+def collect(root, quiet=False):
+    return collect_with_stats(root, quiet)[0]
 
 
 # ── Attribution ──────────────────────────────────────────────────────────────────────────────────
@@ -396,21 +406,44 @@ def _branch_matches(branch, ticket):
     return bool(branch) and re.search(rf"(?<![A-Za-z0-9]){re.escape(ticket)}(?![0-9])", branch, re.IGNORECASE) is not None
 
 
-def calls_for_ticket(calls, markers, ticket):
-    """A chat belongs to a ticket if a marker for it was written while that chat was active (split at each
-    marker when one chat covers several tickets), or, with no marker in that chat, if any of its turns ran
-    on a branch named for the ticket."""
+ANY_TICKET_IN_BRANCH = re.compile(r"(?<![A-Za-z0-9])[A-Za-z][A-Za-z0-9_]*-\d+")
+
+
+def _group_sessions(calls):
     sessions = {}
     for c in calls:
         sessions.setdefault(c["session"], []).append(c)
-    picked = []
     for session_calls in sessions.values():
         session_calls.sort(key=lambda c: c["timestamp_ms"])
-        first, last = session_calls[0]["timestamp_ms"], session_calls[-1]["timestamp_ms"]
-        inside = sorted(
-            (m for m in markers if first - SESSION_SLACK_MS <= m["timestamp_ms"] <= last + SESSION_SLACK_MS),
-            key=lambda m: m["timestamp_ms"],
-        )
+    return sessions
+
+
+def _markers_inside(session_calls, markers):
+    first, last = session_calls[0]["timestamp_ms"], session_calls[-1]["timestamp_ms"]
+    return sorted(
+        (m for m in markers if first - SESSION_SLACK_MS <= m["timestamp_ms"] <= last + SESSION_SLACK_MS),
+        key=lambda m: m["timestamp_ms"],
+    )
+
+
+def _is_elsewhere(session_calls, this_repo):
+    """True when every repo this chat names is a different one than the repo the tracker runs in."""
+    remotes = {c["remote"] for c in session_calls if c.get("remote")}
+    return bool(this_repo and remotes and this_repo not in remotes)
+
+
+def calls_for_ticket(calls, markers, ticket, this_repo=""):
+    """A chat belongs to a ticket if
+    - a marker for it was written while that chat was active (split at each marker when one chat covers
+      several tickets); a marker is written in this repo, so the chat's own repo is not checked; or
+    - with no marker in that chat, any of its turns ran on a branch named for the ticket, and the chat is
+      in this repo (a same-named branch in another project doesn't count); or
+    - it is an unlinked picker chat that ended shortly before a marker for the ticket (the picker has no
+      terminal, so it can't write the marker itself)."""
+    picked = []
+    unlinked_pickers = []
+    for session_calls in _group_sessions(calls).values():
+        inside = _markers_inside(session_calls, markers)
         if inside:
             for c in session_calls:
                 owner = inside[0]
@@ -420,11 +453,97 @@ def calls_for_ticket(calls, markers, ticket):
                 if owner["ticketId"].upper() == ticket.upper():
                     picked.append(c)
         elif any(_branch_matches(c.get("branch"), ticket) for c in session_calls):
-            picked.extend(session_calls)
-    return sorted(picked, key=lambda c: (c["timestamp_ms"], c["id"]))
+            if not _is_elsewhere(session_calls, this_repo):
+                picked.extend(session_calls)
+        elif (any(c["agentName"] == PICKER_AGENT for c in session_calls)
+              and not any(ANY_TICKET_IN_BRANCH.search(c.get("branch") or "") for c in session_calls)):
+            unlinked_pickers.append(session_calls)
+    for m in (m for m in markers if m["ticketId"].upper() == ticket.upper()):
+        before = [s for s in unlinked_pickers if m["timestamp_ms"] - PICKER_GAP_MS <= s[-1]["timestamp_ms"] <= m["timestamp_ms"]]
+        if before:
+            picked.extend(max(before, key=lambda s: s[-1]["timestamp_ms"]))
+    unique = {c["id"]: c for c in picked}
+    return sorted(unique.values(), key=lambda c: (c["timestamp_ms"], c["id"]))
+
+
+# ── Diagnostics ──────────────────────────────────────────────────────────────────────────────────
+
+
+def diagnose(root, ticket, calls, markers, stats):
+    """Plain-text lines saying what the tracker could see and which link between a ticket and its chats
+    is missing. `ticket` may be None for the general lines only."""
+    this_repo = current_remote(root)
+    sessions = _group_sessions(calls)
+    lines = [
+        f"Repo root: {root}",
+        f"Markers file: {tracker_dir(root) / MARKERS_FILE} ({len(markers)} markers)",
+        f"This repo's remote: {this_repo or 'none (no git remote)'}",
+    ]
+    sources = stats.get("sources") or []
+    if sources:
+        lines.append("Trace sources: " + ", ".join(f"{k} ({p})" for p, k in sources))
+    else:
+        lines.append("Trace sources: none found")
+    lines.append(f"Spans read this run: {stats.get('spans_read', 0)}")
+    for n in stats.get("notes") or []:
+        lines.append(f"Warning: {n}")
+    if calls:
+        newest, oldest = calls[-1]["timestamp_ms"], calls[0]["timestamp_ms"]
+        lines.append(f"Stored model calls: {len(calls)} in {len(sessions)} chats, {iso(oldest)} to {iso(newest)}")
+        age_days = (now_ms() - newest) / 86_400_000
+        if age_days > 7:
+            lines.append(f"The newest call is {age_days:.0f} days old; Copilot deletes its traces after 7 days, so "
+                         "work from before that can't be recovered.")
+    else:
+        lines.append("Stored model calls: 0")
+    if not ticket:
+        return lines
+
+    mine_markers = [m for m in markers if m["ticketId"].upper() == ticket.upper()]
+    lines.append(f"Markers for {ticket}: "
+                 + (", ".join(iso(m["timestamp_ms"]) for m in mine_markers) if mine_markers else "none"))
+    chats_with_marker = [s for s in sessions.values() if _markers_inside(s, mine_markers)]
+    lines.append(f"Chats active when a {ticket} marker was written: {len(chats_with_marker)}")
+    branches = sorted({c["branch"] for c in calls if c.get("branch")})
+    matching = [b for b in branches if _branch_matches(b, ticket)]
+    lines.append("Branches seen in chats: " + (", ".join(branches[:12]) + (" …" if len(branches) > 12 else "") if branches else "none"))
+    lines.append(f"Branches naming {ticket}: " + (", ".join(matching) if matching else "none"))
+    elsewhere = [s for s in sessions.values() if _is_elsewhere(s, this_repo)]
+    if elsewhere:
+        remotes = sorted({c["remote"] for s in elsewhere for c in s if c.get("remote")})
+        lines.append(f"Chats in a different repo than this one: {len(elsewhere)} ({', '.join(remotes[:5])})")
+    branch_in_elsewhere = any(any(_branch_matches(c.get("branch"), ticket) for c in s) for s in elsewhere)
+
+    if not sources and not calls:
+        cause = ("No Copilot trace database was found. In VS Code, set github.copilot.chat.otel.dbSpanExporter.enabled "
+                 "to true (and don't set telemetry.telemetryLevel to off), then work in a chat.")
+    elif not calls:
+        cause = ("The trace database has no model calls. Chat in agent mode after turning the tracing setting on; "
+                 "Copilot only records from then on.")
+    elif not mine_markers and not matching:
+        cause = (f"No marker was written for {ticket} and no chat ran on a branch naming it. Run "
+                 f"`python3 .github/token-tracker/scripts/token_tracker.py mark {ticket}` in the chat you worked in "
+                 "(or run /qatalyst-ticket-start), or check out a branch with the ticket ID in its name.")
+    elif matching and branch_in_elsewhere and not chats_with_marker:
+        cause = (f"A branch naming {ticket} was seen, but only in chats whose repo differs from this one "
+                 f"({this_repo or 'no remote'}). Run `mark {ticket}` from this repo, or run the report from the "
+                 "repo the chats were in.")
+    elif mine_markers and not chats_with_marker:
+        cause = (f"A marker for {ticket} exists but no chat was active within 10 minutes of it. The marker is probably "
+                 "in the wrong checkout's .logs, or the chat's traces are older than 7 days.")
+    else:
+        cause = "Unclear; send these lines to whoever maintains the tracker."
+    lines.append(f"Most likely cause: {cause}")
+    return lines
 
 
 # ── Commands ─────────────────────────────────────────────────────────────────────────────────────
+
+
+def cmd_doctor(root, ticket=None):
+    calls, stats = collect_with_stats(root, quiet=True)
+    markers = load_jsonl(tracker_dir(root) / MARKERS_FILE)
+    print("\n".join(diagnose(root, ticket, calls, markers, stats)))
 
 
 def cmd_mark(root, ticket):
@@ -477,8 +596,9 @@ code { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-si
 """
 
 
-def render_html(summary, sources):
-    """Static page from the same data as token-usage.json; every value is escaped, and there are no scripts."""
+def render_html(summary, sources, why=()):
+    """Static page from the same data as token-usage.json; every value is escaped, and there are no scripts.
+    `why` is the diagnostic lines shown when the ticket has no calls."""
     e = html.escape
     ticket, totals, calls = summary["ticketId"], summary["totals"], summary["calls"]
     grand = max(totals["totalTokens"], 1)
@@ -512,6 +632,12 @@ def render_html(summary, sources):
             f"<code>token_tracker.py mark {e(ticket)}</code> ran during it, or when one of its turns ran on a branch "
             f"named for {e(ticket)}.</p></div>",
         ]
+        if why:
+            parts += [
+                '<h2>What the tracker could see</h2><div class="card"><ul class="empty">',
+                *[f"<li>{e(w)}</li>" for w in why],
+                "</ul></div>",
+            ]
     else:
         parts += [
             f'<p class="meta">{e(readable(calls[0]["timestamp"]))} to {e(readable(calls[-1]["timestamp"]))}'
@@ -584,9 +710,10 @@ def open_in_browser(path):
 
 
 def cmd_report(root, ticket, open_page=False):
-    calls = collect(root)
+    calls, stats = collect_with_stats(root)
     markers = load_jsonl(tracker_dir(root) / MARKERS_FILE)
-    mine = calls_for_ticket(calls, markers, ticket)
+    mine = calls_for_ticket(calls, markers, ticket, current_remote(root))
+    why = [] if mine else diagnose(root, ticket, calls, markers, stats)
     out_dir = tracker_dir(root) / ticket
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -619,6 +746,9 @@ def cmd_report(root, ticket, open_page=False):
             "Either tracing wasn't on while it was worked on, or none of its chats could be linked to it: a chat is "
             f"linked when `token_tracker.py mark {ticket}` ran during it, or when one of its turns ran on a branch "
             f"named for {ticket}.",
+            "",
+            "What the tracker could see:",
+            *[f"- {w}" for w in why],
         ]
     else:
         per_agent, per_model = {}, {}
@@ -650,7 +780,7 @@ def cmd_report(root, ticket, open_page=False):
             "`token-usage.html` and `token-usage.json`.",
         ]
     page = out_dir / "token-usage.html"
-    page.write_text(render_html(summary, sorted({c["source"] for c in mine})), encoding="utf-8")
+    page.write_text(render_html(summary, sorted({c["source"] for c in mine}), why), encoding="utf-8")
     print()
     print("\n".join(lines))
     print()
@@ -676,12 +806,16 @@ def main(argv=None):
     report = sub.add_parser("report", help="collect, then write a ticket's usage report")
     report.add_argument("ticket", type=ticket_arg)
     report.add_argument("--open", action="store_true", help="open token-usage.html in the default browser")
+    doctor = sub.add_parser("doctor", help="show what the tracker can see, and why a ticket has no calls")
+    doctor.add_argument("ticket", type=ticket_arg, nargs="?")
     args = parser.parse_args(argv)
     root = repo_root()
     if args.command == "mark":
         cmd_mark(root, args.ticket)
     elif args.command == "collect":
         collect(root)
+    elif args.command == "doctor":
+        cmd_doctor(root, args.ticket)
     else:
         cmd_report(root, args.ticket, open_page=args.open)
 

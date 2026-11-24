@@ -115,8 +115,10 @@ class TokenTrackerTest(unittest.TestCase):
         ])
         self.assertEqual(sorted(p.name for p in (self.repo / ".logs" / "token-tracker" / "ABC-1").iterdir()),
                          ["token-usage.html", "token-usage.json"])
-        stored =(self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
-        self.assertNotIn("9999", stored)
+        # Every chat is kept in calls.jsonl, but another repo's chat is not counted for the ticket.
+        stored = (self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
+        self.assertIn("9999", stored)
+        self.assertNotIn(9999, [r["inputTokens"] for r in rows])
 
     def test_rows_survive_copilot_cleanup(self):
         self.build_db()
@@ -189,6 +191,81 @@ class TokenTrackerTest(unittest.TestCase):
                                "byAgent": [], "calls": []})
         page = (self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.html").read_text()
         self.assertIn("No model calls found for this ticket.", page)
+
+    def page(self, ticket):
+        return (self.repo / ".logs" / "token-tracker" / ticket / "token-usage.html").read_text()
+
+    def test_empty_report_names_the_cause(self):
+        # No trace database at all.
+        self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
+        out = self.run_tool("report", "ABC-1").stdout
+        self.assertIn("No Copilot trace database was found", out)
+        self.assertIn("No Copilot trace database was found", self.page("ABC-1"))
+        # Calls exist, but no marker and no branch for this ticket.
+        self.env["TOKEN_TRACKER_VSCODE_DB"] = str(self.db)
+        self.build_db()
+        out = self.run_tool("report", "ZZ-9").stdout
+        self.assertIn("No marker was written for ZZ-9 and no chat ran on a branch naming it", out)
+        self.assertIn("Branches seen in chats:", out)
+        self.assertIn("No marker was written for ZZ-9", self.page("ZZ-9"))
+        # A marker far from every chat.
+        self.write_marker("ZZ-9", T0 + 50_000_000)
+        out = self.run_tool("report", "ZZ-9").stdout
+        self.assertIn("no chat was active within 10 minutes of it", out)
+
+    def test_branch_match_in_another_repo_is_explained(self):
+        conn = sqlite3.connect(self.db)
+        conn.executescript(SCHEMA)
+        add_span(conn, "a1", None, "invoke_agent GitHub Copilot Chat", T0, "invoke_agent", "GitHub Copilot Chat", "conv-x",
+                 attrs={"copilot_chat.repo.remote_url": "https://github.com/other/repo",
+                        "copilot_chat.repo.head_branch_name": "feature/ABC-5-thing"})
+        add_span(conn, "c1", "a1", "chat gpt-5", T0 + 1000, "chat", model="gpt-5", inp=10, out=1)
+        conn.commit()
+        conn.close()
+        out = self.run_tool("report", "ABC-5").stdout
+        self.assertIn("only in chats whose repo differs from this one", out)
+        self.assertEqual(self.read_rows("ABC-5"), [])
+
+    def test_marked_chat_in_another_repo_is_linked(self):
+        # A multi-repo workspace: the chat's top-level span names a different repo, but `mark` ran here.
+        conn = sqlite3.connect(self.db)
+        conn.executescript(SCHEMA)
+        add_span(conn, "a1", None, "invoke_agent GitHub Copilot Chat", T0, "invoke_agent", "GitHub Copilot Chat", "conv-x",
+                 attrs={"copilot_chat.repo.remote_url": "https://github.com/acme/other-repo",
+                        "copilot_chat.repo.head_branch_name": "develop"})
+        add_span(conn, "c1", "a1", "chat gpt-5", T0 + 1000, "chat", model="gpt-5", inp=10, out=1)
+        conn.commit()
+        conn.close()
+        self.write_marker("ABC-5", T0 + 500)
+        self.run_tool("report", "ABC-5")
+        self.assertEqual([r["inputTokens"] for r in self.read_rows("ABC-5")], [10])
+
+    def test_picker_chat_before_the_marker_is_linked(self):
+        conn = sqlite3.connect(self.db)
+        conn.executescript(SCHEMA)
+        here = {"copilot_chat.repo.remote_url": REMOTE, "copilot_chat.repo.head_branch_name": "develop"}
+        # The picker chat ends 30 minutes before the marker; a plain chat ends at the same time.
+        add_span(conn, "a1", None, "invoke_agent GitHub Copilot Chat", T0, "invoke_agent", "GitHub Copilot Chat", "conv-pick",
+                 attrs={**here, "copilot_chat.mode_name": "qatalyst-ticket"})
+        add_span(conn, "c1", "a1", "chat gpt-5", T0 + 1000, "chat", model="gpt-5", inp=10, out=1)
+        add_span(conn, "a2", None, "invoke_agent GitHub Copilot Chat", T0, "invoke_agent", "GitHub Copilot Chat", "conv-plain", attrs=here)
+        add_span(conn, "c2", "a2", "chat gpt-5", T0 + 2000, "chat", model="gpt-5", inp=20, out=2)
+        conn.commit()
+        conn.close()
+        self.write_marker("ABC-5", T0 + 30 * 60 * 1000)
+        self.run_tool("report", "ABC-5")
+        self.assertEqual([r["inputTokens"] for r in self.read_rows("ABC-5")], [10])
+
+    def test_doctor(self):
+        self.build_db()
+        self.write_marker("ABC-1", T0 + 500)
+        out = self.run_tool("doctor", "ABC-1").stdout
+        self.assertIn("Stored model calls: 6 in 4 chats", out)
+        self.assertIn("Markers for ABC-1:", out)
+        self.assertIn("Chats in a different repo than this one: 1", out)
+        general = self.run_tool("doctor").stdout
+        self.assertNotIn("Most likely cause", general)
+        self.assertFalse((self.repo / ".logs" / "token-tracker" / "ABC-1").exists())
 
     def test_mark_and_bad_ticket_id(self):
         self.run_tool("mark", "abc-12")

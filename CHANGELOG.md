@@ -10,6 +10,21 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.4.10] - 2026-11-24
+
+### Fixed
+- The token tracker no longer drops a chat just because its top-level span names a different repo
+  than the one the tracker runs in (as in the five-repo app workspace). A chat with a `mark` written
+  in this repo is counted whatever repo it names; the repo check now applies only to the
+  branch-name rule. `calls.jsonl` keeps chats from every repo.
+- A `qatalyst-ticket` picker chat (no terminal, so no `mark` of its own) that ended within an hour
+  before a ticket's `mark` is now counted for that ticket.
+
+### Added
+- `token_tracker.py doctor [ticket ID]` prints what the tracker can see (trace sources, calls and
+  chats stored, markers, branches, chats in another repo) and the most likely reason a ticket has no
+  calls. The "No model calls found" page and console summary now include the same lines.
+
 ## [0.4.9] - 2026-11-23
 
 ### Changed

@@ -379,13 +379,25 @@ summary and writes two files to `.logs/token-tracker/ABC-123/`:
   input, output and total tokens per agent, largest first), for feeding into other tools.
 
 **How a chat gets counted for a ticket:** `/qatalyst-ticket-start` records the
-ticket ID when it starts, and any chat that ran on the ticket's branch counts too. A chat
-that did neither (for example, planning started from the `qatalyst-ticket` picker that you abandoned
+ticket ID when it starts, and any chat that ran on the ticket's branch (in this repo) counts too. A
+`qatalyst-ticket` picker chat that ended within an hour before the ticket's start is counted as well.
+Any other chat that did none of these (for example, planning in a plain chat that you abandoned
 before a branch was created) isn't counted; run
 `python3 .github/token-tracker/scripts/token_tracker.py mark ABC-123` at the start of such a chat to
 include it. Skills don't appear as separate rows: they make no model calls of their own.
 Copilot deletes its trace data after 7 days, so run `report` (or `collect`) at least weekly on a
 long-running ticket; everything it has copied stays in `.logs/token-tracker/`.
+
+**If the report says "No model calls found":** the page and the console list what the tracker could
+see and the most likely cause. To get the same list without writing a report, run
+`python3 .github/token-tracker/scripts/token_tracker.py doctor ABC-123`. The usual causes:
+
+- No `agent-traces.db`: the setting is off, `telemetry.telemetryLevel` is `off`, or you haven't
+  chatted since turning it on (and reloading the window).
+- No `mark` ran in the chat and no turn ran on a branch with the ticket ID in its name.
+- The branch matched, but the chat's repo is not this one (a multi-repo workspace). A `mark` run from
+  this repo counts the chat whatever repo it was in.
+- The chat is older than 7 days and was never collected.
 
 ## 4. Maintenance
 
