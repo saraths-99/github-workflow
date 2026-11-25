@@ -3,13 +3,12 @@
     "atlassian-rovo": {
       "url": "https://mcp.atlassian.com/v2/mcp"
     },
-    "figma": {
-      "command": "npx",
-      "args": ["-y", "figma-mcp"]
-    },
     "repowise": {
-      "command": "repowise",
-      "args": ["mcp"]
+      "command": "/Users/<USER_PATH>/.local/bin/repowise",
+      "args": [
+        "mcp",
+        "<REPOWISE_PROJECT_PARENT_FOLDER>"
+      ]
     }
   }
 }

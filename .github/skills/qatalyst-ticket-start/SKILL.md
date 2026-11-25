@@ -55,9 +55,11 @@ repositories, and Repowise is what lets the planners, the log analyser and the r
 change's callers in the other repos — without it they read only the files they're pointed at.
 
 1. If you can run terminal commands, run `repowise status --workspace` and read which repos are
-   missing or behind. Either way, call one cheap Repowise tool (`get_overview`): a "no index" reply
-   means not indexed; the tool not being offered, or a timeout, means Repowise isn't installed or its
-   MCP server didn't start.
+   missing or behind. Either way, probe the MCP server with one cheap code-graph call:
+   `search_codebase` with a one-word query and `limit` 1. Don't use `get_overview`: it returns the
+   generated overview essay, which an index built with `--no-prose` (the one this workflow uses)
+   doesn't have, so it comes back unreadable on a healthy index. A "no index" reply means not
+   indexed; the tool not being offered, or a timeout, means the MCP server isn't running.
 2. **Ready** — it answers, and every repo in `architecture.md`'s repository table is indexed and up
    to date. Say so in one line ("Repowise ready — 5 repos indexed"), then make sure the commit hook
    is in place (below), and carry on.
@@ -73,13 +75,19 @@ change's callers in the other repos — without it they read only the files they
    when you can't run commands or the developer chose to continue without Repowise.
 3. **Not ready** — say which of these it is, and ask (see `qatalyst-ask-developer`), putting the
    command in the question:
-   - not installed: `pipx install repowise`
+   - not installed (`repowise` isn't found; with no terminal, "not installed or its MCP server isn't
+     running"): `uv tool install repowise`
+   - installed and indexed (`repowise status --workspace` is fine) but the MCP server isn't answering:
+     it is defined in `.mcp.json` as `repowise mcp <folder holding all the repos>`, local, with no API key; if its `command` or folder is still a `<...>` placeholder, that is why it won't start. Start it from VS Code's
+     **MCP: List Servers**, or by choosing Android Studio's Local agent (`.github/workflow-guide.md`, "MCP servers")
    - not indexed, or repos missing: from the folder that holds all the repos side by side,
      `repowise init --yes --no-prose --no-editor-setup`
    - indexed but behind: `repowise update --workspace`
 
-   Options: I've set it up — check again · Continue without Repowise · Stop, I'll set it up.
-4. Never run `pipx install`, `repowise init` or `repowise update` yourself — they write to the
+   Options: I've set it up — check again · Continue without Repowise · Stop, I'll set it up. (If
+   the MCP server is the only problem, "Continue without Repowise" means direct file reads; the
+   agents never use the CLI index themselves.)
+4. Never run `uv tool install`, `repowise init` or `repowise update` yourself — they write to the
    developer's machine, and `init` without `--no-editor-setup` writes into the repos. The commit
    hook above is the one thing you do install.
 5. Tell every agent you hand off to the outcome ("Repowise: ready" or "Repowise: the developer
@@ -91,6 +99,17 @@ change's callers in the other repos — without it they read only the files they
 project this repo's tickets can come from. Each entry has its own `key` and `bug_issue_types`; this
 app can still track tickets under more than one Jira project, each with its own issue-type scheme,
 so there's no single shared `bug_issue_types` to check against.
+
+**Seed the project first.** The project key is the part of the ticket ID the developer typed before
+the dash (`HALOM-14123` → `HALOM`). If `jira_projects` still holds the `<FILL IN` placeholder, or has no
+entry for that key, add one before anything else, with `bug_issue_types: [Bug]`: a ticket in a project
+the file doesn't know is run as a bug by default anyway, and this records it. Edit only the
+`jira_projects` list in `copilot-instructions.md`'s settings block: replace the placeholder entry,
+or add the new entry under the existing ones, and leave `base_branch` and everything else as it is.
+Say it in one line ("Added Jira project HALOM to copilot-instructions.md, bug types: Bug"). If you
+can't edit the file, say that in one line and carry on; the ticket is treated as a bug either way.
+Step 1 below then reads the real project key from Jira: if it differs from the key you added,
+replace the added entry's key with Jira's, and say so.
 
 1. Read the ticket's Jira `issuetype` field **and its project key** via `qatalyst-jira-ticket-intake` —
    never parsed from the ticket ID string.

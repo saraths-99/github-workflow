@@ -24,7 +24,7 @@ Used by `qatalyst-bug-planner`, `qatalyst-feature-planner` (via `qatalyst-plan-t
    compact view leaves attachments out, so without it a ticket with a log attached looks like it has
    none. Note each attachment's numeric `id`, `filename`, `size` and `mimeType`; the id is what
    `downloadJiraIssueAttachment` needs, and it is not the media UUID inside a comment's body.
-4. Note any linked Confluence pages and Figma designs for the caller to fetch separately.
+4. Note any linked Confluence pages for the caller to fetch separately, and any Figma links as links only (no Figma server is configured).
 
 ## Done means
 

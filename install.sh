@@ -126,6 +126,7 @@ fi
 echo "Model provider: $PROVIDER"
 mkdir -p "$TARGET/specs/.templates"
 cp -R "$SRC/specs/.templates/." "$TARGET/specs/.templates/"
+cp "$SRC/.github/workflow-guide.md" "$TARGET/.github/workflow-guide.md"
 mkdir -p "$TARGET/docs"
 cp "$SRC/docs/workflow-design.md" "$TARGET/docs/workflow-design.md"
 
@@ -156,11 +157,10 @@ elif ! grep -q 'github.copilot.chat.otel.dbSpanExporter.enabled' "$TARGET/.vscod
   echo "  note: for token tracking in VS Code, add \"github.copilot.chat.otel.dbSpanExporter.enabled\": true to .vscode/settings.json"
 fi
 
-if [ -f "$TARGET/.gitignore" ]; then
-  grep -qxF '.logs/' "$TARGET/.gitignore" || echo '.logs/' >> "$TARGET/.gitignore"
-else
-  echo '.logs/' > "$TARGET/.gitignore"
-fi
+touch "$TARGET/.gitignore"
+for entry in '.logs/' '.github/'; do
+  grep -qxF "$entry" "$TARGET/.gitignore" || echo "$entry" >> "$TARGET/.gitignore"
+done
 
 cat > "$TARGET/.github/workflow-sync.md" <<EOF
 # Workflow sync record

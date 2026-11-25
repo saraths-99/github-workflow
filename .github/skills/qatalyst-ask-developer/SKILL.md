@@ -39,7 +39,7 @@ and runs you again with the answer.
 | Stop | Options |
 |---|---|
 | No ticket ID given | The developer's own open Jira tickets (`assignee = currentUser() AND statusCategory != Done`, newest first, up to 4: "`ABC-123` — summary"). The tool's free-text answer is the only way to give another ID. |
-| Repowise isn't ready at ticket start (say which: not installed · not indexed · repos missing or behind, naming them — with the command to fix it) | I've set it up — check again · Continue without Repowise · Stop, I'll set it up |
+| Repowise isn't ready at ticket start (say which: not installed · not indexed · repos missing or behind, naming them · MCP server not running — with the command or step to fix it) | I've set it up — check again · Continue without Repowise · Stop, I'll set it up |
 | Bug ticket has no log attachment | UI-only issue — skip log analysis · I've attached it now — check again · Stop, I'll attach it later |
 | Bug ticket has a log but no issue time | I'll give the time (**needs text**: `HH:MM:SS`, plus the date if the log spans days) · Use the whole log, no time window · Stop, I'll add the time to the ticket |
 | Raw log isn't in `.logs/<ticket ID>/raw/` and the download from the ticket couldn't run or failed (say why, and the exact folder and file name to save it as) | I've saved it there — continue · Skip log analysis |

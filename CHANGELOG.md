@@ -43,7 +43,10 @@ changed since its last sync.
   risk, tests around the change, and whether each changed file is current in Repowise's index) and
   tells the developer whether Repowise's index was used, naming stale files and the command to
   refresh them. Without Repowise it falls back to direct searches and says so. The ship
-  confirmation shows the summary. Steps are in `qatalyst-repowise-lookup`.
+  confirmation shows the summary. Steps are in `qatalyst-repowise-lookup`. A "Workflow checks"
+  section records how token tracking went (written, off, no hand-off received, or failed), which
+  hand-off the agent received, and the Repowise index and commit hook status, self-reported, with
+  "not recorded" where the agent wasn't told. The token report now runs before the workflow report.
 - Token tracking runs in VS Code only. `qatalyst-ticket-start` runs `mark` only when it has the
   `vscode/askQuestions` tool, and tells the agents it hands off to "Token tracking: on" or "off";
   `qatalyst-developer` writes the token report only when told "on". In Android Studio and the Copilot
@@ -54,6 +57,23 @@ changed since its last sync.
   `models.json` into each `model:` line. The files here now carry the Claude lists, so the mixed
   Claude/GPT fallback lists are gone: a plan needs the chosen provider's models. Gemini isn't offered,
   as its model names aren't known. `tests/test_set_models.py` and a static check cover the lists.
+- The Jira project is filled in from the first ticket. When `qatalyst-ticket-start` sees the placeholder
+  in `jira_projects` (or no entry for the ticket's project), it adds the key from the ID the developer
+  typed (`HALOM-14123` gives `HALOM`) with `bug_issue_types: [Bug]`, and corrects the key if Jira
+  reports a different one. `base_branch` is left alone. `qatalyst-ticket` gets the `edit` tools for it.
+- Repowise installs with `uv tool install repowise` (was `pipx`); the guide and the ticket-start
+  check say so. `install.sh` now also adds `.github/` to the app repo's `.gitignore`, next to
+  `.logs/`, so the installed workflow files stay out of the app's commits. Files the app repo
+  already tracks under `.github/` stay tracked.
+- `.mcp.json` now lists only `atlassian-rovo` and `repowise`; the Figma server is dropped (the two planners no longer list `figma/*`, and Figma links are noted but not fetched). The Repowise
+  entry runs `repowise mcp` against the folder that holds all the repos, with the full path to the
+  program, and ships with two placeholders (`<USER_PATH>`, `<REPOWISE_PROJECT_PARENT_FOLDER>`) each
+  developer fills in on their own machine. The guide and README say so, and the guide notes that the
+  registry's `com.atlassian/atlassian-mcp-server` entry isn't seen by the agents, which look tools up
+  as `atlassian-rovo/*`. Install still never overwrites an existing `.mcp.json`.
+- The workflow guide records that Android Studio was seen not to give the log analyser the Atlassian
+  `executeRead` and `discover` tools, so the Jira log can't be downloaded there; it says to save the attachment into
+  `.logs/<ticket ID>/raw/` by hand. Not yet checked in VS Code.
 - Repowise's commit hook is installed for the developer. After the Repowise check says ready,
   `qatalyst-ticket-start` runs `repowise hook status --workspace` and `repowise hook install <repo>`
   in each repo without it (skipping a repo that has its own post-commit hook, and never using
@@ -63,6 +83,16 @@ changed since its last sync.
   tier (it ran on the chat's model before). The security reviewer is started by the code reviewer and
   the ship step, both at or above standard, so the cost rule still holds. Only the two planners are
   left unpinned.
+
+- The Repowise check no longer uses `get_overview` as its probe. With an index built `--no-prose`
+  it has no overview essay to return, so a healthy index looked unreadable. It probes with
+  `search_codebase` instead, and a healthy CLI index whose MCP server isn't answering is now its own
+  "not ready" case (start the MCP server) instead of "not installed".
+- A developer guide, `.github/workflow-guide.md`, is installed into the app repo. It holds the
+  day-to-day parts of the README: Repowise setup, MCP servers per IDE, the per-IDE comparison, the
+  daily ticket flow and token usage. The README keeps the repo overview, install and maintenance and
+  points to it. `install.sh` copies it (and every install overwrites it); the manual-install list
+  includes it.
 
 ### Removed
 - The Copilot CLI launcher `.github/token-tracker/copilot-tracked.sh`, and its mentions in the docs

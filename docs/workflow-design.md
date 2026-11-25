@@ -74,7 +74,10 @@ files and symbols the ticket changed, their dependents in every repo of the work
 change, and whether each changed file is current in Repowise's index. It tells the developer in chat
 whether the index was used (every lookup, some, or none and why) and names any stale files. Without
 Repowise it still writes the report from direct searches and marks every row as such. The ship
-step shows the summary in its confirmation. The report covers only its own lookups and the
+step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
+agent, how the token report went (written, off, no hand-off received, or failed with the reason),
+which hand-off it received, and the Repowise index and commit hook status; anything it wasn't told is
+"not recorded". The token report step therefore runs before the workflow report. The report covers only its own lookups and the
 ticket-start status, not lookups made earlier by the planners or the log analyser.
 
 ### Token usage per ticket (Beta — works in VS Code)
@@ -234,8 +237,8 @@ by a skill of its own.
 |---|---|---|---|
 | `qatalyst-log-ticket-intake` | Reads the bug ticket's full text and pins the issue time and log attachment type; `qatalyst-log-analyser`'s own Intake step | read, search, atlassian-rovo/* | Read-only — writes nothing, never touches a log script |
 | `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; the loop is its own procedure | read, edit, search, execute, agent, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
-| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used |
-| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, figma/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about |
+| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used |
+| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about |
 | `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
 | `qatalyst-test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search, agent, repowise/* | Pure router — no `edit`/`execute` itself; writes nothing |
 | `qatalyst-unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
@@ -307,7 +310,6 @@ edits are covered only by Copilot's own approval prompts, so read them before yo
 | Server | Used for | Auth |
 |---|---|---|
 | Atlassian Rovo MCP | Jira, Confluence, Bitbucket Cloud | OAuth (Jira/Confluence); Basic auth API token (Bitbucket) |
-| Figma MCP | Linked designs, read-only | Developer's Figma sign-in |
 | Repowise | Code map, risk, dead-code (advisory only) | None — local, optional |
 
 `/qatalyst-ticket-start` checks Repowise at the start of every ticket. If it isn't ready (not
@@ -321,7 +323,7 @@ from this workflow.
 
 Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoint was retired on
 30 June 2026). Setup and sign-in per IDE, including Android Studio's Local agent, are in the
-workflow repo's README §2c.
+`.github/workflow-guide.md`, "MCP servers".
 
 ## 8. Safety & control principles
 
@@ -387,7 +389,7 @@ versus a convention this workflow invented for itself.
 ├── workflow.prompt.md                 pre-existing team doc, if any — linked, not written here
 ├── docs/workflows/                    pre-existing team docs, if any
 ├── docs/workflow-design.md            this document
-├── .gitignore                         .logs/ ignored
+├── .gitignore                         .logs/ and .github/ ignored
 ├── specs/
 │   └── .templates/
 │       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention
