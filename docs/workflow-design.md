@@ -389,7 +389,7 @@ versus a convention this workflow invented for itself.
 ├── workflow.prompt.md                 pre-existing team doc, if any — linked, not written here
 ├── docs/workflows/                    pre-existing team docs, if any
 ├── docs/workflow-design.md            this document
-├── .gitignore                         .logs/ and .github/ ignored
+├── .gitignore                         .logs/, .github/, .repowise/, .vscode/, docs/workflow-design.md, specs/.templates/ ignored
 ├── specs/
 │   └── .templates/
 │       └── tasks-template.md          scaffold only — see §10.3 for the -template.md convention

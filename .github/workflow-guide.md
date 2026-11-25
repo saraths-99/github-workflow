@@ -57,8 +57,8 @@ once per developer machine:
    `.git/hooks`, not in the repo's tracked files. If you remove it with `repowise hook uninstall`,
    the next ticket puts it back; keep your own `.git/hooks/post-commit` in a repo to stop that.
 
-4. **Keep `.repowise/` out of git** — it's a per-machine index. Add `.repowise/` to the app repo's
-   `.gitignore` if it isn't there.
+4. **Keep `.repowise/` out of git** — it's a per-machine index. The install adds `.repowise/` to the app
+   repo's `.gitignore`; add it to the other repos' `.gitignore` yourself if Repowise created one there.
 
 Check it with `repowise status`. Repowise sends anonymous usage telemetry by default; turn it off
 with `repowise telemetry disable` if your project needs that. To remove it from a repo, run

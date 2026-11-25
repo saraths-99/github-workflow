@@ -32,9 +32,11 @@ changed since its last sync.
 
 ### Changed
 - Repowise installs with `uv tool install repowise` (was `pipx`); the guide and the ticket-start
-  check say so. `install.sh` now also adds `.github/` to the app repo's `.gitignore`, next to
-  `.logs/`, so the installed workflow files stay out of the app's commits. Files the app repo
-  already tracks under `.github/` stay tracked.
+  check say so. `install.sh` now also adds `.github/`, `.repowise/`, `.vscode/`, `docs/workflow-design.md` and
+  `specs/.templates/` to the app repo's `.gitignore`, next to `.logs/`, so the installed workflow files,
+  the design doc, the task template, Repowise's index and the VS Code settings stay out of the app's
+  commits (a ticket's own `specs/<bug|feature>/<ticket ID>/` folder is not ignored). Files the app repo already tracks under `.github/` or
+  `.vscode/` stay tracked.
 - `.mcp.json` now lists only `atlassian-rovo` and `repowise`; the Figma server is dropped (the two
   planners no longer list `figma/*`, and Figma links are noted but not fetched). The Repowise entry
   runs `repowise mcp` against the folder that holds all the repos, with the full path to the

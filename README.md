@@ -57,9 +57,11 @@ them are removed, along with the guard hooks it used to install (see the changel
 again any time this repo changes, to pick up the update — it always overwrites those files (they're maintained here, not hand-edited per app repo),
 but never overwrites `copilot-instructions.md`, `.mcp.json`, `project-context.md`, `architecture.md`
 if they already exist, since those
-hold the app repo's own project data. It also adds `.logs/` and `.github/` to the app repo's `.gitignore`, so the workflow files and
-the per-ticket logs stay out of the app's commits. Files already tracked in the app repo's `.github/`
-stay tracked, and git still shows changes to them. A new file there needs `git add -f`.
+hold the app repo's own project data. It also adds `.logs/`, `.github/`, `.repowise/`, `.vscode/`, `docs/workflow-design.md` and
+`specs/.templates/` to the app repo's `.gitignore`, so the workflow files, the design doc, the task
+template, the per-ticket logs, Repowise's index and the VS Code settings stay out of the app's
+commits. A ticket's own `specs/<bug|feature>/<ticket ID>/` folder is not ignored. Files already tracked in the app repo's `.github/` or `.vscode/` stay tracked, and git still
+shows changes to them. A new file there needs `git add -f`.
 
 If the app repo has no `.vscode/settings.json`, the install also creates one holding the single
 Copilot setting token tracking needs. If it already has one, the install leaves it alone and prints
@@ -89,7 +91,7 @@ extracted folder:
   `project-context.md`, `architecture.md` —
   copy these **only if the app repo doesn't already have them**. If it does, leave them alone;
   they hold that app's own settings and data, not this repo's.
-- Add `.logs/` and `.github/` to the app repo's `.gitignore` if they're not already there.
+- Add `.logs/`, `.github/`, `.repowise/`, `.vscode/`, `docs/workflow-design.md` and `specs/.templates/` to the app repo's `.gitignore` if they're not already there.
 - The copied agents and prompts run on Claude's models. For GPT, run
   `python3 set-models.py gpt <path to the app repo>` from this repo after copying (it needs Python 3).
 - Copy `.github/token-tracker/vscode-settings.json` to `.vscode/settings.json` only if the app repo

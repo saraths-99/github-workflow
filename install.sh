@@ -158,7 +158,7 @@ elif ! grep -q 'github.copilot.chat.otel.dbSpanExporter.enabled' "$TARGET/.vscod
 fi
 
 touch "$TARGET/.gitignore"
-for entry in '.logs/' '.github/'; do
+for entry in '.logs/' '.github/' '.repowise/' '.vscode/' 'docs/workflow-design.md' 'specs/.templates/'; do
   grep -qxF "$entry" "$TARGET/.gitignore" || echo "$entry" >> "$TARGET/.gitignore"
 done
 
