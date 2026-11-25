@@ -56,7 +56,10 @@ it). `tasks.md` now carries what the old `requirements.md` and `design.md` cover
 is for, acceptance criteria, edge cases, approach/risks — as sections ahead of the task checklist, in
 the single file `qatalyst-code-reviewer` and `qatalyst-test-writer` check against. For a bug, the first
 acceptance criterion is the reported scenario itself, so the fix is planned with a test that
-reproduces it; each edge case is tied to the task whose test covers it.
+reproduces it; each edge case is tied to the task whose test covers it. The approval also asks whether
+to write tests at all: "No tests for this ticket" sets `**Tests:** none` in `tasks.md`, which
+`qatalyst-developer`, `qatalyst-code-reviewer` and `qatalyst-ticket-ship` all read (no test-writer
+hand-off, no missing-test comments, and a line in each PR saying none were written).
 
 That "Can we reach Bitbucket" step is a real, current gap worth naming plainly: opening a PR and checking CI both need
 Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an
@@ -73,8 +76,8 @@ the 5 allowed analysis passes it took to reach a confident fix (copied from `log
 files and symbols the ticket changed, their dependents in every repo of the workspace, the change risk, the tests around the
 change, and whether each changed file is current in Repowise's index. It tells the developer in chat
 whether the index was used (every lookup, some, or none and why) and names any stale files. Without
-Repowise it still writes the report from direct searches and marks every row as such. The ship
-step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
+Repowise it still writes the report from direct searches and marks every row as such. `qatalyst-ticket-start` then shows the whole report in chat under its full path, in every IDE, and the
+ship step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
 agent, how the token report went (written, off, no hand-off received, or failed with the reason),
 which hand-off it received, and the Repowise index and commit hook status; anything it wasn't told is
 "not recorded". The token report step therefore runs before the workflow report. The report covers only its own lookups and the
@@ -194,8 +197,8 @@ it.
 
 | Tier | Claude, in order | GPT, in order | Agents |
 |---|---|---|---|
-| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
-| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-code-reviewer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`, `qatalyst-security-reviewer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
+| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser` and `qatalyst-code-reviewer`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
+| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`, `qatalyst-security-reviewer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
 | Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
 
 **One provider throughout.** The developer chooses Claude or GPT when installing (`install.sh
@@ -355,9 +358,12 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
    a hard bug rather than fix it.
 2. **UI error/loading/empty states** — `qatalyst-new-screen` and `xml-ui.instructions.md` stop at wiring;
    nothing requires a screen to handle or test a failure/loading/empty state.
-3. **No retry cap for `qatalyst-developer`/`qatalyst-test-writer`** — unlike
-   `qatalyst-log-analyser`'s 5-pass cap, nothing
-   says "stop and report" after N failed attempts at a task.
+3. **Stuck runs are only caught by the agent's own count** — `qatalyst-developer` stops and asks
+   after 3 failed attempts at the same failure, or a build/test command silent for 10 minutes
+   (and `qatalyst-ticket-ship` does the same for its build, tests and Pipelines wait), but that
+   relies on the agent noticing. A run that hangs outright (model or tool never returns) can't
+   report itself, and no timer or hook exists to do it; the developer's recovery is to stop the
+   chat and run `/qatalyst-ticket-start` again. `qatalyst-test-writer` has no cap of its own.
 4. **"Resolved" is undefined** for review comments — unclear if a developer override counts.
 5. **Ticket reclassified after `qatalyst-ticket-start` runs** — issue type is read once; a later
    feature→bug (or reverse) reclassification isn't re-checked.

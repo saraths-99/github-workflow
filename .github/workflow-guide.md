@@ -202,11 +202,21 @@ handing off to another, never by picking it yourself.
 2. Hands off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise), which
    reads the ticket and its Confluence pages, writes to the deterministic
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
-   not three.
+   not three. When it shows you the draft it also asks whether to write tests for the ticket (default:
+   yes). "No tests for this ticket" records `**Tests:** none` in `tasks.md`; the developer then ticks
+   tasks on a green build, the code reviewer doesn't ask for tests, and every PR says no tests were
+   written.
 3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
    Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
-4. Runs `qatalyst-developer` through every task, then asks whether to ship now; picking "Ship it
-   now" runs the shipping steps below in the same chat.
+4. Runs `qatalyst-developer` through every task, then asks whether to ship now, and whether you have
+   an idea for improving the workflow itself; picking "Ship it now" runs the shipping steps below in
+   the same chat. An idea you type is saved to `.logs/<ticket ID>/workflow-ideas.md` (git-ignored, on
+   your machine only): pass it on to whoever maintains the workflow repo.
+   If a task stops moving (the same failure three times, or a build or test command silent for 10
+   minutes), `qatalyst-developer` stops and asks what to do instead of carrying on; the same goes
+   for a stuck build, test or Pipelines run at ship. A run that hangs outright (nothing comes back
+   at all) can't announce itself: if the chat shows no progress for a long while, stop it and run
+   `/qatalyst-ticket-start <ticket ID>` again, which picks the task up where it was.
 
 **Picking up where it stopped.** If the chat breaks, or you stop at a question, run
 `/qatalyst-ticket-start <ticket ID>` again (in a new chat is fine). It works out where the ticket
@@ -225,7 +235,7 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 
 **Models.** You don't pick a model, only a provider, once, when you install (see the [install steps](https://github.com/saraths-99/github-workflow/blob/develop/README.md#2-one-time-setup)). With Claude,
 starting a ticket switches the chat to Claude Opus 5.5, which also runs log analysis and planning;
-`qatalyst-developer` and the reviewers (security included) run on Claude Sonnet 5.5, and most test writers on Claude
+`qatalyst-developer` and the security and error-handling reviewers run on Claude Sonnet 5.5; the code reviewer runs on Opus 5.5, so it isn't the model that wrote the code, and most test writers on Claude
 Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
 agent's `model:` line sets it (the full table is in [docs/workflow-design.md](../docs/workflow-design.md)
 §4). Every agent runs on the chosen provider only, so your Copilot plan must include its models; if a
@@ -260,8 +270,9 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
 
 1. Confirms every task is ticked.
 2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
-   for flagged diffs) against
-   the spec.
+   for flagged diffs) against the spec. If a reviewer has comments, `qatalyst-developer` fixes them
+   and the reviewers run again, for up to 3 rounds; after that it asks you what to do. The rounds
+   are recorded in the workflow report's "Review rounds" section.
 3. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
    instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
    test stops the push; skipping tests is allowed, and the PRs then say they weren't run.

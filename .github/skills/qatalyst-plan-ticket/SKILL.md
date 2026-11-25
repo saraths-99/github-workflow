@@ -42,7 +42,7 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    `copilot-instructions.md`), Out of scope, Open questions,
    then the ordered task checklist. Each task names the project skill `qatalyst-developer` should
    use and what `qatalyst-test-writer` should cover — the acceptance criteria and edge cases its
-   test exercises. The last task is always the review —
+   test exercises (write `**Tests:** write` under the title; see the Gate for `none`). The last task is always the review —
    `qatalyst-code-reviewer` (and `qatalyst-security-reviewer` when the diff touches a sensitive
    area) against this ticket's `tasks.md`.
 4. Size the file to the ticket — a one-line fix gets a short file and a single task; a cross-repo
@@ -53,9 +53,16 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
 
 Nothing starts until the developer approves the draft. Ask for approval with options, per
 `qatalyst-ask-developer`: approve, request changes (the one answer that takes text), or stop —
-plus which root cause to fix, if there are two. If you're running as a sub-agent and can't ask,
+plus which root cause to fix, if there are two, plus, the first time the draft is shown, whether to
+write tests: **Write tests** (recommended) or **No tests for this ticket**. Ask it in the same call, not
+afterwards. Don't ask it again when the draft is shown a second time; its `Tests:` line stands. If
+you're running as a sub-agent and can't ask,
 return the draft's path and that question to `qatalyst-ticket-start`, which asks it. On "request
-changes", revise the draft and ask again.
+changes", revise the draft and ask again. On "No tests", set `**Tests:** none`, delete every task's
+Test line and the edge-case "→ Task N's test" ties, and for a bug replace its reproduce-it test with
+the manual check named under Open questions (say so there, even if only "no reproduction beyond the
+report"). That edit is the developer's own answer applied, not a change to the plan, so it needs no
+second approval; say in one line what you removed.
 
 ## If the plan changes mid-ticket
 

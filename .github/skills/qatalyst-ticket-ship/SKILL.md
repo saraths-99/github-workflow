@@ -19,10 +19,26 @@ treat every step below as per-repo unless it says otherwise.
 
 1. Confirm every task in `tasks.md` is ticked. If one isn't, stop and say which — don't ship a
    partial ticket.
-2. Run `qatalyst-code-reviewer` against the full diff in every repo touched; run
-   `qatalyst-security-reviewer` too if `qatalyst-code-reviewer` flagged a sensitive area, and
-   `qatalyst-error-handling-reviewer` too if it flagged a layer where functions can fail. All must
-   pass with no open comments, in every repo.
+2. **Review, and fix what the review finds, for up to 3 rounds.** Run `qatalyst-code-reviewer`
+   against the full diff in every repo touched; run `qatalyst-security-reviewer` too if
+   `qatalyst-code-reviewer` flagged a sensitive area, and `qatalyst-error-handling-reviewer` too if it
+   flagged a layer where functions can fail. All must pass with no open comments, in every repo. The
+   code reviewer runs on a deeper model than `qatalyst-developer` on purpose, so the second opinion
+   isn't the model that wrote the code.
+   When a reviewer has open comments, that is a round (the first review is round 1):
+   1. Note the round: which reviewer, and each comment with its file and what was wrong.
+   2. Hand `qatalyst-developer` the exact comments of this round, plus every earlier round's list
+      under "what was wrong before", and tell it to fix only those, with the tests the fix needs, and
+      to add no other scope. It keeps to `tasks.md` and its own scope rules.
+   3. When it reports the fix, run the same reviewers again on the new diff, in every repo touched.
+   4. Pass with no open comments: go on to step 3. Otherwise start the next round.
+   After round 3 with comments still open, stop. Show the open comments and ask (see
+   `qatalyst-ask-developer`): I'll fix it by hand, then check again · Ship anyway, comments open (say
+   so in every PR's description) · Cancel. Never push with open comments unless they pick "ship
+   anyway".
+   When the loop ends, add a "Review rounds" section to `.logs/<ticket ID>/workflow-report.md`, one line
+   per round: the reviewer, the comments, and whether the fix cleared them, and how it ended (passed in
+   round N, or open after 3). If that file isn't there, say so and give the same lines in chat.
 3. Build locally with `isLocalBuild=true`, in every repo touched, then **ask the developer which
    tests to run** (see `qatalyst-ask-developer`) and run them the same way, using the commands in
    `project-context.md`'s "Build and test commands". If those are still marked TBD, say which
@@ -31,9 +47,13 @@ treat every step below as per-repo unless it says otherwise.
    - **All tests**: unit tests, then the instrumented (`androidTest`) tests. These need an emulator
      or device; check one is connected first (`adb devices`), and if none is, say so and ask again
      rather than skipping them.
-   - **Only this ticket's tests**: the test classes the diff added or changed, in their modules.
+   - **Only this ticket's tests**: the test classes the diff added or changed, in their modules (leave
+     this option out when `tasks.md` says `**Tests:** none`: there are none).
    - **Skip tests**: build only. Say "tests were not run locally" in every PR's description, and
      never report them as passing.
+
+   When `tasks.md` says `**Tests:** none`, say in every PR's description "No tests written for this
+   change (developer's choice at approval)"; running the existing tests is still offered above.
 
    Where a module's build ignores test failures (see `testing.instructions.md`), read its test
    report instead of trusting the exit code. Plan-only tests (interop, OTA, performance, chaos) have
@@ -41,7 +61,7 @@ treat every step below as per-repo unless it says otherwise.
 4. **Ask the developer once**, showing: the planned PRs and their merge order (which repo depends on
    which), the files that will be pushed in each, each PR's title and description, and the workflow
    report's summary (the analysis passes, the blast radius) and its "Repowise:" line from
-   `.logs/<ticket ID>/workflow-report.md` (if that file isn't there, say so). Ask with
+   `.logs/<ticket ID>/workflow-report.md`, giving its full path (if that file isn't there, say so). Ask with
    options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7
    until they pick "push".
 5. On confirmation, commit, push the ticket branch (`bug/<ticket ID>-<slug>` or `feature/<ticket ID>-<slug>`, as
@@ -70,3 +90,7 @@ paste into Bitbucket by hand — don't block the whole ship step on one missing 
   `pullrequests/{id}/statuses` endpoint).
 - Never move the ticket to In Review until every repo's gate has cleared — one repo passing doesn't
   clear the others.
+- Never wait silently on a local build, a test run or a Pipelines run. If a build or test command
+  has printed nothing new for 10 minutes, or a Pipelines run hasn't finished after 30, tell the
+  developer which one and ask the stuck question from `qatalyst-ask-developer`. Don't push or move
+  the ticket meanwhile.

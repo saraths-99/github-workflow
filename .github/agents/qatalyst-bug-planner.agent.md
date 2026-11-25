@@ -27,7 +27,8 @@ criterion is the reported scenario itself, and the first task's test must reprod
 the edge cases around the fix — other callers of the faulty code, and the boundary conditions it
 touches — each tied to a task's test, so the developer sees them at the approval gate. A bug that no
 automated test can reproduce (hardware only) says so under Open questions and names the manual
-check.
+check. If the developer picks "No tests for this ticket" at the gate, the reproducing test goes too:
+name the manual check instead, per `qatalyst-plan-ticket`.
 
 **Exception — the no-log stub.** If `log-analysis.md` says log analysis was skipped (no attachment,
 developer confirmed UI-only), there's no root cause to fold in. You are the one who grounds it,

@@ -175,9 +175,13 @@ finish: it reads the ticket itself plus its Confluence/Figma links and writes th
 deterministic `specs/<bug|feature>/<ticket ID>/tasks.md` path (see
 `qatalyst-spec-folder-resolution` — the same path `qatalyst-log-analyser` already used, for a bug).
 
-Then show the draft and ask for approval: approve, request changes, or stop. If the draft lists two
-candidate root causes, ask which to fix in the same question set. On "request changes", run the
-planner again with the developer's text and ask again. Don't start step 2 until it's approved.
+Then show the draft and ask for approval: approve, request changes, or stop. In the same call, ask
+whether to write tests (**Write tests** or **No tests for this ticket**; see `qatalyst-ask-developer`)
+and, if the draft lists two candidate root causes, which to fix. On "No tests", run the planner
+again with "apply: no tests" so it records `**Tests:** none` and removes the test parts (see
+`qatalyst-plan-ticket`'s Gate); that is the developer's answer applied, so don't ask for approval a
+second time for it. On "request changes", run the planner again with the developer's text and ask
+again, without the tests question. Don't start step 2 until it's approved.
 
 ## 2. Branches
 
@@ -218,14 +222,34 @@ Ask whether to move the Jira ticket to In Progress — don't transition it silen
 
 Hand off to `qatalyst-developer` to work `tasks.md` from its first unticked task. If it stops
 because the plan doesn't fit the code, have the planner that wrote `tasks.md` update it, ask the
-developer to approve the update, then run `qatalyst-developer` again. When it reports every task
-ticked (and has shown the token report), go on to step 5.
+developer to approve the update, then run `qatalyst-developer` again. If it stops because it is
+stuck (see its "When you're stuck"), tell the developer plainly what it was doing and what failed,
+ask the stuck question from `qatalyst-ask-developer`, and act on the answer: "try again" runs it
+again with "continue task N, keeping its changes, and try a different approach"; "I'll look at it"
+waits for them, then runs it with "continue task N, keeping its changes"; "restart" stashes the
+task's changes (as `<ticket ID> task N partial`) and runs it on task N afresh; "stop here" ends the
+flow, and `/qatalyst-ticket-start` resumes from the first unticked task. When it reports every task
+ticked (and has shown the token report), show the developer the workflow report in chat, in full,
+under its full path (`<repo root>/.logs/<ticket ID>/workflow-report.md`), taking the text from the
+agent's reply, or from the file if the reply lacks it. If neither has it, say the report is missing
+and why, if known. This is the report's only guaranteed place in every IDE, Android Studio included,
+where the token report doesn't run. Then go on to step 5.
 
 ## 5. Ship
 
-Ask whether to ship now. On "ship it now", write `.logs/<ticket ID>/in-progress.json` as
+Every time `qatalyst-developer` reports all tasks ticked (a re-run after a plan update counts, so
+does the first), ask two questions in one call: whether to ship now, and whether the developer has
+an idea for improving the workflow itself, so the way they'd do it could be adopted (see
+`qatalyst-ask-developer`). Deal with the idea first: on "I have an idea", append a line to
+`.logs/<ticket ID>/workflow-ideas.md` (git-ignored; create it if it isn't there) holding the UTC
+date, the ticket ID and their words as typed, then tell them the file's full path and that it stays
+on their machine, so it needs passing to whoever maintains this workflow repo. Don't act on the idea
+yourself, change any workflow file because of it, or send it anywhere. On "No idea", say nothing and
+create no file. Then the ship answer: on "ship it now", write `.logs/<ticket ID>/in-progress.json` as
 `{"step": "ship", "startedAt": "<UTC time>"}`, run the `qatalyst-ticket-ship` skill (which asks its
 own questions before pushing), and delete the file when it finishes or is cancelled. On "stop here", say that `/qatalyst-ticket-ship` picks it up later.
+Resuming at "every task ticked" goes to the ship question alone: the idea question was asked when the
+tasks finished.
 
 ## Sizing
 

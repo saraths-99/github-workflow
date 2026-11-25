@@ -12,8 +12,8 @@ whatever started it.
 
 | Tier | Claude | GPT | Used for |
 |---|---|---|---|
-| Deep | Opus 5.5, else Sonnet 5.5 | GPT-5.6 Sol, else GPT-6.1 Sol | the ticket chat itself (`/qatalyst-ticket-start`, `/log-analyser`, `/qatalyst-ticket-ship` and the `qatalyst-ticket` agent switch the chat to it), and with it log analysis and planning. The approval gates and ticket-type detection run here and assume strong instruction-following; a weaker model is more likely to skip a gate or misclassify a ticket. |
-| Standard | Sonnet 5.5, else Sonnet 5 | GPT-6.1 Sol | implementation, code, error-handling and security review, the test router, BLE-protocol and security tests |
+| Deep | Opus 5.5, else Sonnet 5.5 | GPT-5.6 Sol, else GPT-6.1 Sol | the ticket chat itself (`/qatalyst-ticket-start`, `/log-analyser`, `/qatalyst-ticket-ship` and the `qatalyst-ticket` agent switch the chat to it), and with it log analysis, planning and the code reviewer (a deeper model than the one that wrote the code, on purpose). The approval gates and ticket-type detection run here and assume strong instruction-following; a weaker model is more likely to skip a gate or misclassify a ticket. |
+| Standard | Sonnet 5.5, else Sonnet 5 | GPT-6.1 Sol | implementation, error-handling and security review, the test router, BLE-protocol and security tests |
 | Fast | Haiku 5.5, else Haiku 4.5 | GPT-6 Luna, else GPT-5.6 Luna | log-ticket intake and the other test writers |
 
 A sub-agent can't run on a model that costs more than the chat that started it, so don't switch the

@@ -79,6 +79,10 @@ reach (its blast radius), and whether Repowise's index was used for it. Write it
    - Changed files in the index: N current, M stale, K not indexed
    - Not recorded here: lookups made earlier (planning, log analysis, tasks)
 
+   ## Review rounds
+   Added by `qatalyst-ticket-ship` after the review loop, not by this skill. Leave it out when you
+   write the report.
+
    ## Workflow checks
    Self-reported by the developer agent from what it was told and what its commands returned.
    - Token tracking: report written (path) · off · not told (no hand-off received) · failed (reason)

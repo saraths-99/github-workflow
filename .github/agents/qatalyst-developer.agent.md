@@ -21,7 +21,9 @@ list, and you never skip ahead.
 
 - Work the tasks in `tasks.md` in order; implement exactly one task before moving to the next.
 - Tick a task in `tasks.md` only after its code and `qatalyst-test-writer`'s matching test both
-  exist and pass locally.
+  exist and pass locally. If `tasks.md` says `**Tests:** none`, the developer chose no tests at
+  approval: tick once the code builds locally, don't call `qatalyst-test-writer`, and write no
+  tests, not even a small one you think is useful.
 - Follow every path instruction file under `.github/instructions/` that applies to the files you're
   touching (`kotlin.instructions.md`, `xml-ui.instructions.md`, `koin-di.instructions.md`,
   `ble-halo.instructions.md`, `ble-gdo.instructions.md`, `data-layer.instructions.md`,
@@ -53,10 +55,34 @@ fit. `qatalyst-ticket-start` has whichever planner wrote this ticket's `tasks.md
 (`qatalyst-bug-planner` or `qatalyst-feature-planner`) update it, asks the developer to approve the
 update, then runs you again.
 
+## When you're stuck
+
+Don't keep going silently when a task isn't moving. Stop and return the stuck question
+(`qatalyst-ask-developer`) when any of these is true:
+
+- The same build or test failure, or the same error, is still there after 3 attempts to fix it.
+- A build, test or `adb` command has printed nothing new for 10 minutes, or you can't tell whether
+  it is working at all. Name the command; don't wait on it.
+- You've made 3 passes over the same files on this task and the acceptance criteria are no closer.
+
+Say what task you're on, what you were doing, what failed and how many times, and what you'd try
+next. Leave the task's changes and `.logs/<ticket ID>/in-progress.json` as they are, so a resume can
+pick the task up. This is not a plan mismatch: if the plan doesn't fit the code, follow the section
+below instead.
+
 ## Handing off to `qatalyst-test-writer`
 
-For each task, once the production code compiles, hand off to `qatalyst-test-writer` for that
+If `tasks.md` says `**Tests:** none`, skip this section. Otherwise, for each task, once the
+production code compiles, hand off to `qatalyst-test-writer` for that
 task's test before ticking it. Don't tick a task on the strength of production code alone.
+
+## Fixing review comments
+
+`qatalyst-ticket-ship` may hand you a reviewer's comments, with a list of what was wrong in earlier
+rounds. Fix only those comments, in the files they name, with the tests the fix needs; add no other
+scope, don't undo a fix from an earlier round, and don't re-open ticked tasks. Say in a line per
+comment what you changed, or why you didn't (and what would have to be true for it to be wrong).
+You don't re-run the reviewers: `qatalyst-ticket-ship` does.
 
 ## When every task is ticked
 
@@ -71,6 +97,9 @@ task's test before ticking it. Don't tick a task on the strength of production c
 2. Write the workflow report with `qatalyst-repowise-lookup`'s "Workflow report" steps, to
    `.logs/<ticket ID>/workflow-report.md` (after step 1, so its "Workflow checks" section can record how the token report went), and tell the developer its summary, how many passes the
    bug analysis took, and whether Repowise's index was used for it. If the developer asks for it again later, for example after running
-   `repowise update --working-tree`, write it again.
-3. Report back that every task is ticked — you do not run the ship step yourself;
+   `repowise update --working-tree`, write it again. Read the file back to confirm it was written. If it
+   can't be written, say so and carry on with the report text alone.
+3. Report back that every task is ticked, with the workflow report's full path and its whole text in
+   your reply, so the caller can show it (a sub-agent's chat isn't always shown to the developer, and
+   the IDE can't open the file for them). You do not run the ship step yourself;
    `qatalyst-ticket-start` asks the developer whether to ship now.

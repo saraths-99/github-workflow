@@ -6,6 +6,8 @@ below filled out.
 -->
 # Tasks — <TICKET ID>: <title>
 
+**Tests:** write <!-- or `none`: the developer's answer at the approval question. Write `write` in the draft; `qatalyst-ticket-start` has the planner change it to `none` if they pick "No tests for this ticket". -->
+
 ## What & why
 
 <!-- 1-3 sentences: the user story or problem, from the ticket (+ log-analysis.md's root cause for
@@ -62,11 +64,11 @@ below filled out.
 
 ## Tasks
 
-<!-- One block per task. Tick the checkbox only once its code AND test both exist and pass locally. -->
+<!-- One block per task. Tick the checkbox only once its code AND test both exist and pass locally (when Tests: none, once its code builds). -->
 
 - [ ] **Task 1 — <short description>**
       Skill: <qatalyst-new-screen | qatalyst-new-ble-command | qatalyst-new-api-call | qatalyst-room-migration | qatalyst-new-feature>
-      Test: <what test-writer covers — which acceptance criteria and edge cases>
+      Test: <what test-writer covers — which acceptance criteria and edge cases; leave this line out when Tests: none>
 
 - [ ] **Task 2 — <short description>**
       Skill: <skill>

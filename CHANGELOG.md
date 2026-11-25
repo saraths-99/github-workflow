@@ -10,6 +10,38 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.5.1] - 2026-11-25
+
+### Added
+- After every task is ticked, the flow asks two questions in one call: ship now, and whether the
+  developer has an idea for improving the workflow. An idea is appended to
+  `.logs/<ticket ID>/workflow-ideas.md` (git-ignored) with its date and ticket, and the developer is
+  told its path so they can pass it on; nothing is changed or sent automatically. A re-run after a
+  plan update asks again; resuming at "every task ticked" doesn't.
+- A tests question at the `tasks.md` approval. The first time the draft is shown it asks, in the
+  same call as the approval, whether to write tests (write, recommended · no tests for this ticket).
+  "No tests" sets `**Tests:** none` in `tasks.md` (the planner applies it and removes the test parts,
+  with no second approval); `qatalyst-developer` then ticks a task on a green build and skips
+  `qatalyst-test-writer`, `qatalyst-code-reviewer` doesn't comment on missing tests, and
+  `qatalyst-ticket-ship` drops "only this ticket's tests" and states in every PR that none were
+  written. A redraft isn't asked again.
+- Stuck runs. `qatalyst-developer` stops and asks (try again differently · I'll look at it ·
+  restart the task · stop) after the same failure three times, a build, test or `adb` command silent
+  for 10 minutes, or three passes with no progress. `qatalyst-ticket-ship` does the same for a
+  silent build or test run and a Pipelines run still going after 30 minutes. A run that hangs
+  outright can't report itself; the guide says to stop the chat and run `/qatalyst-ticket-start`
+  again. Known gap 3 in the design doc is reworded to match.
+- A review loop at ship. When `qatalyst-code-reviewer` (or the security or error-handling reviewer)
+  has open comments, `qatalyst-ticket-ship` hands them to `qatalyst-developer` with a list of what was
+  wrong in earlier rounds, then re-runs the reviewers, for up to 3 rounds. After round 3 it asks:
+  fix by hand · ship anyway (stated in each PR) · cancel. The rounds go into the workflow report's
+  "Review rounds" section. `qatalyst-code-reviewer` is pinned to the deep tier (Opus 5.5, then
+  Sonnet 5.5; GPT's deep list with GPT), so the reviewer isn't the model that wrote the code.
+- The workflow report now reaches the developer in every IDE. `qatalyst-developer` reads the file
+  back after writing it and returns its path and full text; `qatalyst-ticket-start` shows the whole
+  report in chat, under its full path, before asking whether to ship (Android Studio has no token
+  report, and a sub-agent's own chat isn't always shown). The ship confirmation gives the path too.
+
 ## [0.5.0] - 2026-11-25
 
 ### Added

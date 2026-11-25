@@ -24,7 +24,10 @@ Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
 4. Ask whether to move the ticket to In Progress.
 5. Hand off to `qatalyst-developer` to work every task; if the plan stops fitting, get it updated
    and re-approved.
-6. Once every task is ticked, ask whether to ship now; if so, run the `qatalyst-ticket-ship` skill.
+6. Once every task is ticked, ask whether to ship now and, in the same call, whether the developer
+   has an idea for improving the workflow (save it to `.logs/<ticket ID>/workflow-ideas.md`); if
+   they ship, run the `qatalyst-ticket-ship` skill. If the developer agent reports it is stuck,
+   tell the developer and ask what to do instead of waiting.
 
 If the ticket was started before, resume instead of starting over: an existing draft goes straight
 to the approval question, a ticket branch or ticked tasks go straight to implementation from the
