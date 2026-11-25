@@ -79,6 +79,13 @@ reach (its blast radius), and whether Repowise's index was used for it. Write it
    - Changed files in the index: N current, M stale, K not indexed
    - Not recorded here: lookups made earlier (planning, log analysis, tasks)
 
+   ## Workflow checks
+   Self-reported by the developer agent from what it was told and what its commands returned.
+   - Token tracking: report written (path) · off · not told (no hand-off received) · failed (reason)
+   - Token tracking hand-off: received "on" · received "off" · none received
+   - Repowise index: ready at ticket start · developer continued without it
+   - Repowise commit hook: installed · not installed · not recorded
+
    ## Blast radius
    ### Changed
    | Repo | File | Change | Symbols changed | In the index | Risk |
@@ -89,9 +96,11 @@ reach (its blast radius), and whether Repowise's index was used for it. Write it
    ### Not covered or unknown
    Anything the lookups could not reach.
    ```
+   For "Workflow checks", copy what you were told at the start of the run and the outcome of the
+   token report step; write "not recorded" for anything you weren't told. Never infer a check passed.
 7. **Tell the developer**, in chat, in a few lines: for a bug, how many passes the analysis took; the
    counts from the Summary and the highest-risk file; a line starting "Repowise:" saying whether its
-   index was used (every lookup · some, naming the ones that fell back · none, and why); any stale
+   index was used (every lookup · some, naming the ones that fell back · none, and why); any token tracking line that is not "report written" or "off"; any stale
    files with the command to run; and the report's path.
 
 **Without Repowise** (unavailable, or the developer chose to continue without it): still write the

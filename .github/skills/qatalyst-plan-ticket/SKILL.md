@@ -15,7 +15,7 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
 ## Steps
 
 1. Gather inputs: use `qatalyst-jira-ticket-intake` for the ticket itself, plus any linked Confluence
-   pages and Figma designs (read-only — never push a design change), `project-context.md`, and
+   pages (Figma links are noted but not fetched: no Figma server is configured), `project-context.md`, and
    `architecture.md`. For a bug, fold in `log-analysis.md`'s root cause and suggested fix rather
    than re-investigating. If `log-analysis.md` lists two candidate root causes instead of one,
    don't pick for the developer — list both under Open Questions with their trade-offs; the

@@ -6,7 +6,7 @@ description: >
   tasks.md: what's wrong and why, acceptance criteria, approach, and an
   ordered task checklist. Started by /qatalyst-ticket-start <ticket ID>, after
   log-analyser.
-tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'figma/*', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file']
+tools: ['read', 'edit', 'search', 'atlassian-rovo/*', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

@@ -95,6 +95,16 @@ def current_remote(root):
 # ── Sources ──────────────────────────────────────────────────────────────────────────────────────
 
 
+def candidate_db_paths():
+    override = os.environ.get("TOKEN_TRACKER_VSCODE_DB")
+    if override:
+        return [Path(override)]
+    base = (Path.home() / "Library" / "Application Support" if sys.platform == "darwin"
+            else Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")))
+    return [base / product / "User" / "globalStorage" / "github.copilot-chat" / "agent-traces.db"
+            for product in ("Code", "Code - Insiders", "VSCodium")]
+
+
 def vscode_db_paths():
     override = os.environ.get("TOKEN_TRACKER_VSCODE_DB")
     if override:
@@ -342,6 +352,9 @@ def write_jsonl(path, rows):
     os.replace(tmp, path)
 
 
+LAST_COLLECT = {}
+
+
 def collect(root, quiet=False):
     tdir = tracker_dir(root)
     this_repo = current_remote(root)
@@ -349,6 +362,9 @@ def collect(root, quiet=False):
     stored = {c["id"]: c for c in load_jsonl(calls_path)}
     before = len(stored)
     notes = []
+    info = LAST_COLLECT
+    info.clear()
+    info.update({"sources": [], "read": 0, "other_repo": 0, "errors": []})
 
     sources = [(p, "vscode") for p in vscode_db_paths()]
     cli_paths = [tdir / CLI_TRACE_FILE]
@@ -366,12 +382,16 @@ def collect(root, quiet=False):
                     notes.append(f"{path}: {unreadable} lines but no readable trace records")
         except (sqlite3.Error, OSError) as e:
             notes.append(f"{path}: could not read ({e})")
+            info["errors"].append(f"{path}: {e}")
             continue
         calls = spans_to_calls(spans, kind)
+        info["sources"].append(f"{kind}: {path}")
+        info["read"] += len(calls)
         sessions_elsewhere = {c["session"] for c in calls if this_repo and c["remote"] and c["remote"] != this_repo}
         sessions_here = {c["session"] for c in calls if this_repo and c["remote"] == this_repo}
         for c in calls:
             if c["session"] in sessions_elsewhere and c["session"] not in sessions_here:
+                info["other_repo"] += 1
                 continue
             stored[c["id"]] = c
 
@@ -583,6 +603,45 @@ def open_in_browser(path):
         return False
 
 
+def why_empty(root, ticket, calls, markers):
+    """One line per fact that explains an empty report, most basic first."""
+    info = LAST_COLLECT
+    out = []
+    if not info.get("sources"):
+        out.append("No Copilot trace database was found, so nothing could be read. In VS Code, "
+                   "github.copilot.chat.otel.dbSpanExporter.enabled must be true (workspace or user settings), and "
+                   "VS Code must be reloaded after it is turned on. Searched: "
+                   + ", ".join(str(p) for p in candidate_db_paths()) + " (none present)."
+                   if not vscode_db_paths() else "A trace database exists but could not be read.")
+        for e in info.get("errors", []):
+            out.append(f"Read error: {e}")
+        return out
+    out.append("Trace sources read: " + "; ".join(info["sources"]))
+    if info["read"] == 0:
+        out.append("The database has no model calls in it. Tracing was probably switched on after the chats ran; "
+                   "only chats held after the setting is on and VS Code reloaded are recorded.")
+        return out
+    out.append(f"Model calls read: {info['read']}; stored in total: {len(calls)}.")
+    if info["other_repo"]:
+        out.append(f"{info['other_repo']} calls were skipped because their chat ran in a different git repository "
+                   "(a different remote from this one).")
+    mine_markers = [m for m in markers if m["ticketId"].upper() == ticket.upper()]
+    out.append(f"Markers for {ticket}: {len(mine_markers)}"
+               + ("" if mine_markers else " (token_tracker.py mark was never run for it on this machine)") + ".")
+    if calls:
+        sessions = {}
+        for c in calls:
+            sessions.setdefault(c["session"], []).append(c)
+        branches = sorted({c["branch"] for c in calls if c.get("branch")})
+        out.append(f"{len(sessions)} chats stored, spanning {iso(min(c['timestamp_ms'] for c in calls))} to "
+                   f"{iso(max(c['timestamp_ms'] for c in calls))}; branches seen in them: "
+                   + (", ".join(branches[:8]) if branches else "none recorded") + ".")
+        if mine_markers:
+            out.append("A marker only links a chat whose calls fall within the chat's time span (plus a small slack). "
+                       f"Marker times: {', '.join(iso(m['timestamp_ms']) for m in mine_markers[-3:])}.")
+    return out
+
+
 def cmd_report(root, ticket, open_page=False):
     calls = collect(root)
     markers = load_jsonl(tracker_dir(root) / MARKERS_FILE)
@@ -619,7 +678,9 @@ def cmd_report(root, ticket, open_page=False):
             "Either tracing wasn't on while it was worked on, or none of its chats could be linked to it: a chat is "
             f"linked when `token_tracker.py mark {ticket}` ran during it, or when one of its turns ran on a branch "
             f"named for {ticket}.",
-        ]
+            "",
+            "What this machine's data shows:",
+        ] + [f"- {r}" for r in why_empty(root, ticket, calls, markers)]
     else:
         per_agent, per_model = {}, {}
         for c in mine:

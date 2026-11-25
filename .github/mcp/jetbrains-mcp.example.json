@@ -1,5 +1,5 @@
 {
-  "_comment": "Only needed if Android Studio doesn't pick up the app repo's .mcp.json (see README §2c). Copy the servers you need into Android Studio's own mcp.json (Settings > Tools > GitHub Copilot > MCP, or the chat's tools menu > Edit mcp.json). Keep the server names as they are: the agents look tools up by them (atlassian-rovo/*, figma/*, repowise/*). The Authorization header is only for API-token sign-in; leave requestInit out to sign in through the browser instead. Never commit a filled-in mcp.json.",
+  "_comment": "Only needed if Android Studio doesn't pick up the app repo's .mcp.json (see the MCP servers section of .github/workflow-guide.md). Copy the servers you need into Android Studio's own mcp.json (Settings > Tools > GitHub Copilot > MCP, or the chat's tools menu > Edit mcp.json). Keep the server names as they are: the agents look tools up by them (atlassian-rovo/*, repowise/*). The Authorization header is only for API-token sign-in; leave requestInit out to sign in through the browser instead. Never commit a filled-in mcp.json.",
   "servers": {
     "atlassian-rovo": {
       "url": "https://mcp.atlassian.com/v2/mcp",
@@ -9,19 +9,12 @@
         }
       }
     },
-    "figma": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "figma-mcp"
-      ]
-    },
     "repowise": {
       "type": "stdio",
-      "command": "repowise",
+      "command": "/Users/<USER_PATH>/.local/bin/repowise",
       "args": [
-        "mcp"
+        "mcp",
+        "<REPOWISE_PROJECT_PARENT_FOLDER>"
       ]
     }
   }
