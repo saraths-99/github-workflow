@@ -87,11 +87,11 @@ You don't re-run the reviewers: `qatalyst-ticket-ship` does.
 ## When every task is ticked
 
 1. Only if you were told "Token tracking: on" (VS Code), run
-   `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID> --open` and show
-   the developer the summary it prints: the ticket's total tokens and the split by agent and model.
-   It reads local trace files only, writes to `.logs/token-tracker/<ticket ID>/` (gitignored, never
-   committed), and opens the HTML version, `token-usage.html`, in the developer's browser; where it
-   can't open one, it prints the file's path instead, so pass that on. If it fails or finds no calls, say so in one line and carry on. If you were told "Token tracking:
+   `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID>` (no `--open`). It
+   reads local trace files only and writes to `.logs/token-tracker/<ticket ID>/` (gitignored, never
+   committed). Don't show its summary or open the page: `qatalyst-ticket-start` runs it again
+   right before asking whether to ship, so the numbers the developer sees are the final ones. If
+   it fails or finds no calls, say so in one line and carry on. If you were told "Token tracking:
    off", or told nothing, skip this step without comment and create no files.
    Note the outcome for the report: report written, off, not told (no hand-off received), or failed with the one-line reason.
 2. Write the workflow report with `qatalyst-repowise-lookup`'s "Workflow report" steps, to

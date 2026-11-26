@@ -27,7 +27,7 @@ Run the `qatalyst-log-analyser` agent on the ticket ID given as an argument:
    needed, up to 5 passes.
 4. Write `specs/bug/<ticket ID>/log-analysis.md` — deterministic from the ticket ID, nothing to ask
    about — including a suggested fix (or, if the top two hypotheses are still close after the refine
-   cap, both candidates and their fixes), and post a redacted Jira comment.
+   cap, both candidates and their fixes). Nothing is posted to Jira.
 5. Say it's ready for `/qatalyst-ticket-start`.
 
 Every question offers options to pick, per the `qatalyst-ask-developer` skill. If no ticket ID is

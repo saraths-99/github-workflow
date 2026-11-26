@@ -47,6 +47,7 @@ and runs you again with the answer.
 | Digest has no warnings or errors (the window has lines, but nothing to analyse) | Widen the time window · Use the whole log · The log shows nothing for this issue — report it as inconclusive · Wrong attachment — stop |
 | Trimmed log came out nearly empty | Widen the time window · Use the whole log · Wrong attachment — stop |
 | `log-analysis.md` has two candidate root causes | Fix cause A (name it) · Fix cause B (name it) · Fix both |
+| The planner's fix check found the fix is already in the code, is blocked (platform, permission, policy or other limit), or is too ambiguous to choose (say which, with the evidence) | Do not produce a fix · Go with a fix anyway |
 | `tasks.md` draft ready, the first time it is shown (two questions, one call) | **Plan:** Approve · Request changes (**needs text**: what to change) · Stop here. **Tests:** Write tests (recommended) · No tests for this ticket |
 | `tasks.md` draft shown again (after changes or a plan update) | Approve · Request changes (**needs text**: what to change) · Stop here. The tests question is not asked again; the draft's `Tests:` line stands |
 | Plan doesn't fit the code mid-task (updated `tasks.md`) | Approve the updated plan · Stop here |
@@ -58,7 +59,7 @@ and runs you again with the answer.
 | Every task ticked (two questions, one call) | **Ship:** Ship it now · Stop here, I'll ship later. **Idea:** I have an idea for the workflow (**needs text**: describe it) · No idea, nothing to add |
 | `qatalyst-developer` is stuck on a task (say which task, what it was doing, what failed and how many times, or which command has gone quiet and for how long) | Try again, a different approach · I'll look at it, then continue the task · Restart task N (stash its changes first) · Stop here |
 | A build, test run or Pipelines run is stuck at ship (say which, and for how long it has been quiet) | Keep waiting · I'll look at it, then continue shipping · Stop here |
-| Which tests to run before pushing (ship step 3, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the PRs say tests weren't run) |
+| Which tests to run before pushing (ship step 5, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the PRs say tests weren't run) |
 | The commit title and message are shown (at ship, and when the developer stops to ship later) | Use this message · Make it shorter · Add more detail · Change it (**needs text**: what to change) |
 | Push and open the PRs | Push and open the PRs · Cancel |
 

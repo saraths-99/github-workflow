@@ -206,6 +206,15 @@ handing off to another, never by picking it yourself.
    yes). "No tests for this ticket" records `**Tests:** none` in `tasks.md`; the developer then ticks
    tasks on a green build, the code reviewer doesn't ask for tests, and every PR says no tests were
    written.
+
+   **When there may be no fix to make.** Before drafting, the planner checks three things: the fix is
+   already in the code, it is blocked (a platform, permission, store-policy or other limit it can
+   point to), or the evidence is too ambiguous to choose a fix. If it finds one, it shows the finding
+   and its evidence and asks: **Do not produce a fix** or **Go with a fix anyway**. "Do not produce a
+   fix" writes `.logs/<ticket ID>/no-fix.md` (git-ignored) and ends there: no branch, no Jira move,
+   nothing implemented. "Go with a fix anyway" plans the best fix the finding allows, notes the finding
+   at the top of `tasks.md`'s Open questions, and repeats it in every PR description. Run
+   `/qatalyst-ticket-start <ticket ID>` again later to be asked again.
 3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
    Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
 4. Runs `qatalyst-developer` through every task, then asks whether to ship now, and whether you have
@@ -261,7 +270,7 @@ its fix; then what changed, who depends on it across the repos (the blast radius
 and the tests around it. It tells you whether Repowise's index was used for it, and which
 changed files the index had out of date (run `repowise update --working-tree`, then ask for the
 report again). Without Repowise it still writes the report from direct searches and says so. It then
-shows the ticket's token usage (see below), and the flow asks whether to ship now.
+and the flow asks whether to ship now.
 
 ### Shipping
 
@@ -273,14 +282,16 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
    for flagged diffs) against the spec. If a reviewer has comments, `qatalyst-developer` fixes them
    and the reviewers run again, for up to 3 rounds; after that it asks you what to do. The rounds
    are recorded in the workflow report's "Review rounds" section.
-3. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
-   instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
-   test stops the push; skipping tests is allowed, and the PRs then say they weren't run.
+3. Once the review is done, shows the ticket's token usage (VS Code only; see below) and opens the
+   HTML report. It counts everything up to that point; the push and PR steps are not in it.
 4. Writes the commit title and message for each repo (the `qatalyst-commit-message` skill) and shows
    them for you to rework: use it, make it shorter, add more detail, or change it with your own
-   words. It repeats until you pick "Use this message". Then it asks once (push and open the PRs, or
-   cancel), commits with that message, pushes, opens the Bitbucket PR, waits on Pipelines where it's
-   on, and moves the ticket to In Review.
+   words. It repeats until you pick "Use this message".
+5. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
+   instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
+   test stops the push; skipping tests is allowed, and the PRs then say they weren't run.
+6. Asks once (push and open the PRs, or cancel), commits with the approved message, pushes, opens the
+   Bitbucket PR, waits on Pipelines where it's on, and moves the ticket to In Review.
 
 **Commit message.** The title is `<ticket ID> - <what the change does>` (72 characters or fewer, always
 starting with the ticket ID). The body gives the reason (the root cause for a
@@ -320,8 +331,8 @@ Copilot Chat extension is too old, so update it), and that you're in VS Code and
 Studio or the CLI. Only chats held after this are recorded, so a ticket worked before the file
 existed reports 0 model calls; start it again to get numbers.
 
-**Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
-and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
+**Seeing a ticket's usage:** `qatalyst-ticket-ship` shows it once the review is done, so the figures
+count the whole ticket up to the commit and push, and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
 shipping to include the review and ship steps), run:
 
 ```bash

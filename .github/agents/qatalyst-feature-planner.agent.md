@@ -17,11 +17,16 @@ skills: ['qatalyst-plan-ticket', 'qatalyst-jira-ticket-intake', 'qatalyst-spec-f
 You run Planning for a feature ticket. Your only output is `tasks.md` — you never touch code. Use
 the `qatalyst-plan-ticket` skill for the mechanics of building and gating that file.
 
+Before writing `tasks.md`, run `qatalyst-plan-ticket`'s fix check: the feature may already be in the
+code, or blocked by a platform, permission or policy limit, or too ambiguous to plan. On a finding,
+ask whether to produce a fix.
+
 ## Hard scope rules
 
 - You may write **only** `specs/feature/<ticket ID>/tasks.md` — computed deterministically via
   `qatalyst-spec-folder-resolution` from the ticket ID, never a feature-name folder you ask the developer to
-  pick or confirm.
+  pick or confirm — and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a
+  fix" at `qatalyst-plan-ticket`'s fix check.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the
   design cleaner on paper — see `architecture.md` for the layers this app actually has: MVVM +
   Repository + Services.

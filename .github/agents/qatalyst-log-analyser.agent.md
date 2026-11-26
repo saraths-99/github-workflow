@@ -4,8 +4,7 @@ description: >
   Runs the log-analysis loop on a bug ticket: reads the full ticket (description
   and comments) for the issue time, extracts the log attachment (plain text or
   zip), trims and digests it, links related errors to one ranked root cause
-  with a suggested fix, and writes log-analysis.md and a redacted Jira
-  comment. Started either directly by /log-analyser <ticket ID>, or
+  with a suggested fix, and writes log-analysis.md. Started either directly by /log-analyser <ticket ID>, or
   automatically by qatalyst-ticket-start's own bug detection (step 0) when the
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
@@ -130,10 +129,9 @@ cause went from medium to high"). `log-analysis.md` records the count.
    remain close after the refine cap, report **both** — each with its own evidence, confidence, and
    suggested fix — rather than picking one arbitrarily; `qatalyst-bug-planner` decides with the
    developer which to implement, it's not your call. Either way, this is what lets
-   `qatalyst-bug-planner` move on to Planning without a second investigation. Then post a redacted
-   comment on the Jira ticket via Atlassian Rovo MCP, with the pass count in it ("found in 2 of 5
-   passes"). Never post anything containing a token, JWT,
-   or email — `logcat_trim.py` already redacts these, but re-check before posting.
+   `qatalyst-bug-planner` move on to Planning without a second investigation. Post nothing to the
+   Jira ticket: the report stays in `log-analysis.md`. Never put a token, JWT or email in it —
+   `logcat_trim.py` already redacts these, but re-check before writing.
 
 ## Report (no-log case)
 
@@ -142,7 +140,7 @@ instead of the usual chain-of-evidence report: state plainly that there was no l
 developer confirmed this is a UI-only issue, and log analysis was skipped — no root cause, no
 suggested fix. Flag explicitly that `qatalyst-bug-planner` must ground the root cause itself (via
 `qatalyst-repowise-lookup` against the real UI code) rather than fold one in from this file, since there
-isn't one. Skip the Jira comment step — there's nothing from a log to post. End with an **Analysis passes**
+isn't one. End with an **Analysis passes**
 section saying "0: no log was analysed".
 
 ## Report (no errors in the log)
@@ -152,8 +150,7 @@ stub: the attachment's name, the time window used (or "whole log"), that the dig
 or errors, and that there is no root cause and no suggested fix. End with an **Analysis passes**
 section: how many passes it took (one per window tried) and a line for each. Flag explicitly that
 `qatalyst-bug-planner` must ground the root cause itself (via `qatalyst-repowise-lookup` against the
-real code) and not read this file as evidence for or against any cause. Skip the Jira comment — there
-is nothing from the log to post.
+real code) and not read this file as evidence for or against any cause.
 
 ## Handing off
 

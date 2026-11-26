@@ -31,7 +31,9 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    relevant `.github/instructions/` file (`xml-ui.instructions.md` for most UI issues) to pinpoint
    the exact file and cause before writing Approach — a vague "investigate the UI" approach isn't
    acceptable here any more than it would be for a log-backed bug.
-3. Write `tasks.md` to `specs/<bug|feature>/<ticket ID>/tasks.md` (see `qatalyst-spec-folder-resolution` —
+3. **Fix check**, before writing anything (see the section below). Only when it finds nothing wrong,
+   or the developer says to go ahead, carry on to step 4.
+4. Write `tasks.md` to `specs/<bug|feature>/<ticket ID>/tasks.md` (see `qatalyst-spec-folder-resolution` —
    deterministic from the ticket's type and ID, nothing to ask about), using the
    `tasks-template.md` shape: What & why,
    Acceptance criteria (Given/When/Then, one per testable behavior; for a bug, the first one is the
@@ -45,9 +47,47 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    test exercises (write `**Tests:** write` under the title; see the Gate for `none`). The last task is always the review —
    `qatalyst-code-reviewer` (and `qatalyst-security-reviewer` when the diff touches a sensitive
    area) against this ticket's `tasks.md`.
-4. Size the file to the ticket — a one-line fix gets a short file and a single task; a cross-repo
+5. Size the file to the ticket — a one-line fix gets a short file and a single task; a cross-repo
    feature gets the full set of stories, criteria, and approach detail.
-5. Show the full draft in chat, including the `specs/<bug|feature>/<ticket ID>/` path it lives in.
+6. Show the full draft in chat, including the `specs/<bug|feature>/<ticket ID>/` path it lives in.
+
+## Fix check
+
+Before drafting, decide whether a fix is actually there to plan. Look for exactly three findings, and
+only when you can point at evidence; a hunch is not a finding, and most tickets have none.
+
+- **Already fixed.** The code the ticket is about already does what the fix would do, so the
+  reported scenario can't happen as the code reads now. Cite the file and lines. If only some
+  callers or paths are covered, that is not this finding: plan the rest and say in What & why what
+  is already done.
+- **Blocked.** The fix would need something the app can't do: an OS or platform restriction, a
+  store policy (Google Play and the like), a permission the app can't be granted, a limit in
+  firmware, a third-party SDK or a backend outside these repos. Cite where you read it: the code, a
+  ticket comment, or a linked page. Never assert a policy or platform rule from memory; if you
+  can't cite it, or aren't sure it applies, that is **Ambiguous**, not Blocked.
+- **Ambiguous.** After steps 1 and 2 you still can't name the file and the change with evidence:
+  `log-analysis.md` is inconclusive (or the no-log stub) and step 2 found no cause in the code
+  either, or the ticket allows two readings of what "fixed" means and the code doesn't settle it.
+  (Two candidate causes in `log-analysis.md` is not this: that has its own question at the Gate.)
+
+On a finding, don't write `tasks.md`. Ask (see `qatalyst-ask-developer`), stating which finding it
+is and the evidence: **Do not produce a fix** · **Go with a fix anyway**. If you're running as a
+sub-agent and can't ask, return the finding, its evidence and those options to
+`qatalyst-ticket-start`, which asks and runs you again with the answer.
+
+- **Do not produce a fix.** Write `.logs/<ticket ID>/no-fix.md` (git-ignored): the finding, the
+  evidence, and what would have to change for a fix to be possible (a clearer repro, a decision, a
+  permission, a fix elsewhere). Write no `tasks.md`; the flow ends there with no branch, no
+  Jira transition and no developer run. Say the file's full path.
+- **Go with a fix anyway.** Write `tasks.md` as usual, with the finding as the first item under
+  Open questions: `**Fix check (<finding>):**` its evidence, and "the developer chose to go ahead".
+  Then plan the best fix that finding allows, never one that pretends it isn't there:
+  already fixed → only what the code still lacks (an uncovered caller, a missing test), saying what
+  the code already does; blocked → the best workaround inside the limitation, never one that breaks
+  the cited policy or permission, with the risk and the manual check named; ambiguous → the most
+  likely fix, with the readings you didn't pick listed as alternatives. If nothing is left to
+  change, say so and stop instead of inventing a task.
+  Delete `no-fix.md` if it exists.
 
 ## Gate
 

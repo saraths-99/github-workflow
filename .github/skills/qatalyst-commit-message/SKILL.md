@@ -10,7 +10,7 @@ description: >
 
 # qatalyst-commit-message
 
-Used by `qatalyst-ticket-ship` (step 4, before the push confirmation) and `qatalyst-ticket-start`
+Used by `qatalyst-ticket-ship` (step 4, right after the token report) and `qatalyst-ticket-start`
 (step 5, when the developer picks "Stop here, I'll ship later"). You write the message and let the
 developer rework it; you never run `git commit` yourself. `qatalyst-ticket-ship` does that, with the
 message this skill leaves behind.
@@ -96,7 +96,7 @@ forbid (a log excerpt, a secret), say why you left it out and offer the rest.
 ## Two ways in
 
 - **Called by `qatalyst-ticket-ship` ("Ship it now").** Run it at step 4, after the review and the
-  tests, so the diff is final. Reuse a section that is already `approved` when its `Files:` line
+  token report, so the diff is final. Reuse a section that is already `approved` when its `Files:` line
   still matches the repo's current diff; write a fresh draft for any repo whose files changed, and
   say so. Ship commits with the approved message.
 - **Called by `qatalyst-ticket-start` ("Stop here, I'll ship later").** Run it once, on the diff as

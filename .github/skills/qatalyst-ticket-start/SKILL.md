@@ -144,6 +144,7 @@ Running `/qatalyst-ticket-start` again picks up where the ticket is, worked out 
 
 | What's there | Pick up at |
 |---|---|
+| `.logs/<ticket ID>/no-fix.md`, and no `tasks.md` | Show its finding and evidence and ask again: **Do not produce a fix** (end here, nothing changes) · **Go with a fix anyway** (run the planner with "apply: go ahead anyway"). Takes precedence over the row below. |
 | No `tasks.md` | Step 0.4, as normal |
 | `tasks.md`, but no task ticked and no ticket branch (see "Branches" in step 2) | Step 1's approval question, on the existing draft — don't re-plan |
 | A ticket branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
@@ -174,6 +175,14 @@ Wait for the planner you handed off to (`qatalyst-bug-planner` or `qatalyst-feat
 finish: it reads the ticket itself plus its Confluence/Figma links and writes the draft to the
 deterministic `specs/<bug|feature>/<ticket ID>/tasks.md` path (see
 `qatalyst-spec-folder-resolution` — the same path `qatalyst-log-analyser` already used, for a bug).
+
+If the planner instead returns a fix-check finding (the fix is already in the code, is blocked, or
+is ambiguous; see `qatalyst-plan-ticket`'s fix check), there is no draft yet: show the finding and
+its evidence, ask **Do not produce a fix** or **Go with a fix anyway**, and run the planner again
+with "apply: no fix" or "apply: go ahead anyway". After "no fix", the planner has written
+`.logs/<ticket ID>/no-fix.md`: tell the developer its full path, say that no branch was created and
+the ticket wasn't moved, and end the flow here (skip steps 2 to 5). After "go ahead anyway", carry
+on with the draft below.
 
 Then show the draft and ask for approval: approve, request changes, or stop. In the same call, ask
 whether to write tests (**Write tests** or **No tests for this ticket**; see `qatalyst-ask-developer`)
@@ -229,7 +238,7 @@ again with "continue task N, keeping its changes, and try a different approach";
 waits for them, then runs it with "continue task N, keeping its changes"; "restart" stashes the
 task's changes (as `<ticket ID> task N partial`) and runs it on task N afresh; "stop here" ends the
 flow, and `/qatalyst-ticket-start` resumes from the first unticked task. When it reports every task
-ticked (and has shown the token report), show the developer the workflow report in chat, in full,
+ticked, show the developer the workflow report in chat, in full,
 under its full path (`<repo root>/.logs/<ticket ID>/workflow-report.md`), taking the text from the
 agent's reply, or from the file if the reply lacks it. If neither has it, say the report is missing
 and why, if known. This is the report's only guaranteed place in every IDE, Android Studio included,

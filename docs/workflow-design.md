@@ -87,7 +87,7 @@ ticket-start status, not lookups made earlier by the planners or the log analyse
 
 This feature is in beta and runs in VS Code only. `qatalyst-ticket-start` checks which IDE it is in
 (VS Code has the `vscode/askQuestions` tool), runs `mark` only there, and tells the agents it hands
-off to "Token tracking: on" or "off"; `qatalyst-developer` writes the report only when told "on".
+off to "Token tracking: on" or "off"; `qatalyst-developer` writes the report only when told "on", and `qatalyst-ticket-ship` writes it again, and shows it, once the review is done.
 Elsewhere nothing is created.
 
 `.github/token-tracker/scripts/token_tracker.py` reports how many tokens a ticket used, one row per
@@ -130,8 +130,9 @@ anywhere, and prompt or code content is never captured.
   for every span (reproduced with OpenTelemetry SDK 2.5.1 and 2.12.1). The SQLite store converts
   spans to plain rows first and doesn't have this problem.
 
-`qatalyst-developer` runs `token_tracker.py report <ticket ID> --open` once every task in
-`tasks.md` is ticked, before pointing the developer at `/qatalyst-ticket-ship`; a developer can run
+`qatalyst-developer` runs `token_tracker.py report <ticket ID>` once every task in
+`tasks.md` is ticked, so the workflow report can record the outcome, and `qatalyst-ticket-ship` runs
+it again with `--open` once the review is done, so the figures shown cover the review fixes too; a developer can run
 it again any time, for example after shipping to include the review and ship steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
 `token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
 there's a local display) and `token-usage.json` (one row per call under `calls`, plus `totals` and a
@@ -153,7 +154,7 @@ flowchart TD
     D --> E[Map: Repowise class/module lookup]
     E --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
-    G -- yes --> H([Report: log-analysis.md<br/>+ suggested fix + Jira comment])
+    G -- yes --> H([Report: log-analysis.md<br/>+ suggested fix])
     G -- no, pass < 5 --> I[Refine: widen window /<br/>restore noise tag / read code]
     I --> B
     G -- no, pass = 5 --> H
@@ -241,8 +242,8 @@ by a skill of its own.
 |---|---|---|---|
 | `qatalyst-log-ticket-intake` | Reads the bug ticket's full text and pins the issue time and log attachment type; `qatalyst-log-analyser`'s own Intake step | read, search, atlassian-rovo/* | Read-only — writes nothing, never touches a log script |
 | `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; the loop is its own procedure | read, edit, search, execute, agent, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
-| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used |
-| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about |
+| `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill, including its fix check (already fixed, blocked, or ambiguous: ask whether to produce a fix) | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used, and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a fix" |
+| `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill, including its fix check | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about — and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a fix" |
 | `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
 | `qatalyst-test-writer` | Routes a task to the matching test-writer sub-agent(s) | read, search, agent, repowise/* | Pure router — no `edit`/`execute` itself; writes nothing |
 | `qatalyst-unit-test-writer` | ViewModel/service/repository/mapper/Room tests | read, edit, search, execute, repowise/* | Edits only test files for the in-progress task |
@@ -277,8 +278,7 @@ Tool lists are the *mechanical* half of scope enforcement (Copilot can strip `ed
   per-command allowlist in a tool list — "can run commands" is all-or-nothing. So
   `qatalyst-log-analyser`'s blueprint states explicitly that it may only invoke the three named
   scripts; `qatalyst-code-reviewer` isn't the backstop here (its phase is before any code diff
-  exists) — the backstop is the developer reviewing `log-analysis.md` and the redacted Jira comment
-  it posts.
+  exists) — the backstop is the developer reviewing `log-analysis.md`.
 - **Every `repowise` grant needs its own usage + fallback line.** Granting `repowise/*` in an agent's
   `tools` list isn't self-explanatory — Copilot's tool list has no way to express "try this, then
   fall back," so that behavior is written into the agent's own body: what it uses Repowise for, and

@@ -24,6 +24,32 @@ changed since its last sync.
   only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll ship later",
   so they still get a title and message to rework and use; a later `/qatalyst-ticket-ship` reuses an
   approved message while the repo's changed files are the same.
+- A fix check before planning. `qatalyst-plan-ticket` now looks for three findings, each only with
+  evidence it can cite: the fix is already in the code, the fix is blocked (an OS or platform
+  restriction, a store policy such as Google Play's, a permission the app can't get, a limit in
+  firmware, an SDK or a backend), or the evidence is too ambiguous to choose a fix (including an
+  inconclusive `log-analysis.md` the code doesn't settle). A policy or platform rule it can't cite is
+  treated as ambiguous, never as blocked. On a finding it asks: Do not produce a fix · Go with a fix
+  anyway. It applies to bugs and features.
+- "Do not produce a fix" writes `.logs/<ticket ID>/no-fix.md` (git-ignored) and ends the flow: no
+  `tasks.md`, no branch, no Jira move. Running `/qatalyst-ticket-start` again shows the finding and
+  asks again. "Go with a fix anyway" plans the best fix the finding allows (only what the code still
+  lacks, a workaround inside the limit, or the likeliest reading with the alternatives listed), puts
+  the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in every PR
+  description.
+
+### Changed
+- Ship now runs in this order: review, token report, commit message, build and tests, one push
+  confirmation. `qatalyst-ticket-ship` shows the token report (`report --open`) once the review rounds
+  are done, so it includes the review fixes and the reviewers' own calls, and then settles the
+  commit message. The push and PR steps are not in it; run `report` after shipping to add them.
+  `qatalyst-ticket-start` no longer shows the report before the ship question, and
+  `qatalyst-developer` still writes one quietly at the end so the workflow report can record the
+  outcome. The commit message is rewritten if a later fix changes the diff.
+
+### Removed
+- `qatalyst-log-analyser` no longer posts a redacted comment on the Jira ticket. The analysis stays in
+  `log-analysis.md`; nothing is written to Jira at that step.
 
 ## [0.5.2] - 2026-11-26
 

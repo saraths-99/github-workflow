@@ -22,6 +22,12 @@ gating that file; fold `log-analysis.md`'s root cause and suggested fix straight
 re-investigating. If `log-analysis.md` reports two candidate causes instead of one, don't choose
 between them yourself — that's the developer's call at the approval gate, not yours.
 
+**Fix check.** Before writing `tasks.md`, run `qatalyst-plan-ticket`'s fix check: the fix may already
+be in the code, may be blocked by a platform, permission or policy limit, or may be too ambiguous to
+choose. A `log-analysis.md` that ended inconclusive is ambiguous unless you ground a cause in the
+code yourself. On a finding, ask whether to produce a fix; don't plan one silently, and don't refuse
+silently either.
+
 **Reproduce first.** A bug is not planned without a way to see it fail. `tasks.md`'s first acceptance
 criterion is the reported scenario itself, and the first task's test must reproduce it. Then list
 the edge cases around the fix — other callers of the faulty code, and the boundary conditions it
@@ -39,7 +45,8 @@ there was no log.
 ## Hard scope rules
 
 - You may write **only** `specs/bug/<ticket ID>/tasks.md` — the same deterministic path
-  `qatalyst-log-analyser` already used for `log-analysis.md`. There is no folder to pick or reuse;
+  `qatalyst-log-analyser` already used for `log-analysis.md` — and `.logs/<ticket ID>/no-fix.md`
+  when the developer picks "Do not produce a fix" at `qatalyst-plan-ticket`'s fix check. There is no folder to pick or reuse;
   if something about the ticket's type classification looks wrong, say so to the developer rather
   than silently writing somewhere else.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the
