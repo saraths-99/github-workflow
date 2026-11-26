@@ -9,7 +9,7 @@ description: >
   ticket's Jira issue type matches its matched Jira project's
   bug_issue_types — either way, before Planning.
 tools: ['read', 'edit', 'search', 'execute', 'executeRead', 'discover', 'agent', 'atlassian-rovo/*', 'repowise/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
-model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
+model: ['Claude Sonnet 5.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

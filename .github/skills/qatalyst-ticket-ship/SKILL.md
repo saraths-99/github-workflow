@@ -24,8 +24,9 @@ treat every step below as per-repo unless it says otherwise.
    against the full diff in every repo touched; run `qatalyst-security-reviewer` too if
    `qatalyst-code-reviewer` flagged a sensitive area, and `qatalyst-error-handling-reviewer` too if it
    flagged a layer where functions can fail. All must pass with no open comments, in every repo. The
-   code reviewer runs on a deeper model than `qatalyst-developer` on purpose, so the second opinion
-   isn't the model that wrote the code.
+   code reviewer is a separate agent that starts from the diff, `tasks.md` and the context docs, not
+   from the developer's chat. It runs on the same deep tier as `qatalyst-developer`, so its
+   independence comes from that fresh context, not from a different model.
    When a reviewer has open comments, that is a round (the first review is round 1):
    1. Note the round: which reviewer, and each comment with its file and what was wrong.
    2. Hand `qatalyst-developer` the exact comments of this round, plus every earlier round's list

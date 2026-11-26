@@ -1,6 +1,6 @@
 ---
 mode: agent
-model: ['Claude Sonnet 5.5 (copilot)', 'Claude Sonnet 5 (copilot)']
+model: ['Claude Haiku 5.5 (copilot)', 'Claude Haiku 4.5 (copilot)']
 description: Write a test for existing code, outside the ticket flow. Usage: /qatalyst-write-tests
 ---
 

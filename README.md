@@ -22,7 +22,7 @@ where every file lives — see [`docs/workflow-design.md`](docs/workflow-design.
 | **`.mcp.json`** | Portable workspace MCP server config (Atlassian and Repowise) — the one file VS Code Copilot and the Copilot CLI both actually auto-discover. Its Repowise entry has two placeholders to fill in per machine |
 | **`.github/workflow-guide.md`** | The developer's guide to using the workflow day to day: Repowise, MCP servers, per-IDE differences, the ticket flow (read it in the app repo) |
 | **`.github/log-analyser/`** | The log-analysis loop's scripts |
-| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py` and the VS Code setting it needs (VS Code only) (see the guide's "Token usage per ticket") |
+| **`.github/token-tracker/`** | Per-ticket token usage: `token_tracker.py`, `token_credits.py` (tokens to AI credits from your price sheet) and the VS Code setting it needs (VS Code only) (see the guide's "Token usage per ticket") |
 | **`project-context.md`**, **`architecture.md`** | What this app is and how it's built — filled in once by hand, then edited directly as facts change (never regenerated) |
 | **`specs/.templates/`** | Scaffold for `tasks.md` — a ticket's one spec file — copied into a ticket's own `specs/<bug\|feature>/<ticket-id>/` folder |
 | **`docs/workflow-design.md`** | Combined technical reference: flowcharts, tables, folder structure, known gaps |

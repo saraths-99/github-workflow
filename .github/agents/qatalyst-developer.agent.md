@@ -5,7 +5,7 @@ description: >
   for each task, and ticks each task off as it's completed. Runs local
   builds and tests with isLocalBuild=true.
 tools: ['read', 'edit', 'search', 'execute', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'create_file', 'run_in_terminal', 'get_terminal_output']
-model: ['Claude Sonnet 5.5 (copilot)', 'Claude Sonnet 5 (copilot)']
+model: ['Claude Sonnet 5.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

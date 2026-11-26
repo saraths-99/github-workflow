@@ -7,7 +7,7 @@ description: >
   or by the qatalyst-write-tests skill for a standalone test-only task. Doesn't
   report done until every matched sub-agent has reported back.
 tools: ['read', 'search', 'agent', 'repowise/*', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search']
-model: ['Claude Sonnet 5.5 (copilot)', 'Claude Sonnet 5 (copilot)']
+model: ['Claude Haiku 5.5 (copilot)', 'Claude Haiku 4.5 (copilot)']
 target: github-copilot
 user-invocable: false
 x-github-copilot-invoke-policy: ["model"]

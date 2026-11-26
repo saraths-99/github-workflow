@@ -1,6 +1,6 @@
 ---
 mode: agent
-model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
+model: ['Claude Sonnet 5.5 (copilot)']
 description: Ship a finished ticket — review, build, one PR per repo in merge order. Usage: /qatalyst-ticket-ship
 ---
 

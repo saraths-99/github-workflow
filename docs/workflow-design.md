@@ -199,9 +199,9 @@ it.
 
 | Tier | Claude, in order | GPT, in order | Agents |
 |---|---|---|---|
-| Deep | Opus 5.5 → Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser` and `qatalyst-code-reviewer`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
-| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-developer`, `qatalyst-error-handling-reviewer`, `qatalyst-test-writer`, `qatalyst-ble-protocol-test-writer`, `qatalyst-security-test-writer`, `qatalyst-security-reviewer`; also the `/qatalyst-write-tests`, `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
-| Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and the unit, androidTest, compatibility, interop, OTA, performance and chaos test writers |
+| Deep | Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser`, `qatalyst-code-reviewer` and `qatalyst-developer`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
+| Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-error-handling-reviewer`, `qatalyst-security-reviewer`; also the `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
+| Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and every test writer: the router (`qatalyst-test-writer`) and the unit, BLE-protocol, androidTest, compatibility, security, interop, OTA, performance and chaos writers; also the `/qatalyst-write-tests` prompt |
 
 **One provider throughout.** The developer chooses Claude or GPT when installing (`install.sh
 --provider claude|gpt`, or the question it asks on a first install; the choice is kept in
@@ -216,8 +216,8 @@ model is picked in the chat, so pick one from the same provider.
 
 Each tier stays inside one of Copilot's own categories (Powerful, Versatile, Lightweight) at a
 similar token price across the two providers: GPT-6.1 Sol is rated Powerful at $2 in / $10 out per
-million tokens, the same price as Sonnet 5.5; GPT-5.6 Sol matches Opus 5.5 at $4 / $20; GPT-6 Luna
-($0.10 / $0.50) matches Haiku 5.5. GPT-6 Astra ($10 / $50) is left out: it costs 2.5× Opus 5.5, and a
+million tokens, the same price as Sonnet 5.5; GPT-5.6 Sol costs $4 / $20, twice Sonnet 5.5 (the Claude Deep list has no Opus now, so GPT's Deep tier is the pricier of the two); GPT-6 Luna
+($0.10 / $0.50) matches Haiku 5.5. GPT-6 Astra ($10 / $50) is left out: it costs 2.5× GPT-5.6 Sol, and a
 sub-agent can't run on a costlier model than its chat. Gemini, Grok and MAI-Code aren't listed;
 adding a provider means adding a block to `models.json` with the same three tiers.
 
@@ -467,6 +467,7 @@ versus a convention this workflow invented for itself.
     │   └── qatalyst-ticket-ship.prompt.md
     └── token-tracker/
         ├── scripts/token_tracker.py   mark / collect / report — per-ticket token usage
+        ├── scripts/token_credits.py   price sheet (.xlsx) + token-usage.html/.json -> AI credits per model and agent; stdlib only
         └── vscode-settings.json       the one VS Code setting tracing needs; copied to .vscode/settings.json if the app repo has none
 ```
 

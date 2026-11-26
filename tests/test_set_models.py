@@ -41,6 +41,24 @@ class SetModels(unittest.TestCase):
     def test_tiers_match_across_providers(self):
         self.assertEqual({k: set(v) for k, v in TABLE.items()}, {k: {"deep", "standard", "fast"} for k in TABLE})
 
+    def test_tier_lists_are_distinct_so_a_line_names_one_tier(self):
+        for provider, tiers in TABLE.items():
+            texts = [render(v) for v in tiers.values()]
+            self.assertEqual(len(texts), len(set(texts)), f"{provider} has two tiers with the same list")
+
+    def test_test_related_agents_run_on_the_fast_tier(self):
+        fast = render(TABLE["claude"]["fast"])
+        got = lines(self.app)
+        for name in ("qatalyst-test-writer.agent.md", "qatalyst-unit-test-writer.agent.md", "qatalyst-ble-protocol-test-writer.agent.md",
+                     "qatalyst-security-test-writer.agent.md", "qatalyst-write-tests.prompt.md"):
+            self.assertEqual(got[name], fast, name)
+
+    def test_developer_runs_on_the_deep_tier(self):
+        self.assertEqual(lines(self.app)["qatalyst-developer.agent.md"], render(TABLE["claude"]["deep"]))
+
+    def test_no_claude_list_names_opus(self):
+        self.assertNotIn("Opus", json.dumps(TABLE["claude"]))
+
     def test_checked_in_files_carry_claude_lists(self):
         allowed = {render(v) for v in TABLE["claude"].values()}
         self.assertTrue(lines(self.app))

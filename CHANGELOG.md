@@ -38,7 +38,22 @@ changed since its last sync.
   the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in every PR
   description.
 
+- `token_credits.py` in `.github/token-tracker/scripts/`: converts a ticket's `token-usage.html` (or
+  `.json`) into AI credits with a model price sheet (`.xlsx`), as tokens / 1,000,000 x the model's
+  USD rate, input and output priced separately, divided by $0.01 per credit, using the long-context row when a call's input is over
+  the threshold. It writes `token-credits.html` and `.json` and prints a table by model and agent.
+  A call whose model isn't in the sheet is listed as not priced, never guessed. The usage file has
+  no cached-token split, so input is priced at the full rate. Standard library only, with tests.
+
 ### Changed
+- Model tiers. Every test-related agent is now on the Fast tier (the router `qatalyst-test-writer`,
+  `qatalyst-ble-protocol-test-writer` and `qatalyst-security-test-writer` moved down from Standard,
+  and the `/qatalyst-write-tests` prompt with them). `qatalyst-developer` moved up to the Deep tier.
+  Claude Opus 5.5 is gone from the Claude lists: Deep is now Claude Sonnet 5.5 alone, so the ticket
+  chat, log analysis, planning, implementation and the code reviewer all run on it. Standard is left
+  with the security and error-handling reviewers and the `/qatalyst-new-*` prompts. The code
+  reviewer and the developer now share a model; the reviewer's independence comes from its fresh
+  context. GPT lists are unchanged.
 - Ship now runs in this order: review, token report, commit message, build and tests, one push
   confirmation. `qatalyst-ticket-ship` shows the token report (`report --open`) once the review rounds
   are done, so it includes the review fixes and the reviewers' own calls, and then settles the

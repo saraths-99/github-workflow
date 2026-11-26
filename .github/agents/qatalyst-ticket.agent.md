@@ -7,7 +7,7 @@ description: >
   feature through planning, implementation and shipping, with every stop a
   question with options.
 tools: ['read', 'edit', 'search', 'execute', 'executeRead', 'executeWrite', 'discover', 'agent', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'run_in_terminal', 'get_terminal_output']
-model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
+model: ['Claude Sonnet 5.5 (copilot)']
 target: github-copilot
 user-invocable: true
 x-github-copilot-invoke-policy: ["user"]

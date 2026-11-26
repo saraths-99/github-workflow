@@ -167,7 +167,7 @@ update that cell.
 3. If the MCP servers don't appear, add them from
    [`.github/mcp/jetbrains-mcp.example.json`](https://github.com/saraths-99/github-workflow/blob/develop/.github/mcp/jetbrains-mcp.example.json) and sign in
    to Atlassian (see [MCP servers](#mcp-servers)).
-4. Pick the deep-tier model of the provider you installed (Claude Opus 5.5, or GPT-5.6 Sol) in the
+4. Pick the deep-tier model of the provider you installed (Claude Sonnet 5.5, or GPT-5.6 Sol) in the
    chat's model picker before starting, since `model:` pinning isn't confirmed here.
 5. Expect no token report; review commands and edits yourself.
 6. For a bug ticket with a log, download the attachment from Jira yourself into
@@ -243,9 +243,9 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 `qatalyst-ask-developer` skill holds every question and its options.
 
 **Models.** You don't pick a model, only a provider, once, when you install (see the [install steps](https://github.com/saraths-99/github-workflow/blob/develop/README.md#2-one-time-setup)). With Claude,
-starting a ticket switches the chat to Claude Opus 5.5, which also runs log analysis and planning;
-`qatalyst-developer` and the security and error-handling reviewers run on Claude Sonnet 5.5; the code reviewer runs on Opus 5.5, so it isn't the model that wrote the code, and most test writers on Claude
-Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
+starting a ticket switches the chat to Claude Sonnet 5.5, which also runs log analysis, planning, the
+code reviewer and `qatalyst-developer`; the security and error-handling reviewers run on Claude Sonnet 5.5
+(falling back to Sonnet 5), and every test writer, the router included, on Claude Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
 agent's `model:` line sets it (the full table is in [docs/workflow-design.md](../docs/workflow-design.md)
 §4). Every agent runs on the chosen provider only, so your Copilot plan must include its models; if a
 model isn't offered, the agent uses the next one in its list, or the chat's model. Don't switch the
@@ -357,3 +357,21 @@ before a branch was created) isn't counted; run
 include it. Skills don't appear as separate rows: they make no model calls of their own.
 Copilot deletes its trace data after 7 days, so run `report` (or `collect`) at least weekly on a
 long-running ticket; everything it has copied stays in `.logs/token-tracker/`.
+
+**Turning tokens into AI credits.** Given your model price sheet (an `.xlsx` with the columns Model,
+Threshold (input tokens), Input, Cached input, Cache write and Output, one row per model and tier),
+`token_credits.py` prices a ticket's report:
+
+```bash
+python3 .github/token-tracker/scripts/token_credits.py "prices.xlsx" .logs/token-tracker/ABC-123/token-usage.html
+```
+
+It works out `tokens / 1,000,000 x the model's rate` (the sheet's prices are USD per 1M tokens) for
+every call, input and output separately and added, then divides by $0.01 (1 AI credit = $0.01; change it
+with `--usd-per-credit`), using the long-context row when a call's input is over the sheet's threshold. It writes
+`token-credits.html` and `token-credits.json` next to the usage file (or into `--out`) and prints a
+table by model and by agent. It also accepts `token-usage.json`. Two things to know: a call on a
+model that isn't in the sheet (Copilot's small helper model, for example) is listed under "Not
+priced" and left out of the total, never guessed; and the usage file has no cached-token split, so
+every input token is priced at the full Input rate, which overstates the credits if part of the
+input came from cache. The sheet is yours and isn't stored in this repo.
