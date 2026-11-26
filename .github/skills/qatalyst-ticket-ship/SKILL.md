@@ -28,6 +28,8 @@ otherwise.
    code reviewer is a separate agent that starts from the diff, `tasks.md` and the context docs, not
    from the developer's chat. It runs on the same deep tier as `qatalyst-developer`, so its
    independence comes from that fresh context, not from a different model.
+   Tell the reviewers to ignore a `gradle.properties` line that sets `isLocalBuild=true`: it is a local
+   building switch that step 7 resets to `false` before committing, not part of the change.
    When a reviewer has open comments, that is a round (the first review is round 1):
    1. Note the round: which reviewer, and each comment with its file and what was wrong.
    2. Hand `qatalyst-developer` the exact comments of this round, plus every earlier round's list
@@ -57,7 +59,8 @@ otherwise.
    by `qatalyst-ticket-start`'s "commit later" path is reused if that repo's files haven't changed
    since. If a later step changes the diff (a fix after a failed test, say), run the skill again
    before step 6.
-5. Build locally with `isLocalBuild=true`, in every repo touched, then **ask the developer which
+5. Build locally with `isLocalBuild=true` (the developer has it set in each repo's `gradle.properties`
+   while working; if a repo doesn't, pass `-PisLocalBuild=true`), in every repo touched, then **ask the developer which
    tests to run** (see `qatalyst-ask-developer`) and run them the same way, using the commands in
    `project-context.md`'s "Build and test commands". If those are still marked TBD, say which
    command you're about to run before running it. The options:
@@ -78,13 +81,29 @@ otherwise.
    and its "Repowise:" line from `.logs/<ticket ID>/workflow-report.md`, giving its full path (if that
    file isn't there, say so). Ask with options, per `qatalyst-ask-developer`: commit, or cancel. Do
    nothing in step 7 until they pick "commit".
-7. On confirmation, commit in each repo, on the ticket branch (`bug/<ticket ID>-<slug>` or
+7. On confirmation, **first set `isLocalBuild` to `false`**, then commit. While working, the developer
+   keeps `isLocalBuild=true` in `gradle.properties` in all five repos (the repository table in
+   `architecture.md`); a commit must never carry it. For every one of the five, touched or not:
+   1. Read the repo's `gradle.properties`. If it has an `isLocalBuild` line set to `true`, write
+      `.logs/<ticket ID>/isLocalBuild.json` with each such repo and its line as it was, then change
+      only that line to `isLocalBuild=false`, keeping the file's own spacing (`isLocalBuild = false`
+      if that is how it is written). If the line is already `false` or absent, leave the file alone.
+   2. Commit as below.
+   3. Put every recorded line back as it was, so the developer's local setup is unchanged, and
+      delete the file. Do this also when a commit fails or you stop partway. If you are resuming and
+      the file exists, a broken chat stopped between 1 and 3: finish the commit, then restore.
+
+   Then commit in each repo, on the ticket branch (`bug/<ticket ID>-<slug>` or
    `feature/<ticket ID>-<slug>`, as `qatalyst-ticket-start` named it; if a repo is on another branch,
    stop and say so). For each repo:
    - Stage exactly the files in that repo's `Files:` line in `.logs/<ticket ID>/commit-message.md`,
      plus `specs/<bug|feature>/<ticket ID>/` in whichever repo owns the spec folder (see
      `architecture.md`'s module map; never duplicated across repos). Never `git add -A` or
-     `git commit -a`, and never stage `.logs/` or a file that isn't in the diff.
+     `git commit -a`, and never stage `.logs/` or a file that isn't in the diff. A `gradle.properties`
+     whose only change is the `isLocalBuild` line is not part of the diff and is not staged.
+   - Before committing, run `git diff --cached` and check it holds no `isLocalBuild=true` (with or
+     without spaces). If it does, unstage that file, set the line to `false` and check again; if it
+     still shows `true`, stop and say which repo.
    - Commit with that repo's approved title and body, exactly as approved (write it to a temp file
      and use `git commit -F`). No trailer is added.
    - If the commit fails (a hook, say), show the output and stop. Never retry with `--no-verify`.
@@ -93,14 +112,18 @@ otherwise.
    When continuing a commit that a broken chat left partway, check each repo first and skip the one
    whose latest commit already has the approved title.
 8. Say what was done and what wasn't: the commit's short hash and title in each repo, that **nothing
-   was pushed, no pull request was opened and the ticket wasn't moved**, and the branch name in each
-   repo for the developer to push and open the pull request themselves.
+   was pushed, no pull request was opened and the ticket wasn't moved**, the branch name in each
+   repo for the developer to push and open the pull request themselves, and that `isLocalBuild` was
+   `false` in what was committed and is back to `true` in the working copy of any repo where it was
+   (name them).
 
 ## Rules
 
 - Never commit before the single confirmation in step 6 — one confirmation covers every repo, not one
   ask per repo. The commit message is settled before it (step 4), with its own question.
 - Never commit with a message the developer hasn't approved.
+- Never commit `isLocalBuild=true` in any repo's `gradle.properties`, and never leave a repo's line
+  changed after the commit step: restore what step 7 recorded.
 - Never push, force-push, amend, open a pull request, read or wait on a Pipelines run, or transition
   the Jira ticket from this skill.
 - Never wait silently on a local build or a test run. If a build or test command has printed nothing

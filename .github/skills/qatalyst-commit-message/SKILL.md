@@ -19,7 +19,9 @@ message this skill leaves behind.
 
 - The ticket ID, its type (bug or feature) and its Jira summary.
 - For each repo touched: `git diff` against the ticket branch's base, and `git status` for new
-  files. Describe only what the diff shows.
+  files. Describe only what the diff shows. Ignore a `gradle.properties` change that only sets
+  `isLocalBuild` (a local building switch, reset to `false` before the commit): leave it out of the
+  message and out of the `Files:` list.
 - `specs/<bug|feature>/<ticket ID>/tasks.md`: the tasks, and its `**Tests:**` line.
 - For a bug, `log-analysis.md`: the confirmed root cause. Use the cause and the fix, never log
   lines.

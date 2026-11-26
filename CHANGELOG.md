@@ -62,6 +62,14 @@ changed since its last sync.
   `qatalyst-developer` still writes one quietly at the end so the workflow report can record the
   outcome. The commit message is rewritten if a later fix changes the diff.
 
+### Added
+- `isLocalBuild` is `false` in everything committed. The developer keeps `isLocalBuild=true` in
+  `gradle.properties` in all five repos while working; before committing, `qatalyst-ticket-ship` records
+  each such line in `.logs/<ticket ID>/isLocalBuild.json`, sets it to `false` (keeping the file's
+  spacing), commits, then puts every line back and deletes the record. A `gradle.properties` whose only
+  change is that line isn't part of the diff or the commit message, the reviewers are told to ignore
+  it, and the commit stops if `git diff --cached` still shows `isLocalBuild=true`.
+
 ### Removed
 - The ship step no longer pushes, opens pull requests, reads Pipelines runs or moves the ticket to In
   Review. `qatalyst-ticket-ship` now ends at a local commit: after the review rounds, token report,

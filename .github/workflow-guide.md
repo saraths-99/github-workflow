@@ -291,8 +291,9 @@ the branch and open the PR yourself.
 5. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
    instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
    test stops the commit; skipping tests is allowed, and the commit message then says they weren't run.
-6. Asks once (commit, or cancel), then commits in each repo with the approved message, staging only
-   the ticket's files and its spec folder. It tells you the commit and the branch name, and that
+6. Asks once (commit, or cancel). It then sets `isLocalBuild=false` in `gradle.properties` in all five
+   repos (you keep it `true` while working), commits in each repo with the approved message, staging
+   only the ticket's files and its spec folder, and puts `isLocalBuild` back to `true` afterwards. It tells you the commit and the branch name, and that
    nothing was pushed.
 
 **Commit message.** The title is `<ticket ID> - <what the change does>` (72 characters or fewer, always
