@@ -109,7 +109,8 @@ anywhere, and prompt or code content is never captured.
   (`~/.config/Code/User/globalStorage/github.copilot-chat/` on Linux,
   `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/` on macOS). If the
   setting shows "Unknown configuration setting", the installed Copilot Chat extension is too old to
-  have it.
+  have it. The file is only created once the setting is on and the window reloaded, so chats held
+  before then are never recorded and a ticket worked earlier reports 0 model calls.
 
 - **Linking chats to a ticket.** Copilot's traces don't contain a ticket ID. A chat is linked when
   `token_tracker.py mark <ticket ID>` runs during it (`qatalyst-ticket-start` does this first, in

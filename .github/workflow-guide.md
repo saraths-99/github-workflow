@@ -292,7 +292,22 @@ code are never recorded. Requires Python 3.9 or newer.
 - **VS Code:** the setting `"github.copilot.chat.otel.dbSpanExporter.enabled": true`. The install
   adds it to `.vscode/settings.json` for you if that file didn't exist; otherwise add it yourself,
   in that file or your user settings. Tracking also stops if VS Code's own `telemetry.telemetryLevel`
-  is `off`.
+  is `off` (the default, `all`, is fine).
+
+**The setting isn't in the Settings screen.** Searching for `dbSpanExporter` there finds nothing,
+and that is normal: it has to be added by hand to a settings JSON file, either your user settings
+(**Preferences: Open User Settings (JSON)**) or `.vscode/settings.json` in the app repo. Then:
+
+1. Run **Developer: Reload Window**.
+2. Send one message in Copilot Chat.
+3. Check that `agent-traces.db` now exists in VS Code's storage for the Copilot Chat extension
+   (`~/.config/Code/User/globalStorage/github.copilot-chat/` on Linux,
+   `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/` on macOS).
+
+If it doesn't, check the setting isn't underlined with "Unknown configuration setting" (the
+Copilot Chat extension is too old, so update it), and that you're in VS Code and not Android
+Studio or the CLI. Only chats held after this are recorded, so a ticket worked before the file
+existed reports 0 model calls; start it again to get numbers.
 
 **Seeing a ticket's usage:** `qatalyst-developer` shows it once every task in `tasks.md` is ticked
 and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after

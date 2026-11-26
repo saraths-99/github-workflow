@@ -10,6 +10,15 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.5.2] - 2026-11-26
+
+### Changed
+- Token tracking setup now says that `github.copilot.chat.otel.dbSpanExporter.enabled` is not
+  listed on VS Code's Settings screen (searching for it finds nothing) and goes in a settings JSON
+  file. The workflow guide, the README and the design doc give the check: reload the window, send
+  one Copilot chat message, and confirm `agent-traces.db` exists. They also say a ticket worked
+  before the file existed reports 0 model calls and must be started again.
+
 ## [0.5.1] - 2026-11-25
 
 ### Added

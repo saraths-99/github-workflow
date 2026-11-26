@@ -95,7 +95,10 @@ extracted folder:
 - The copied agents and prompts run on Claude's models. For GPT, run
   `python3 set-models.py gpt <path to the app repo>` from this repo after copying (it needs Python 3).
 - Copy `.github/token-tracker/vscode-settings.json` to `.vscode/settings.json` only if the app repo
-  has no such file; otherwise add its one line to the existing file.
+  has no such file; otherwise add its one line to the existing file. The setting doesn't appear in
+  VS Code's Settings screen, so searching for it finds nothing: it goes in a settings JSON file. Then
+  run **Developer: Reload Window**, send one Copilot chat message, and check that `agent-traces.db`
+  now exists (see the guide's "Token usage per ticket"). A ticket worked before then reports 0 calls.
 - If your file manager ever offers to "keep both" on a naming conflict instead of replacing,
   decline it — that's how literal duplicate files (`name (1).md`) end up committed by accident.
 
