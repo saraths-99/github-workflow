@@ -13,5 +13,5 @@ applyTo: "**/*.gradle.kts,**/libs.versions.toml"
   contents.
 - A new module is added to `settings.gradle.kts` and to the module map in `copilot-instructions.md`
   in the same change — don't let the two drift apart.
-- `qatalyst-ticket-ship` builds with `isLocalBuild=true` before opening a PR — a Gradle change that breaks
-  that configuration blocks shipping, not just the pipeline run.
+- `qatalyst-ticket-ship` builds with `isLocalBuild=true` before committing — a Gradle change that breaks
+  that configuration blocks the commit, not just a later pipeline run.

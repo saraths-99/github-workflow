@@ -9,7 +9,7 @@ description: >
 
 # qatalyst-ask-developer
 
-This workflow runs as one flow from `/qatalyst-ticket-start` to the shipped PR. Wherever it stops
+This workflow runs as one flow from `/qatalyst-ticket-start` to the ticket's local commit. Wherever it stops
 for the developer, the developer answers by picking an option, not by typing. This skill is how.
 
 ## Asking
@@ -43,7 +43,7 @@ and runs you again with the answer.
 | Bug ticket has no log attachment | UI-only issue — skip log analysis · I've attached it now — check again · Stop, I'll attach it later |
 | Bug ticket has a log but no issue time | I'll give the time (**needs text**: `HH:MM:SS`, plus the date if the log spans days) · Use the whole log, no time window · Stop, I'll add the time to the ticket |
 | Raw log isn't in `.logs/<ticket ID>/raw/` and the download from the ticket couldn't run or failed (say why, and the exact folder and file name to save it as) | I've saved it there — continue · Skip log analysis |
-| Review comments still open after 3 rounds (show them, with the reviewer and file) | I'll fix it by hand, then check again · Ship anyway, comments open · Cancel |
+| Review comments still open after 3 rounds (show them, with the reviewer and file) | I'll fix it by hand, then check again · Commit anyway, comments open · Cancel |
 | Digest has no warnings or errors (the window has lines, but nothing to analyse) | Widen the time window · Use the whole log · The log shows nothing for this issue — report it as inconclusive · Wrong attachment — stop |
 | Trimmed log came out nearly empty | Widen the time window · Use the whole log · Wrong attachment — stop |
 | `log-analysis.md` has two candidate root causes | Fix cause A (name it) · Fix cause B (name it) · Fix both |
@@ -55,13 +55,13 @@ and runs you again with the answer.
 | Move the ticket to In Progress | Move to In Progress · Leave it where it is |
 | Resuming, but uncommitted changes block switching to the ticket branch | Stash them and switch · Stop here |
 | Resuming after the last chat broke partway through task N (say so first) | Continue task N, keeping its changes · Restart task N (stash its changes first) · Stop here |
-| Resuming after the last chat broke partway through shipping (say so first) | Continue shipping · Stop here |
-| Every task ticked (two questions, one call) | **Ship:** Ship it now · Stop here, I'll ship later. **Idea:** I have an idea for the workflow (**needs text**: describe it) · No idea, nothing to add |
+| Resuming after the last chat broke partway through committing (say so first) | Continue committing · Stop here |
+| Every task ticked (two questions, one call) | **Commit:** Commit it now · Stop here, I'll commit later. **Idea:** I have an idea for the workflow (**needs text**: describe it) · No idea, nothing to add |
 | `qatalyst-developer` is stuck on a task (say which task, what it was doing, what failed and how many times, or which command has gone quiet and for how long) | Try again, a different approach · I'll look at it, then continue the task · Restart task N (stash its changes first) · Stop here |
-| A build, test run or Pipelines run is stuck at ship (say which, and for how long it has been quiet) | Keep waiting · I'll look at it, then continue shipping · Stop here |
-| Which tests to run before pushing (ship step 5, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the PRs say tests weren't run) |
-| The commit title and message are shown (at ship, and when the developer stops to ship later) | Use this message · Make it shorter · Add more detail · Change it (**needs text**: what to change) |
-| Push and open the PRs | Push and open the PRs · Cancel |
+| A build or test run is stuck at the commit step (say which, and for how long it has been quiet) | Keep waiting · I'll look at it, then continue committing · Stop here |
+| Which tests to run before committing (ship step 5, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the commit message says tests weren't run) |
+| The commit title and message are shown (at the commit step, and when the developer stops to commit later) | Use this message · Make it shorter · Add more detail · Change it (**needs text**: what to change) |
+| Commit the ticket's changes (ship step 6; the commit title and files are shown) | Commit · Cancel |
 
 Approving a terminal command or tool call (Allow / Allow all) is Copilot's own prompt, not a
 question you ask.

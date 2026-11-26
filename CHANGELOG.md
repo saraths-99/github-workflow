@@ -20,8 +20,8 @@ changed since its last sync.
   sign-off trailer. It is shown with options to rework: use it · make it shorter · add more detail ·
   change it (typed). It repeats until the developer picks "Use this message", and saves the result
   to `.logs/<ticket ID>/commit-message.md`.
-- `qatalyst-ticket-ship` runs it before the push confirmation and commits with the approved message
-  only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll ship later",
+- `qatalyst-ticket-ship` runs it before the commit confirmation and commits with the approved message
+  only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll commit later",
   so they still get a title and message to rework and use; a later `/qatalyst-ticket-ship` reuses an
   approved message while the repo's changed files are the same.
 - A fix check before planning. `qatalyst-plan-ticket` now looks for three findings, each only with
@@ -35,8 +35,8 @@ changed since its last sync.
   `tasks.md`, no branch, no Jira move. Running `/qatalyst-ticket-start` again shows the finding and
   asks again. "Go with a fix anyway" plans the best fix the finding allows (only what the code still
   lacks, a workaround inside the limit, or the likeliest reading with the alternatives listed), puts
-  the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in every PR
-  description.
+  the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in the commit
+  message.
 
 - `token_credits.py` in `.github/token-tracker/scripts/`: converts a ticket's `token-usage.html` (or
   `.json`) into AI credits with a model price sheet (`.xlsx`), as tokens / 1,000,000 x the model's
@@ -54,15 +54,23 @@ changed since its last sync.
   with the security and error-handling reviewers and the `/qatalyst-new-*` prompts. The code
   reviewer and the developer now share a model; the reviewer's independence comes from its fresh
   context. GPT lists are unchanged.
-- Ship now runs in this order: review, token report, commit message, build and tests, one push
+- Ship now runs in this order: review, token report, commit message, build and tests, one commit
   confirmation. `qatalyst-ticket-ship` shows the token report (`report --open`) once the review rounds
   are done, so it includes the review fixes and the reviewers' own calls, and then settles the
-  commit message. The push and PR steps are not in it; run `report` after shipping to add them.
+  commit message. The build, tests and commit are not in it; run `report` afterwards to add them.
   `qatalyst-ticket-start` no longer shows the report before the ship question, and
   `qatalyst-developer` still writes one quietly at the end so the workflow report can record the
   outcome. The commit message is rewritten if a later fix changes the diff.
 
 ### Removed
+- The ship step no longer pushes, opens pull requests, reads Pipelines runs or moves the ticket to In
+  Review. `qatalyst-ticket-ship` now ends at a local commit: after the review rounds, token report,
+  commit message and build/tests, it asks once (commit · cancel) and commits each repo's ticket files
+  (staged by name, never `git add -A`) with the approved message, then says nothing was pushed and
+  names the branch for the developer to push and open the PR. `pipelines-detection.md` is deleted.
+  The question labels are now "Commit it now" · "Stop here, I'll commit later"; the skill and
+  prompt keep the name `qatalyst-ticket-ship`. Notes that went into PR descriptions (tests not run,
+  no tests written, open review comments, a fix-check finding) now go into the commit message.
 - `qatalyst-log-analyser` no longer posts a redacted comment on the Jira ticket. The analysis stays in
   `log-analysis.md`; nothing is written to Jira at that step.
 

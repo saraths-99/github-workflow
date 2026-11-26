@@ -3,12 +3,12 @@ name: qatalyst-ticket-start
 description: >
   /qatalyst-ticket-start <ticket ID>. The single entry point for any ticket, from any
   of this repo's configured Jira projects, and the one flow that carries it
-  through to shipping — detects whether it's a bug from its Jira issue type
+  through to its local commit — detects whether it's a bug from its Jira issue type
   (checked against whichever configured project the ticket actually belongs
   to), hands off to the matching planner (bug-planner, after log-analyser
   runs if it hasn't already, or feature-planner), gets tasks.md approved,
   creates the ticket branch (bug/ or feature/), runs qatalyst-developer through every task,
-  then runs qatalyst-ticket-ship. Every stop is a question with options.
+  then runs qatalyst-ticket-ship (review and a local commit, no push or PR). Every stop is a question with options.
 ---
 
 # qatalyst-ticket-start
@@ -16,7 +16,7 @@ description: >
 Run at the start of every ticket — this is the only command a developer needs to remember,
 regardless of whether the ticket turns out to be a bug or a feature. You decide that yourself, in
 step 0, rather than relying on the developer to know and to run `/log-analyser` separately first.
-From there the ticket runs as one flow to its PRs: the developer never has to type a command or an
+From there the ticket runs as one flow to its local commit: the developer never has to type a command or an
 answer to move it on.
 
 You detect the ticket type and hand off — you never write `log-analysis.md` or `tasks.md` yourself;
@@ -148,19 +148,19 @@ Running `/qatalyst-ticket-start` again picks up where the ticket is, worked out 
 | No `tasks.md` | Step 0.4, as normal |
 | `tasks.md`, but no task ticked and no ticket branch (see "Branches" in step 2) | Step 1's approval question, on the existing draft — don't re-plan |
 | A ticket branch, or any task ticked, and some tasks unticked | Step 4, from the first unticked task |
-| Every task ticked | Step 5, the ship question |
+| Every task ticked | Step 5, the commit question |
 
 **If the last chat broke midway.** `.logs/<ticket ID>/in-progress.json` exists only while a task
-or the ship step is running; a clean finish or a "Stop here" answer removes it. If it's there when
+or the commit step is running; a clean finish or a "Stop here" answer removes it. If it's there when
 you resume, the last chat stopped partway. Tell the developer so, plainly — which task (number and
-title) or that it was shipping, when it started, and how many files have uncommitted changes on the
+title) or that it was committing, when it started, and how many files have uncommitted changes on the
 ticket branch — then ask:
 
 - **A task:** continue task N, keeping its changes · restart task N (its uncommitted changes are
   stashed first, as `<ticket ID> task N partial`) · stop here. On "continue", start
   `qatalyst-developer` with "continue task N, keeping its changes".
-- **Shipping:** continue shipping · stop here. `qatalyst-ticket-ship` checks which repos already
-  have a pushed branch or an open PR and doesn't repeat those.
+- **Committing:** continue committing · stop here. `qatalyst-ticket-ship` checks which repos already
+  have the approved commit and doesn't repeat those.
 
 Before step 4 or 5, switch to the ticket's branch if you're not on it. If the ticket is a bug and
 the only branch for it is an old `feature/<ticket ID>-*`, don't switch to it: step 2 says what to do
@@ -244,20 +244,20 @@ agent's reply, or from the file if the reply lacks it. If neither has it, say th
 and why, if known. This is the report's only guaranteed place in every IDE, Android Studio included,
 where the token report doesn't run. Then go on to step 5.
 
-## 5. Ship
+## 5. Commit
 
 Every time `qatalyst-developer` reports all tasks ticked (a re-run after a plan update counts, so
-does the first), ask two questions in one call: whether to ship now, and whether the developer has
+does the first), ask two questions in one call: whether to commit now, and whether the developer has
 an idea for improving the workflow itself, so the way they'd do it could be adopted (see
 `qatalyst-ask-developer`). Deal with the idea first: on "I have an idea", append a line to
 `.logs/<ticket ID>/workflow-ideas.md` (git-ignored; create it if it isn't there) holding the UTC
 date, the ticket ID and their words as typed, then tell them the file's full path and that it stays
 on their machine, so it needs passing to whoever maintains this workflow repo. Don't act on the idea
 yourself, change any workflow file because of it, or send it anywhere. On "No idea", say nothing and
-create no file. Then the ship answer: on "ship it now", write `.logs/<ticket ID>/in-progress.json` as
+create no file. Then the commit answer: on "commit it now", write `.logs/<ticket ID>/in-progress.json` as
 `{"step": "ship", "startedAt": "<UTC time>"}`, run the `qatalyst-ticket-ship` skill (which asks its
-own questions before pushing), and delete the file when it finishes or is cancelled. On "stop here", run the `qatalyst-commit-message` skill so they still leave with a commit title and message they can rework and use themselves, then say that `/qatalyst-ticket-ship` picks it up later and reuses an approved message.
-Resuming at "every task ticked" goes to the ship question alone: the idea question was asked when the
+own questions before committing, and never pushes or opens a PR), and delete the file when it finishes or is cancelled. On "stop here, I'll commit later", run the `qatalyst-commit-message` skill so they still leave with a commit title and message they can rework and use themselves, then say that `/qatalyst-ticket-ship` picks it up later and reuses an approved message.
+Resuming at "every task ticked" goes to the commit question alone: the idea question was asked when the
 tasks finished.
 
 ## Sizing

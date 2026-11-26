@@ -1,7 +1,7 @@
 ---
 mode: agent
 model: ['Claude Sonnet 5.5 (copilot)']
-description: Start a ticket and carry it through to its PRs — detects bug vs. feature, plans, implements and ships, with every stop a question to pick an answer for. Usage: /qatalyst-ticket-start <ticket ID>
+description: Start a ticket and carry it through to a local commit — detects bug vs. feature, plans, implements and commits (no push, no PR), with every stop a question to pick an answer for. Usage: /qatalyst-ticket-start <ticket ID>
 ---
 
 Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
@@ -24,14 +24,14 @@ Run the `qatalyst-ticket-start` skill for the ticket ID given as an argument:
 4. Ask whether to move the ticket to In Progress.
 5. Hand off to `qatalyst-developer` to work every task; if the plan stops fitting, get it updated
    and re-approved.
-6. Once every task is ticked, ask whether to ship now and, in the same call, whether the developer
+6. Once every task is ticked, ask whether to commit now and, in the same call, whether the developer
    has an idea for improving the workflow (save it to `.logs/<ticket ID>/workflow-ideas.md`); if
-   they ship, run the `qatalyst-ticket-ship` skill. If the developer agent reports it is stuck,
+   they commit, run the `qatalyst-ticket-ship` skill. If the developer agent reports it is stuck,
    tell the developer and ask what to do instead of waiting.
 
 If the ticket was started before, resume instead of starting over: an existing draft goes straight
 to the approval question, a ticket branch or ticked tasks go straight to implementation from the
-first unticked task, and all tasks ticked goes straight to the ship question (see the skill's
+first unticked task, and all tasks ticked goes straight to the commit question (see the skill's
 "Resuming" section).
 
 Every question offers options to pick, per the `qatalyst-ask-developer` skill — never an open-ended

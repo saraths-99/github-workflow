@@ -2,7 +2,7 @@
 
 How to use this workflow day to day. It's installed into your app repo by `install.sh`, so it's here
 when you need it: setting up Repowise and the MCP servers, what differs between VS Code, Android
-Studio and the Copilot CLI, and the daily ticket flow, from starting a ticket to shipping it.
+Studio and the Copilot CLI, and the daily ticket flow, from starting a ticket to its local commit.
 
 Installing and updating the workflow itself is covered in the
 [workflow repo's README](https://github.com/saraths-99/github-workflow/blob/develop/README.md), and the full design reference is in
@@ -66,12 +66,12 @@ with `repowise telemetry disable` if your project needs that. To remove it from 
 
 ## MCP servers
 
-The agents reach Jira, Confluence, Bitbucket and Repowise through MCP servers. The app repo's
+The agents reach Jira, Confluence and Repowise through MCP servers. The app repo's
 `.mcp.json` lists them:
 
 | Server | Used for | Needed? |
 |---|---|---|
-| `atlassian-rovo` | Reading the ticket and its comments, Confluence pages, moving the ticket, Bitbucket PRs and Pipelines | **Yes** — `/qatalyst-ticket-start` reads the ticket's issue type from Jira, so the flow can't start without it. Without the Bitbucket tools, ship still pushes and gives you the PR text to paste. |
+| `atlassian-rovo` | Reading the ticket and its comments, Confluence pages, moving the ticket to In Progress | **Yes** — `/qatalyst-ticket-start` reads the ticket's issue type from Jira, so the flow can't start without it. The workflow doesn't use the Bitbucket tools: it never pushes or opens a PR. |
 | `repowise` | Code map, callers, change risk | Optional — needs Repowise installed and the repos indexed first (see [Repowise](#repowise-optional)), and its entry filled in as described below |
 
 Keep the server names as they are: the agents find the tools by them (`atlassian-rovo/*`,
@@ -119,8 +119,7 @@ with the same name, URL or command as in `.mcp.json`.
 **Signing in to Atlassian.** The browser sign-in is the default. If your company uses API tokens
 instead, add `"Authorization": "Basic <base64 of email:api-token>"` as a header in your *own*
 config (VS Code's user MCP settings, Android Studio's `mcp.json`) — never in the repo's `.mcp.json`,
-and never commit it. The Bitbucket tools also need an Atlassian admin to turn them on for your
-site.
+and never commit it.
 
 **If something doesn't connect:**
 - *"requires authorization"* — sign in to Atlassian from the server's entry in the MCP list.
@@ -204,8 +203,8 @@ handing off to another, never by picking it yourself.
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
    not three. When it shows you the draft it also asks whether to write tests for the ticket (default:
    yes). "No tests for this ticket" records `**Tests:** none` in `tasks.md`; the developer then ticks
-   tasks on a green build, the code reviewer doesn't ask for tests, and every PR says no tests were
-   written.
+   tasks on a green build, the code reviewer doesn't ask for tests, and the commit message says no tests
+   were written.
 
    **When there may be no fix to make.** Before drafting, the planner checks three things: the fix is
    already in the code, it is blocked (a platform, permission, store-policy or other limit it can
@@ -213,31 +212,31 @@ handing off to another, never by picking it yourself.
    and its evidence and asks: **Do not produce a fix** or **Go with a fix anyway**. "Do not produce a
    fix" writes `.logs/<ticket ID>/no-fix.md` (git-ignored) and ends there: no branch, no Jira move,
    nothing implemented. "Go with a fix anyway" plans the best fix the finding allows, notes the finding
-   at the top of `tasks.md`'s Open questions, and repeats it in every PR description. Run
+   at the top of `tasks.md`'s Open questions, and repeats it in the commit message. Run
    `/qatalyst-ticket-start <ticket ID>` again later to be asked again.
 3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
    Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
-4. Runs `qatalyst-developer` through every task, then asks whether to ship now, and whether you have
-   an idea for improving the workflow itself; picking "Ship it now" runs the shipping steps below in
+4. Runs `qatalyst-developer` through every task, then asks whether to commit now, and whether you have
+   an idea for improving the workflow itself; picking "Commit it now" runs the commit steps below in
    the same chat. An idea you type is saved to `.logs/<ticket ID>/workflow-ideas.md` (git-ignored, on
    your machine only): pass it on to whoever maintains the workflow repo.
    If a task stops moving (the same failure three times, or a build or test command silent for 10
    minutes), `qatalyst-developer` stops and asks what to do instead of carrying on; the same goes
-   for a stuck build, test or Pipelines run at ship. A run that hangs outright (nothing comes back
+   for a stuck build or test run at the commit step. A run that hangs outright (nothing comes back
    at all) can't announce itself: if the chat shows no progress for a long while, stop it and run
    `/qatalyst-ticket-start <ticket ID>` again, which picks the task up where it was.
 
 **Picking up where it stopped.** If the chat breaks, or you stop at a question, run
 `/qatalyst-ticket-start <ticket ID>` again (in a new chat is fine). It works out where the ticket
 is from `tasks.md` and the ticket branch: an unapproved draft goes back to the approval question,
-a half-done ticket continues from the first unticked task, and a finished one goes to the ship
-question. Nothing is re-planned. If the last chat broke in the middle of a task (or of shipping),
+a half-done ticket continues from the first unticked task, and a finished one goes to the commit
+question. Nothing is re-planned. If the last chat broke in the middle of a task (or of committing),
 it tells you so — which task, when it started, how many files are changed — and asks whether to
 continue that task keeping its changes, restart it with the changes stashed, or stop.
 
-**One flow, no typing.** From the command (or the picker) to the PRs, the ticket runs as one flow.
+**One flow, no typing.** From the command (or the picker) to the local commit, the ticket runs as one flow.
 Wherever it stops for you, it asks a question with options to click — approve the plan, skip log
-analysis for a UI-only bug, ship now — using VS Code's `askQuestions` tool, `ask_questions` in
+analysis for a UI-only bug, commit now — using VS Code's `askQuestions` tool, `ask_questions` in
 Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type is what to change when you ask for changes to
 `tasks.md`. Approving a terminal command (Allow / Allow all) is Copilot's own prompt. The
 `qatalyst-ask-developer` skill holds every question and its options.
@@ -270,12 +269,14 @@ its fix; then what changed, who depends on it across the repos (the blast radius
 and the tests around it. It tells you whether Repowise's index was used for it, and which
 changed files the index had out of date (run `repowise update --working-tree`, then ask for the
 report again). Without Repowise it still writes the report from direct searches and says so. It then
-and the flow asks whether to ship now.
+asks whether to commit now.
 
-### Shipping
+### Committing
 
-Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". If you picked
-"Stop here, I'll ship later", run it on its own with **`/qatalyst-ticket-ship`**.
+Runs as the last step of `/qatalyst-ticket-start` when you pick "Commit it now". If you picked
+"Stop here, I'll commit later", run it on its own with **`/qatalyst-ticket-ship`**. It makes a local
+commit and stops: it never pushes, opens a pull request, reads Pipelines or moves the ticket. You push
+the branch and open the PR yourself.
 
 1. Confirms every task is ticked.
 2. Runs `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
@@ -283,21 +284,22 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
    and the reviewers run again, for up to 3 rounds; after that it asks you what to do. The rounds
    are recorded in the workflow report's "Review rounds" section.
 3. Once the review is done, shows the ticket's token usage (VS Code only; see below) and opens the
-   HTML report. It counts everything up to that point; the push and PR steps are not in it.
+   HTML report. It counts everything up to that point; the build, tests and commit are not in it.
 4. Writes the commit title and message for each repo (the `qatalyst-commit-message` skill) and shows
    them for you to rework: use it, make it shorter, add more detail, or change it with your own
    words. It repeats until you pick "Use this message".
 5. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
    instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
-   test stops the push; skipping tests is allowed, and the PRs then say they weren't run.
-6. Asks once (push and open the PRs, or cancel), commits with the approved message, pushes, opens the
-   Bitbucket PR, waits on Pipelines where it's on, and moves the ticket to In Review.
+   test stops the commit; skipping tests is allowed, and the commit message then says they weren't run.
+6. Asks once (commit, or cancel), then commits in each repo with the approved message, staging only
+   the ticket's files and its spec folder. It tells you the commit and the branch name, and that
+   nothing was pushed.
 
 **Commit message.** The title is `<ticket ID> - <what the change does>` (72 characters or fewer, always
 starting with the ticket ID). The body gives the reason (the root cause for a
 bug), the changes grouped by task, and a line on tests. It is built only from the diff, `tasks.md`
 and `log-analysis.md`, and never holds a log excerpt, a secret or an AI sign-off line. It is saved
-to `.logs/<ticket ID>/commit-message.md` (git-ignored). If you pick "Stop here, I'll ship later" you
+to `.logs/<ticket ID>/commit-message.md` (git-ignored). If you pick "Stop here, I'll commit later" you
 still get the title and message to rework and copy for your own commit, and `/qatalyst-ticket-ship`
 reuses an approved one as long as the files haven't changed since.
 
@@ -332,8 +334,8 @@ Studio or the CLI. Only chats held after this are recorded, so a ticket worked b
 existed reports 0 model calls; start it again to get numbers.
 
 **Seeing a ticket's usage:** `qatalyst-ticket-ship` shows it once the review is done, so the figures
-count the whole ticket up to the commit and push, and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
-shipping to include the review and ship steps), run:
+count the whole ticket up to the commit, and opens the HTML report in your browser. To see it at any other time (mid-ticket, or again after
+the commit to include the build, tests and commit steps), run:
 
 ```bash
 python3 .github/token-tracker/scripts/token_tracker.py report ABC-123 --open

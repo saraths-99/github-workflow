@@ -37,12 +37,8 @@ flowchart TD
     C --> D[Plan: tasks.md —<br/>what, why, approach, steps]
     D --> F[Build it, one task<br/>at a time, with tests]
     F --> G[Review the code]
-    G --> H[Push the code]
-    H --> I{Can we reach<br/>Bitbucket?}
-    I -- yes --> J[Open the PR for you,<br/>wait for CI to pass]
-    I -- no --> K[Hand you the PR text<br/>to paste in yourself]
-    J --> L([Mark ticket In Review])
-    K --> L
+    G --> H[Write the commit message,<br/>build and test]
+    H --> I([Commit locally —<br/>you push and open the PR])
 ```
 
 The Plan box is one agent, one file, one approval: `qatalyst-bug-planner` for a bug ticket (after
@@ -59,13 +55,11 @@ acceptance criterion is the reported scenario itself, so the fix is planned with
 reproduces it; each edge case is tied to the task whose test covers it. The approval also asks whether
 to write tests at all: "No tests for this ticket" sets `**Tests:** none` in `tasks.md`, which
 `qatalyst-developer`, `qatalyst-code-reviewer` and `qatalyst-ticket-ship` all read (no test-writer
-hand-off, no missing-test comments, and a line in each PR saying none were written).
+hand-off, no missing-test comments, and a line in each commit message saying none were written).
 
-That "Can we reach Bitbucket" step is a real, current gap worth naming plainly: opening a PR and checking CI both need
-Bitbucket access through the Atlassian Rovo MCP server, which depends on a scoped API token and an
-admin turning on the Bitbucket tools — nothing this workflow controls. Without it, this workflow
-never blocks on it; it just hands the developer the PR text to paste in by hand instead (see
-`qatalyst-ticket-ship`'s own `SKILL.md`, "If the Bitbucket tools aren't available").
+The flow ends at a local commit. `qatalyst-ticket-ship` never pushes, opens a pull request, reads a
+Pipelines run or moves the ticket; the developer pushes the branch and opens the PR. That keeps the
+Bitbucket side (API token, admin-enabled tools) out of this workflow entirely.
 
 ### Workflow report
 
@@ -77,7 +71,7 @@ files and symbols the ticket changed, their dependents in every repo of the work
 change, and whether each changed file is current in Repowise's index. It tells the developer in chat
 whether the index was used (every lookup, some, or none and why) and names any stale files. Without
 Repowise it still writes the report from direct searches and marks every row as such. `qatalyst-ticket-start` then shows the whole report in chat under its full path, in every IDE, and the
-ship step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
+commit step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
 agent, how the token report went (written, off, no hand-off received, or failed with the reason),
 which hand-off it received, and the Repowise index and commit hook status; anything it wasn't told is
 "not recorded". The token report step therefore runs before the workflow report. The report covers only its own lookups and the
@@ -133,7 +127,7 @@ anywhere, and prompt or code content is never captured.
 `qatalyst-developer` runs `token_tracker.py report <ticket ID>` once every task in
 `tasks.md` is ticked, so the workflow report can record the outcome, and `qatalyst-ticket-ship` runs
 it again with `--open` once the review is done, so the figures shown cover the review fixes too; a developer can run
-it again any time, for example after shipping to include the review and ship steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
+it again any time, for example after the commit to include the build, tests and commit steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
 `token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
 there's a local display) and `token-usage.json` (one row per call under `calls`, plus `totals` and a
 per-agent `byAgent` breakdown). Both come from the same data.
@@ -313,7 +307,7 @@ edits are covered only by Copilot's own approval prompts, so read them before yo
 
 | Server | Used for | Auth |
 |---|---|---|
-| Atlassian Rovo MCP | Jira, Confluence, Bitbucket Cloud | OAuth (Jira/Confluence); Basic auth API token (Bitbucket) |
+| Atlassian Rovo MCP | Jira and Confluence (Bitbucket tools aren't used by the workflow) | OAuth (Jira/Confluence) |
 | Repowise | Code map, risk, dead-code (advisory only) | None — local, optional |
 
 `/qatalyst-ticket-start` checks Repowise at the start of every ticket. If it isn't ready (not
@@ -331,8 +325,8 @@ Atlassian is reached at `https://mcp.atlassian.com/v2/mcp` (the `/v1/sse` endpoi
 
 ## 8. Safety & control principles
 
-- **Developer approves every gate** — each spec file, every task, and the commit/push/PR step all
-  wait for an explicit yes.
+- **Developer approves every gate** — each spec file, every task, and the commit step all
+  wait for an explicit yes. Nothing is pushed and no PR is opened by the workflow.
 - **Spec before code** — no ticket branch exists until `tasks.md` is approved; `qatalyst-developer`
   can't start a task the spec doesn't list.
 - **Context docs are read, not guessed** — `project-context.md`/`architecture.md` are drafted once
@@ -361,7 +355,7 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
    nothing requires a screen to handle or test a failure/loading/empty state.
 3. **Stuck runs are only caught by the agent's own count** — `qatalyst-developer` stops and asks
    after 3 failed attempts at the same failure, or a build/test command silent for 10 minutes
-   (and `qatalyst-ticket-ship` does the same for its build, tests and Pipelines wait), but that
+   (and `qatalyst-ticket-ship` does the same for its build and tests), but that
    relies on the agent noticing. A run that hangs outright (model or tool never returns) can't
    report itself, and no timer or hook exists to do it; the developer's recovery is to stop the
    chat and run `/qatalyst-ticket-start` again. `qatalyst-test-writer` has no cap of its own.
@@ -376,7 +370,7 @@ Found by audit, not yet closed — listed here so they stay visible rather than 
 9. **Plan-only test categories have no execution gate** — `qatalyst-interop-test-writer`, `qatalyst-ota-test-writer`,
     `qatalyst-performance-test-writer`, and `qatalyst-chaos-test-writer` only guarantee a plan file exists and is
     current; nothing in this workflow checks that a human actually ran it against real hardware
-    before the ticket ships, or records the result anywhere `qatalyst-ticket-ship` can see.
+    before the ticket is committed, or records the result anywhere `qatalyst-ticket-ship` can see.
 10. **No guard on commands or secrets** — with the hooks gone, nothing mechanical stops an agent
     from running `git push --force`, reading a keystore or the raw logs, or posting a token in a
     Jira or PR comment; only the written rules and Copilot's own approval prompts stand in the way.
@@ -452,9 +446,7 @@ versus a convention this workflow invented for itself.
     │   ├── qatalyst-commit-message/SKILL.md           cross-cutting
     │   ├── qatalyst-write-tests/SKILL.md
     │   ├── qatalyst-ticket-start/SKILL.md
-    │   └── qatalyst-ticket-ship/
-    │       ├── SKILL.md
-    │       └── pipelines-detection.md
+    │   └── qatalyst-ticket-ship/SKILL.md              review, token report, commit message, build/tests, local commit
     ├── prompts/
     │   ├── log-analyser.prompt.md
     │   ├── qatalyst-new-feature.prompt.md
@@ -492,7 +484,7 @@ specs/<bug|feature>/<ticket-id>/
 ├── trimmed.log           redacted + windowed — what qatalyst-log-analyser actually reads
 ├── digest.md             error groups with counts and first/last times
 ├── workflow-report.md    written when every task is ticked: analysis passes (bugs), what changed, who depends on it, risk, and whether Repowise's index was used
-└── in-progress.json      only while a task or the ship step runs; still there on resume = the last chat broke midway
+└── in-progress.json      only while a task or the commit step runs; still there on resume = the last chat broke midway
 
 .logs/token-tracker/
 ├── markers.jsonl         one line per `token_tracker.py mark` — ticket ID + time

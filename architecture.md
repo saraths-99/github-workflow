@@ -11,7 +11,7 @@
 | `android_otau` | `otau_common_sdk`, `darwin-sdk`, `ti_otau_sdk`, `nordic_otau_sdk`, `mcumgr_core_sdk`, `sampleapp` | Vendor firmware-update SDKs and the common OTA contracts |
 
 (`repository_sdk_android/settings.gradle`, `android_gdo_sdk/settings.gradle`,
-`android_otau/settings.gradle`.) **TBD:** which repository the spec folder ships in —
+`android_otau/settings.gradle`.) **TBD:** which repository the spec folder is committed in —
 `qatalyst-ticket-ship` needs it for a ticket that touches more than one repository.
 
 ## Layers

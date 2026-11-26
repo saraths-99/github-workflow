@@ -1,18 +1,18 @@
 ---
 mode: agent
 model: ['Claude Sonnet 5.5 (copilot)']
-description: Ship a finished ticket — review, build, one PR per repo in merge order. Usage: /qatalyst-ticket-ship
+description: Finish a ticket with a local commit — review, token report, commit message, build and tests, then commit. Never pushes or opens a PR. Usage: /qatalyst-ticket-ship
 ---
 
 Run the `qatalyst-ticket-ship` skill:
 
 1. Confirm every `tasks.md` task is ticked.
 2. Run `qatalyst-code-reviewer` (and `qatalyst-security-reviewer`/`qatalyst-error-handling-reviewer`
-   if flagged) and the local
-   build/tests.
-3. Show the planned PRs and merge order, and ask once before pushing anything: push and open the
-   PRs, or cancel.
-4. On confirmation, push and open one cross-linked PR per repo, in merge order.
-5. Check each repo's Pipelines run where Pipelines is on; note it in the PR description where it's
-   off.
-6. Move the ticket to In Review once every repo's gate clears.
+   if flagged), fixing what they find for up to 3 rounds.
+3. Show the token report where tracking is on.
+4. Settle the commit title and message with the developer (use it, shorter, more detail, or change
+   it).
+5. Run the local build and the tests the developer picks.
+6. Ask once before committing: commit, or cancel.
+7. On confirmation, commit the ticket's files in each repo with the approved message. Nothing is
+   pushed, no PR is opened and the ticket isn't moved.

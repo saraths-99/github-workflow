@@ -4,7 +4,7 @@ description: >
   Conversational entry point for starting a ticket — offers the developer's
   open tickets to pick from if no ID was given, then runs the same
   qatalyst-ticket-start flow /qatalyst-ticket-start does, from detecting bug vs.
-  feature through planning, implementation and shipping, with every stop a
+  feature through planning, implementation and a local commit, with every stop a
   question with options.
 tools: ['read', 'edit', 'search', 'execute', 'executeRead', 'executeWrite', 'discover', 'agent', 'atlassian-rovo/*', 'vscode/askQuestions', 'ask_questions', 'ask_user', 'read_file', 'list_dir', 'get_errors', 'grep_search', 'file_search', 'semantic_search', 'insert_edit_into_file', 'run_in_terminal', 'get_terminal_output']
 model: ['Claude Sonnet 5.5 (copilot)']
@@ -21,7 +21,7 @@ The agent-picker entry point for starting a ticket, as an alternative to typing
 only to let a developer start a ticket by selecting an agent instead of remembering a slash command;
 it has no procedure of its own beyond asking for what `qatalyst-ticket-start` needs. It needs
 `execute` for the steps `qatalyst-ticket-start` runs itself: the token-tracking mark, creating the
-ticket branch, and pushing at ship time.
+ticket branch, and committing at the end.
 
 ## Hard scope rules
 
