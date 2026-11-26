@@ -276,8 +276,19 @@ Runs as the last step of `/qatalyst-ticket-start` when you pick "Ship it now". I
 3. Builds locally, then asks which tests to run: unit tests (the default), all tests including the
    instrumented ones (needs an emulator or device), only this ticket's tests, or none. A failing
    test stops the push; skipping tests is allowed, and the PRs then say they weren't run.
-4. Asks once (push and open the PRs, or cancel), then commits, pushes, opens the Bitbucket PR,
-   waits on Pipelines where it's on, and moves the ticket to In Review.
+4. Writes the commit title and message for each repo (the `qatalyst-commit-message` skill) and shows
+   them for you to rework: use it, make it shorter, add more detail, or change it with your own
+   words. It repeats until you pick "Use this message". Then it asks once (push and open the PRs, or
+   cancel), commits with that message, pushes, opens the Bitbucket PR, waits on Pipelines where it's
+   on, and moves the ticket to In Review.
+
+**Commit message.** The title is `<ticket ID> - <what the change does>` (72 characters or fewer, always
+starting with the ticket ID). The body gives the reason (the root cause for a
+bug), the changes grouped by task, and a line on tests. It is built only from the diff, `tasks.md`
+and `log-analysis.md`, and never holds a log excerpt, a secret or an AI sign-off line. It is saved
+to `.logs/<ticket ID>/commit-message.md` (git-ignored). If you pick "Stop here, I'll ship later" you
+still get the title and message to rework and copy for your own commit, and `/qatalyst-ticket-ship`
+reuses an approved one as long as the files haven't changed since.
 
 ### Token usage per ticket (Beta — works in VS Code)
 

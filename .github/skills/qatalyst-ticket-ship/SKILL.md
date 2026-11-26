@@ -3,7 +3,7 @@ name: qatalyst-ticket-ship
 description: >
   /qatalyst-ticket-ship. Checks every task is ticked, runs code-reviewer and
   security-reviewer/error-handling-reviewer where flagged, plus the local
-  build and tests, then asks once and commits, pushes, and opens one
+  build and tests, then settles the commit message with the developer, asks once and commits, pushes, and opens one
   cross-linked Bitbucket PR per repo touched, in merge order. Checks each
   repo's Pipelines run where Pipelines is on, and moves the ticket to In
   Review once every repo's gate clears.
@@ -58,13 +58,19 @@ treat every step below as per-repo unless it says otherwise.
    Where a module's build ignores test failures (see `testing.instructions.md`), read its test
    report instead of trusting the exit code. Plan-only tests (interop, OTA, performance, chaos) have
    no Gradle task; they aren't part of this choice. If tests fail, show which and stop; don't push.
-4. **Ask the developer once**, showing: the planned PRs and their merge order (which repo depends on
+4. **Settle the commit message, then ask the developer once.** First run the `qatalyst-commit-message`
+   skill: it writes each repo's commit title and message from the final diff, shows them, and lets the
+   developer rework them (shorter, more detail, or their own wording) until they pick "Use this
+   message". A message approved earlier by `qatalyst-ticket-start`'s "ship later" path is reused if
+   that repo's files haven't changed since. Then ask once, showing: the approved commit title in
+   each repo, the planned PRs and their merge order (which repo depends on
    which), the files that will be pushed in each, each PR's title and description, and the workflow
    report's summary (the analysis passes, the blast radius) and its "Repowise:" line from
    `.logs/<ticket ID>/workflow-report.md`, giving its full path (if that file isn't there, say so). Ask with
    options, per `qatalyst-ask-developer`: push and open the PRs, or cancel. Do nothing in steps 5–7
    until they pick "push".
-5. On confirmation, commit, push the ticket branch (`bug/<ticket ID>-<slug>` or `feature/<ticket ID>-<slug>`, as
+5. On confirmation, commit with the approved message from `.logs/<ticket ID>/commit-message.md` (never a
+   different one), push the ticket branch (`bug/<ticket ID>-<slug>` or `feature/<ticket ID>-<slug>`, as
    `qatalyst-ticket-start` named it) in each repo, and open one
    cross-linked Bitbucket PR per repo, in merge order. When continuing a ship that a broken chat
    left partway, check each repo first and skip the push or PR it already has. The spec folder
@@ -84,7 +90,8 @@ paste into Bitbucket by hand — don't block the whole ship step on one missing 
 ## Rules
 
 - Never push or open any PR before the single confirmation in step 4 — one confirmation covers every
-  repo, not one ask per repo.
+  repo, not one ask per repo. The commit message is settled before it, with its own question.
+- Never commit with a message the developer hasn't approved.
 - Never report a repo's Pipelines check as passing without actually reading that repo's run (Rovo
   MCP's pipeline-runs tool for that PR's source commit, falling back to the REST
   `pullrequests/{id}/statuses` endpoint).

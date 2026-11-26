@@ -11,7 +11,7 @@ model: ['Claude Opus 5.5 (copilot)', 'Claude Sonnet 5.5 (copilot)']
 target: github-copilot
 user-invocable: true
 x-github-copilot-invoke-policy: ["user"]
-skills: ['qatalyst-ticket-start', 'qatalyst-ticket-ship', 'qatalyst-ask-developer']
+skills: ['qatalyst-ticket-start', 'qatalyst-ticket-ship', 'qatalyst-commit-message', 'qatalyst-ask-developer']
 ---
 
 # qatalyst-ticket

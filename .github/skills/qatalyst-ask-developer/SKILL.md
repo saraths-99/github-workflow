@@ -59,6 +59,7 @@ and runs you again with the answer.
 | `qatalyst-developer` is stuck on a task (say which task, what it was doing, what failed and how many times, or which command has gone quiet and for how long) | Try again, a different approach · I'll look at it, then continue the task · Restart task N (stash its changes first) · Stop here |
 | A build, test run or Pipelines run is stuck at ship (say which, and for how long it has been quiet) | Keep waiting · I'll look at it, then continue shipping · Stop here |
 | Which tests to run before pushing (ship step 3, after the build) | Unit tests in every module touched (recommended) · All tests: unit, then instrumented (needs an emulator or device) · Only this ticket's tests · Skip tests (build only; the PRs say tests weren't run) |
+| The commit title and message are shown (at ship, and when the developer stops to ship later) | Use this message · Make it shorter · Add more detail · Change it (**needs text**: what to change) |
 | Push and open the PRs | Push and open the PRs · Cancel |
 
 Approving a terminal command or tool call (Allow / Allow all) is Copilot's own prompt, not a

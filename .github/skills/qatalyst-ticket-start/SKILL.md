@@ -247,7 +247,7 @@ on their machine, so it needs passing to whoever maintains this workflow repo. D
 yourself, change any workflow file because of it, or send it anywhere. On "No idea", say nothing and
 create no file. Then the ship answer: on "ship it now", write `.logs/<ticket ID>/in-progress.json` as
 `{"step": "ship", "startedAt": "<UTC time>"}`, run the `qatalyst-ticket-ship` skill (which asks its
-own questions before pushing), and delete the file when it finishes or is cancelled. On "stop here", say that `/qatalyst-ticket-ship` picks it up later.
+own questions before pushing), and delete the file when it finishes or is cancelled. On "stop here", run the `qatalyst-commit-message` skill so they still leave with a commit title and message they can rework and use themselves, then say that `/qatalyst-ticket-ship` picks it up later and reuses an approved message.
 Resuming at "every task ticked" goes to the ship question alone: the idea question was asked when the
 tasks finished.
 

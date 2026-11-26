@@ -10,6 +10,21 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
+## [0.6.0] - 2026-11-26
+
+### Added
+- `qatalyst-commit-message` skill: writes each repo's commit title and message from the diff,
+  `tasks.md` and, for a bug, `log-analysis.md`. The title is `<ticket ID> - <imperative summary>`
+  (72 characters or fewer, always starting with the ticket ID); the body gives the
+  reason, the changes grouped by task and a line on tests, with no log lines, secrets or AI
+  sign-off trailer. It is shown with options to rework: use it · make it shorter · add more detail ·
+  change it (typed). It repeats until the developer picks "Use this message", and saves the result
+  to `.logs/<ticket ID>/commit-message.md`.
+- `qatalyst-ticket-ship` runs it before the push confirmation and commits with the approved message
+  only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll ship later",
+  so they still get a title and message to rework and use; a later `/qatalyst-ticket-ship` reuses an
+  approved message while the repo's changed files are the same.
+
 ## [0.5.2] - 2026-11-26
 
 ### Changed
