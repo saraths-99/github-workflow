@@ -39,7 +39,7 @@ class SetModels(unittest.TestCase):
         return subprocess.run([sys.executable, str(SCRIPT), provider, str(self.app)], capture_output=True, text=True)
 
     def test_tiers_match_across_providers(self):
-        self.assertEqual({k: set(v) for k, v in TABLE.items()}, {k: {"deep", "standard", "fast"} for k in TABLE})
+        self.assertEqual({k: set(v) for k, v in TABLE.items()}, {k: {"deep", "standard", "fast", "judge", "judge-fallback"} for k in TABLE})
 
     def test_tier_lists_are_distinct_so_a_line_names_one_tier(self):
         for provider, tiers in TABLE.items():
@@ -55,6 +55,22 @@ class SetModels(unittest.TestCase):
 
     def test_developer_runs_on_the_deep_tier(self):
         self.assertEqual(lines(self.app)["qatalyst-developer.agent.md"], render(TABLE["claude"]["deep"]))
+
+    def test_fix_approver_runs_on_the_judge_tier_on_a_different_vendor(self):
+        judge = render(TABLE["claude"]["judge"])
+        self.assertEqual(lines(self.app)["qatalyst-fix-approver.agent.md"], judge)
+        self.assertIn("GPT-5.3-Codex", judge)
+        self.assertNotIn("Claude", judge)
+
+    def test_fallback_approver_is_a_cheaper_gpt_model_on_its_own_tier(self):
+        fb = render(TABLE["claude"]["judge-fallback"])
+        self.assertEqual(lines(self.app)["qatalyst-fix-approver-fallback.agent.md"], fb)
+        self.assertNotEqual(fb, render(TABLE["claude"]["judge"]))
+        self.assertIn("GPT-6.1 Terra", fb)
+
+    def test_gpt_install_keeps_the_judge_model(self):
+        self.run_script("gpt")
+        self.assertEqual(lines(self.app)["qatalyst-fix-approver.agent.md"], render(TABLE["gpt"]["judge"]))
 
     def test_no_claude_list_names_opus(self):
         self.assertNotIn("Opus", json.dumps(TABLE["claude"]))

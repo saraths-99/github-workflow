@@ -43,7 +43,8 @@ and runs you again with the answer.
 | Bug ticket has no log attachment | UI-only issue — skip log analysis · I've attached it now — check again · Stop, I'll attach it later |
 | Bug ticket has a log but no issue time | I'll give the time (**needs text**: `HH:MM:SS`, plus the date if the log spans days) · Use the whole log, no time window · Stop, I'll add the time to the ticket |
 | Raw log isn't in `.logs/<ticket ID>/raw/` and the download from the ticket couldn't run or failed (say why, and the exact folder and file name to save it as) | I've saved it there — continue · Skip log analysis |
-| Review comments still open after 3 rounds (show them, with the reviewer and file) | I'll fix it by hand, then check again · Commit anyway, comments open · Cancel |
+| Review comments or approver findings still open after 3 rounds (show them, with the reviewer and file) | I'll fix it by hand, then check again · Commit anyway, not approved · Cancel |
+| Neither `qatalyst-fix-approver` nor `qatalyst-fix-approver-fallback` could give an independent verdict (say why for each: model not available, refused as costlier than the chat's, or it ran on the same model family as the developer) | Continue without independent approval · Stop here |
 | Digest has no warnings or errors (the window has lines, but nothing to analyse) | Widen the time window · Use the whole log · The log shows nothing for this issue — report it as inconclusive · Wrong attachment — stop |
 | Trimmed log came out nearly empty | Widen the time window · Use the whole log · Wrong attachment — stop |
 | `log-analysis.md` has two candidate root causes | Fix cause A (name it) · Fix cause B (name it) · Fix both |

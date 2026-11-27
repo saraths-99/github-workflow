@@ -81,5 +81,6 @@ question comes first, and this one only if an attachment then turns up.
 Give `qatalyst-log-analyser` exactly: the pinned issue time (and whether it came from the ticket or
 the developer), or "no time window, by developer choice", or "blocked on a missing issue time", the
 attachment's file type, name and attachment id — or, if none exists, which of the two outcomes above the developer
-chose — and any other ticket detail you judged relevant (a stated device/lock model, a repro step)
+chose — the ticket's platform scope from `qatalyst-jira-ticket-intake` (Android only, with where the
+ticket says so · also on iOS · not stated) — and any other ticket detail you judged relevant (a stated device/lock model, a repro step)
 in a short note. Then stop — you don't extract, trim, digest, or write anything.

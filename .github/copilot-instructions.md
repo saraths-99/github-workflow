@@ -15,6 +15,7 @@ whatever started it.
 | Deep | Sonnet 5.5 | GPT-5.6 Sol, else GPT-6.1 Sol | the ticket chat itself (`/qatalyst-ticket-start`, `/log-analyser`, `/qatalyst-ticket-ship` and the `qatalyst-ticket` agent switch the chat to it), and with it log analysis, planning, implementation (`qatalyst-developer`) and the code reviewer. The approval gates and ticket-type detection run here and assume strong instruction-following; a weaker model is more likely to skip a gate or misclassify a ticket. |
 | Standard | Sonnet 5.5, else Sonnet 5 | GPT-6.1 Sol | error-handling and security review |
 | Fast | Haiku 5.5, else Haiku 4.5 | GPT-6 Luna, else GPT-5.6 Luna | log-ticket intake and every test writer, the router included |
+| Judge | GPT-5.3-Codex | GPT-5.3-Codex | the independent fix approver (`qatalyst-fix-approver`), run once before a ticket is committed; if VS Code refuses it as costlier than the chat's model, `qatalyst-fix-approver-fallback` (Judge fallback, GPT-6.1 Terra, cheaper than Sonnet 5.5 both ways) runs the same check instead. It is on a different vendor from the Claude set on purpose, so it isn't the model family that wrote the fix; with a GPT install it is still a different model from the developer's. |
 
 A sub-agent can't run on a model that costs more than the chat that started it, so don't switch the
 chat to a cheaper model partway through a ticket. Where an IDE ignores `model:`, pick the deep-tier

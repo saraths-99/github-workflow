@@ -36,14 +36,29 @@ otherwise.
       under "what was wrong before", and tell it to fix only those, with the tests the fix needs, and
       to add no other scope. It keeps to `tasks.md` and its own scope rules.
    3. When it reports the fix, run the same reviewers again on the new diff, in every repo touched.
-   4. Pass with no open comments: go on to step 3. Otherwise start the next round.
-   After round 3 with comments still open, stop. Show the open comments and ask (see
-   `qatalyst-ask-developer`): I'll fix it by hand, then check again · Commit anyway, comments open
-   (the commit message says so) · Cancel. Never commit with open comments unless they pick "commit
-   anyway".
+   4. Pass with no open comments: run the independent approval below. Otherwise start the next round.
+   **Independent approval.** Once every reviewer passes, run `qatalyst-fix-approver` once, on its own
+   model (GPT-5.3-Codex), in every repo touched. If it can't start because VS Code refuses its model
+   as costlier than the chat's (or the model isn't available), run `qatalyst-fix-approver-fallback`
+   instead, the same check on the cheaper GPT-6.1 Terra, and say in one line that it did. Check the
+   `Model:` line of whichever answered: if it names a Claude model or the chat's own model (an agent
+   whose model isn't in the picker silently runs on its starter's), that is not an independent
+   check, so treat it as one that couldn't start. Give it each repo's unified diff and the paths of
+   `tasks.md`, `log-analysis.md` and `.logs/<ticket ID>/workflow-report.md`; give it nothing from the
+   developer's chat. `Verdict: APPROVED` goes on to step 3. `Verdict: NOT APPROVED` is a round like any
+   other, in the same count of 3: its numbered findings are the comments, `qatalyst-developer` fixes
+   them, and then the reviewers and the approver run again on the new diff. If neither approver can
+   give an independent verdict, say so and ask (see `qatalyst-ask-developer`): Continue without
+   independent approval (the commit message says so) · Stop here. Never treat a missing verdict as an approval.
+   After round 3 with comments or findings still open, stop. Show them and ask (see
+   `qatalyst-ask-developer`): I'll fix it by hand, then check again · Commit anyway, not approved
+   (the commit message says so) · Cancel. Never commit with open comments or without the approver's
+   APPROVED unless they pick "commit anyway" or "continue without independent approval".
    When the loop ends, add a "Review rounds" section to `.logs/<ticket ID>/workflow-report.md`, one line
    per round: the reviewer, the comments, and whether the fix cleared them, and how it ended (passed in
-   round N, or open after 3). If that file isn't there, say so and give the same lines in chat.
+   round N, or open after 3), and an "Independent approval" section: the verdict, the model that gave it
+   (and that the fallback ran, if it did), and the
+   findings and how each was cleared, or why it didn't run. If that file isn't there, say so and give the same lines in chat.
 3. **Show the token report**, now that the review is done and the diff is final. Only in VS Code,
    when the ticket was marked (you were told "Token tracking: on", or `.logs/token-tracker/markers.jsonl`
    has a line for this ticket), run
@@ -76,7 +91,7 @@ otherwise.
    Where a module's build ignores test failures (see `testing.instructions.md`), read its test
    report instead of trusting the exit code. Plan-only tests (interop, OTA, performance, chaos) have
    no Gradle task; they aren't part of this choice. If tests fail, show which and stop; don't commit.
-6. **Ask the developer once**, showing: the approved commit title in each repo, the files that will
+6. **Ask the developer once**, showing: the independent approval's verdict and the model that gave it, the approved commit title in each repo, the files that will
    be committed in each, and the workflow report's summary (the analysis passes, the blast radius)
    and its "Repowise:" line from `.logs/<ticket ID>/workflow-report.md`, giving its full path (if that
    file isn't there, say so). Ask with options, per `qatalyst-ask-developer`: commit, or cancel. Do
@@ -111,7 +126,12 @@ otherwise.
 
    When continuing a commit that a broken chat left partway, check each repo first and skip the one
    whose latest commit already has the approved title.
-8. Say what was done and what wasn't: the commit's short hash and title in each repo, that **nothing
+8. Only in VS Code, when the ticket was marked for token tracking (as in step 3), run
+   `python3 .github/token-tracker/scripts/token_tracker.py report <ticket ID> --final` (no `--open`):
+   it stamps the ticket's end time and rewrites `token-usage.json` so it also holds the build, test and
+   commit calls. Say its path and the total cost it prints in one line. If it fails, say so in one line
+   and carry on.
+9. Say what was done and what wasn't: the commit's short hash and title in each repo, that **nothing
    was pushed, no pull request was opened and the ticket wasn't moved**, the branch name in each
    repo for the developer to push and open the pull request themselves, and that `isLocalBuild` was
    `false` in what was committed and is back to `true` in the working copy of any repo where it was

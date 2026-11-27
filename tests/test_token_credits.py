@@ -128,6 +128,15 @@ class Convert(unittest.TestCase):
             ticket, calls = tc.read_usage(p)
             self.assertEqual((ticket, calls[0]["input"]), ("ABC-2", 500000))
 
+    def test_reads_the_current_json_shape_and_rebuilds_the_total_input(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "token-usage.json"
+            p.write_text(json.dumps({"ticketId": "ABC-3", "steps": [{"stepName": "x", "totalCost": 0.0, "calls": [
+                {"agentName": "a", "model": "m", "timestamp": "t", "inputTokens": 100, "cachedInputTokens": 700,
+                 "cacheWriteTokens": 200, "outputTokens": 5, "totalCost": 0.01}]}]}))
+            ticket, calls = tc.read_usage(p)
+            self.assertEqual((ticket, calls[0]["input"], calls[0]["output"]), ("ABC-3", 1000, 5))
+
     def test_html_without_the_call_table_is_an_error(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "x.html"

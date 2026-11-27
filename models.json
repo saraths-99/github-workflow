@@ -3,18 +3,24 @@
   "tiers": {
     "deep": "the ticket chat, log analysis, planning, implementation and the code reviewer",
     "standard": "error-handling and security review",
-    "fast": "log-ticket intake and every test writer, the router included"
+    "fast": "log-ticket intake and every test writer, the router included",
+    "judge": "the independent fix approver, on a model from a different vendor than the one that writes the code",
+    "judge-fallback": "the same approver on a cheaper GPT model, used only when the judge model is refused as costlier than the chat's"
   },
   "providers": {
     "claude": {
       "deep": ["Claude Sonnet 5.5"],
       "standard": ["Claude Sonnet 5.5", "Claude Sonnet 5"],
-      "fast": ["Claude Haiku 5.5", "Claude Haiku 4.5"]
+      "fast": ["Claude Haiku 5.5", "Claude Haiku 4.5"],
+      "judge": ["GPT-5.3-Codex"],
+      "judge-fallback": ["GPT-6.1 Terra"]
     },
     "gpt": {
       "deep": ["GPT-5.6 Sol", "GPT-6.1 Sol"],
       "standard": ["GPT-6.1 Sol"],
-      "fast": ["GPT-6 Luna", "GPT-5.6 Luna"]
+      "fast": ["GPT-6 Luna", "GPT-5.6 Luna"],
+      "judge": ["GPT-5.3-Codex"],
+      "judge-fallback": ["GPT-6.1 Terra"]
     }
   }
 }

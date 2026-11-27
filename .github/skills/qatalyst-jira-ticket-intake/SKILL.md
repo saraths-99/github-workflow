@@ -24,10 +24,19 @@ Used by `qatalyst-bug-planner`, `qatalyst-feature-planner` (via `qatalyst-plan-t
    compact view leaves attachments out, so without it a ticket with a log attached looks like it has
    none. Note each attachment's numeric `id`, `filename`, `size` and `mimeType`; the id is what
    `downloadJiraIssueAttachment` needs, and it is not the media UUID inside a comment's body.
-4. Note any linked Confluence pages for the caller to fetch separately, and any Figma links as links only (no Figma server is configured).
+4. **Note the platform scope.** Look in the description and every comment for what QA or the reporter
+   says about iOS, usually a line such as "iOS Behaviour: Issue is not observed in iOS", "works on
+   iOS" or "not reproducible on iOS". Report one of:
+   - **Android only** — the ticket says the issue is not seen on iOS. Name where it says so (the
+     description, or which comment) and quote the words.
+   - **Also on iOS** — the ticket says it is seen on iOS too.
+   - **Not stated** — it says nothing clear about iOS. Never infer a scope from silence, from the
+     ticket title, or from a developer's guess. If the ticket contradicts itself, say so and report
+     "Not stated".
+5. Note any linked Confluence pages for the caller to fetch separately, and any Figma links as links only (no Figma server is configured).
 
 ## Done means
 
-The caller has the ticket's project key, issue type, full text and attachment list — without re-reading the ticket
+The caller has the ticket's project key, issue type, platform scope, full text and attachment list — without re-reading the ticket
 a second time later in its own flow. `qatalyst-log-ticket-intake` pins an issue time on top of this as its
 own next step; that's not part of this skill.

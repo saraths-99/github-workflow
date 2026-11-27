@@ -246,9 +246,11 @@ def read_usage(path):
     text = Path(path).read_text(encoding="utf-8")
     if Path(path).suffix.lower() == ".json":
         data = json.loads(text)
+        # The current shape has steps[].calls[] with the input split three ways; the older one has calls[].
+        raw = [c for st in data["steps"] for c in st["calls"]] if "steps" in data else data.get("calls", [])
         calls = [{"time": c.get("timestamp", ""), "agent": c.get("agentName", "unknown"), "model": c.get("model", "unknown"),
-                  "input": int(c.get("inputTokens") or 0), "output": int(c.get("outputTokens") or 0)}
-                 for c in data.get("calls", [])]
+                  "input": int(c.get("inputTokens") or 0) + int(c.get("cachedInputTokens") or 0) + int(c.get("cacheWriteTokens") or 0),
+                  "output": int(c.get("outputTokens") or 0)} for c in raw]
         return data.get("ticketId", ""), calls
     parser = _Tables()
     parser.feed(text)

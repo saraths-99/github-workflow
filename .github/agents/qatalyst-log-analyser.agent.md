@@ -43,6 +43,18 @@ straight into `tasks.md`.
   folder choice: `qatalyst-spec-folder-resolution` computes the path deterministically, so there's nothing to
   list or ask about.
 
+## When the ticket says it isn't seen on iOS
+
+If `qatalyst-log-ticket-intake` reports the platform scope as **Android only**, the same lock
+firmware and the same cloud serve iOS and it works there, so a firmware or cloud cause is unlikely
+and the difference sits in the Android app or in how Android behaves. Rank causes in the app and SDK
+code and in Android platform behaviour (BLE stack, permissions, lifecycle, threading, OEM
+differences). The suggested fix must be a change in the Android app repos, including a workaround
+for an Android platform quirk. Never suggest a firmware or cloud/backend change as the fix, even
+when one is possible; if the logs do show something odd on the firmware or cloud side, note it in
+the report under "Seen outside the app, not pursued" with the evidence, and keep it out of the root
+cause and the suggested fix. For "also on iOS" or "not stated", rank every layer as usual.
+
 ## The loop
 
 Follow these steps in order, re-running from Refine as needed, up to five passes total. **Keep a
@@ -120,7 +132,8 @@ cause went from medium to high"). `log-analysis.md` records the count.
    passes, the evidence still doesn't support a single ranked cause, say so plainly in the report
    instead of forcing a best guess — an honest "inconclusive, here's what's missing" is better input
    to Planning than a root cause the logs don't actually support.
-9. **Report** — write `specs/bug/<ticket ID>/log-analysis.md`: the chain from cause to effects,
+9. **Report** — write `specs/bug/<ticket ID>/log-analysis.md`: start with a "Platform scope" line (as
+   `qatalyst-log-ticket-intake` reported it, with the ticket's words when it is Android only), then the chain from cause to effects,
    noise excluded, suspect classes, and anything still unexplained. End it with an **Analysis passes**
    section: how many of the 5 allowed passes it took, one line per pass as noted above, and how it
    ended: one clear cause · two close candidates · inconclusive at the cap. Say why each extra pass

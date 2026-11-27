@@ -41,6 +41,12 @@ flowchart TD
     H --> I([Commit locally —<br/>you push and open the PR])
 ```
 
+A ticket whose QA note says the issue is not observed on iOS is treated as Android only:
+`qatalyst-jira-ticket-intake` reports the platform scope, `qatalyst-log-analyser` ranks causes in the
+app and platform and suggests only an app fix, and `qatalyst-plan-ticket` plans no firmware or
+cloud/backend change (those stay in the report's related areas as "not a fix target"). An unclear or
+contradictory ticket is "not stated" and nothing changes.
+
 The Plan box is one agent, one file, one approval: `qatalyst-bug-planner` for a bug ticket (after
 the
 log-analysis loop), `qatalyst-feature-planner` otherwise. Earlier versions of this workflow split
@@ -68,7 +74,10 @@ report" steps and writes `.logs/<ticket ID>/workflow-report.md`. For a bug it st
 the 5 allowed analysis passes it took to reach a confident fix (copied from `log-analysis.md`'s
 "Analysis passes" section, one line per pass and how it ended). It then covers the blast radius: the
 files and symbols the ticket changed, their dependents in every repo of the workspace, the change risk, the tests around the
-change, and whether each changed file is current in Repowise's index. It tells the developer in chat
+change, and whether each changed file is current in Repowise's index. A "Related areas that could affect the fix" section lists
+what sits outside the changed code (lock firmware and the model numbers that reach it, the other BLE stack, the backend, the
+platform, third-party and sibling modules), each with evidence and a check, and never states firmware or backend behaviour
+the code, docs, ticket or log don't support. It tells the developer in chat
 whether the index was used (every lookup, some, or none and why) and names any stale files. Without
 Repowise it still writes the report from direct searches and marks every row as such. `qatalyst-ticket-start` then shows the whole report in chat under its full path, in every IDE, and the
 commit step shows the summary in its confirmation. A "Workflow checks" section records, self-reported by the
@@ -129,8 +138,15 @@ anywhere, and prompt or code content is never captured.
 it again with `--open` once the review is done, so the figures shown cover the review fixes too; a developer can run
 it again any time, for example after the commit to include the build, tests and commit steps. Output goes to `.logs/token-tracker/<ticket ID>/`:
 `token-usage.html` (a self-contained page with no scripts, opened in the browser by `--open` where
-there's a local display) and `token-usage.json` (one row per call under `calls`, plus `totals` and a
-per-agent `byAgent` breakdown). Both come from the same data.
+there's a local display) and `token-usage.json` (ticket, executor and total cost, then `steps` by agent, each with its
+calls: fresh, cached and cache-write input tokens, output tokens and cost). Both come from the same data.
+Copilot's trace carries three things per call that the tracker now reads: `gen_ai.usage.cache_read.input_tokens`,
+`gen_ai.usage.cache_creation.input_tokens` and `copilot_chat.copilot_usage_nano_aiu`, its own cost in billionths of
+an AI credit (1 credit = $0.01). The recorded input includes the cache read and write tokens (checked on real
+calls), so `inputTokens` in the JSON is input minus those two. The cost is Copilot's figure, which reproduces the
+price sheet exactly for Claude and Codex calls; calls with none fall back to a price sheet when one is given
+(input beyond the cache reads is billed at the sheet's Cache write rate for OpenAI models that report no
+explicit write, and GPT-6 Luna was billed 10% under the sheet, so the fallback is an estimate).
 
 ## 3. Log-analysis loop (bug tickets only)
 
@@ -196,6 +212,8 @@ it.
 | Deep | Sonnet 5.5 | GPT-5.6 Sol → GPT-6.1 Sol | Set by `qatalyst-ticket` and the `/qatalyst-ticket-start`, `/log-analyser` and `/qatalyst-ticket-ship` prompts; pinned on `qatalyst-log-analyser`, `qatalyst-code-reviewer` and `qatalyst-developer`. Unpinned, so they run on the chat's model: `qatalyst-bug-planner`, `qatalyst-feature-planner` |
 | Standard | Sonnet 5.5 → Sonnet 5 | GPT-6.1 Sol | `qatalyst-error-handling-reviewer`, `qatalyst-security-reviewer`; also the `/qatalyst-new-*` and `/qatalyst-room-migration` prompts |
 | Fast | Haiku 5.5 → Haiku 4.5 | GPT-6 Luna → GPT-5.6 Luna | `qatalyst-log-ticket-intake` and every test writer: the router (`qatalyst-test-writer`) and the unit, BLE-protocol, androidTest, compatibility, security, interop, OTA, performance and chaos writers; also the `/qatalyst-write-tests` prompt |
+| Judge | GPT-5.3-Codex | GPT-5.3-Codex | `qatalyst-fix-approver` only: the independent approval before a commit. The one place a Claude install uses a GPT model, so the check isn't the model family that wrote the fix. |
+| Judge fallback | GPT-6.1 Terra | GPT-6.1 Terra | `qatalyst-fix-approver-fallback` only, when the judge model is refused as costlier than the chat's |
 
 **One provider throughout.** The developer chooses Claude or GPT when installing (`install.sh
 --provider claude|gpt`, or the question it asks on a first install; the choice is kept in
@@ -214,6 +232,17 @@ million tokens, the same price as Sonnet 5.5; GPT-5.6 Sol costs $4 / $20, twice 
 ($0.10 / $0.50) matches Haiku 5.5. GPT-6 Astra ($10 / $50) is left out: it costs 2.5× GPT-5.6 Sol, and a
 sub-agent can't run on a costlier model than its chat. Gemini, Grok and MAI-Code aren't listed;
 adding a provider means adding a block to `models.json` with the same three tiers.
+
+`qatalyst-fix-approver` is the exception to "one provider throughout" and carries a risk: GPT-5.3-Codex
+is priced at $1.75 in / $14 out against Sonnet 5.5's $2 / $10, and Copilot lists it as Powerful against
+Sonnet's Versatile. If VS Code counts it as costlier than the chat's model it refuses to start the
+approver; `qatalyst-ticket-ship` then runs `qatalyst-fix-approver-fallback`, the same check on GPT-6.1 Terra
+($1 / $5, Versatile like Sonnet, cheaper in both directions), and only asks whether to continue without
+independent approval if that can't give one either. A model list can't do this on its own, since VS Code
+checks the first name only, so the fallback is a second agent. Because an agent whose model isn't in the
+developer's picker silently runs on its starter's model, both approvers state their model on the first
+line and ship rejects an answer from a Claude model or the chat's own. Whether either starts has to be
+checked on a real run.
 
 VS Code refuses to start a sub-agent on a model that costs more than the model of the chat (or
 agent) that started it, so cost only ever steps down along a chain: chat → `qatalyst-developer` →
@@ -236,6 +265,8 @@ by a skill of its own.
 |---|---|---|---|
 | `qatalyst-log-ticket-intake` | Reads the bug ticket's full text and pins the issue time and log attachment type; `qatalyst-log-analyser`'s own Intake step | read, search, atlassian-rovo/* | Read-only — writes nothing, never touches a log script |
 | `qatalyst-log-analyser` | Root-causes a bug ticket's logs with a suggested fix; the loop is its own procedure | read, edit, search, execute, agent, atlassian-rovo/*, repowise/* | Writes only `log-analysis.md`; runs only the three log scripts, in order |
+| `qatalyst-fix-approver` | Independent approval before a commit: judges whether the diff really fixes the ticket, on GPT-5.3-Codex | read, search, repowise/* | Read-only; returns `Verdict: APPROVED` or `NOT APPROVED` with numbered findings; the verdict gates `qatalyst-ticket-ship`'s commit |
+| `qatalyst-fix-approver-fallback` | The same independent approval on GPT-6.1 Terra ($1 / $5), run only when `qatalyst-fix-approver`'s model is refused as costlier than the chat's | read, search, repowise/* | Read-only; carries no procedure of its own, both use the `qatalyst-fix-approval` skill |
 | `qatalyst-bug-planner` | Writes `tasks.md` for a bug ticket, from `log-analysis.md`; mechanics live in the `qatalyst-plan-ticket` skill, including its fix check (already fixed, blocked, or ambiguous: ask whether to produce a fix) | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the same deterministic `specs/bug/<ticket ID>/` path `qatalyst-log-analyser` already used, and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a fix" |
 | `qatalyst-feature-planner` | Writes `tasks.md` for a feature ticket; mechanics live in the `qatalyst-plan-ticket` skill, including its fix check | read, edit, search, atlassian-rovo/*, repowise/* | Writes only `tasks.md`, to the deterministic `specs/feature/<ticket ID>/` path — nothing to resolve or ask about — and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a fix" |
 | `qatalyst-developer` | Implements `tasks.md` | read, edit, search, execute, agent, repowise/* | One task at a time, in order, only via the named skill |
@@ -491,8 +522,8 @@ specs/<bug|feature>/<ticket-id>/
 ├── calls.jsonl           every model call copied from Copilot's traces (they expire after 7 days)
 └── <ticket-id>/
     ├── token-usage.html  the report as a page; opened by report --open
-    └── token-usage.json  ticketId, agentName, model, inputTokens, outputTokens, timestamp per call,
-                          plus totals and byAgent
+    └── token-usage.json  ticket, executor, priceUnit, totalCost, start/end time; steps[] per agent with
+                          calls[] (fresh/cached/cache-write input, output, cost)
 ```
 
 ### 10.3 Naming conventions: specification compliance

@@ -3,9 +3,13 @@
 
   token_tracker.py mark <ticket ID>     record that work on a ticket starts now
   token_tracker.py collect              copy new model calls from Copilot's traces into .logs/
-  token_tracker.py report <ticket ID> [--open]
+  token_tracker.py meta <ticket ID> [--title T] [--type TYPE]
+                                        remember the ticket's title and Jira type for the report
+  token_tracker.py report <ticket ID> [--open] [--final] [--prices SHEET.xlsx]
                                         collect, then write that ticket's usage report
-                                        (.html, .json); --open shows the HTML page
+                                        (.html, .json); --open shows the HTML page; --final
+                                        stamps the ticket's end time; --prices is a model price
+                                        sheet used only for calls Copilot gave no cost for
 
 Sources: VS Code Copilot Chat's local trace database (agent-traces.db, enabled by the
 `github.copilot.chat.otel.dbSpanExporter.enabled` setting) and the Copilot CLI's JSON-lines trace
@@ -39,6 +43,12 @@ ATTR_MODE = "copilot_chat.mode_name"
 ATTR_BRANCH = "copilot_chat.repo.head_branch_name"
 ATTR_REMOTE = "copilot_chat.repo.remote_url"
 ATTR_CHAT_SESSION = "copilot_chat.chat_session_id"
+ATTR_CACHE_READ = "gen_ai.usage.cache_read.input_tokens"
+ATTR_CACHE_WRITE = "gen_ai.usage.cache_creation.input_tokens"
+# Copilot's own cost for the call, in billionths of an AI credit (1 AI credit = $0.01).
+ATTR_NANO_AIU = "copilot_chat.copilot_usage_nano_aiu"
+META_FILE = "tickets.json"
+USD_PER_CREDIT = 0.01
 
 
 def repo_root():
@@ -137,24 +147,27 @@ def read_vscode_db(path):
         try:
             attrs = {}
             for span_id, key, value in conn.execute(
-                "SELECT span_id, key, value FROM span_attributes WHERE key IN (?, ?, ?)",
-                (ATTR_MODE, ATTR_BRANCH, ATTR_REMOTE),
+                "SELECT span_id, key, value FROM span_attributes WHERE key IN (?, ?, ?, ?, ?, ?)",
+                (ATTR_MODE, ATTR_BRANCH, ATTR_REMOTE, ATTR_CACHE_READ, ATTR_CACHE_WRITE, ATTR_NANO_AIU),
             ):
                 attrs.setdefault(span_id, {})[key] = value
             spans = []
             for row in conn.execute(
                 "SELECT span_id, trace_id, parent_span_id, name, start_time_ms, operation_name, agent_name,"
-                " conversation_id, chat_session_id, request_model, response_model, input_tokens, output_tokens"
-                " FROM spans"
+                " conversation_id, chat_session_id, request_model, response_model, input_tokens, output_tokens,"
+                " cached_tokens FROM spans"
             ):
                 (span_id, trace_id, parent, name, start, op, agent, conv, chat_session,
-                 req_model, resp_model, inp, out) = row
+                 req_model, resp_model, inp, out, cached_col) = row
                 a = attrs.get(span_id, {})
                 spans.append({
                     "id": span_id, "trace": trace_id, "parent": parent, "name": name or "",
                     "start_ms": int(start or 0), "op": op, "agent": agent, "mode": a.get(ATTR_MODE),
                     "conv": conv or chat_session, "branch": a.get(ATTR_BRANCH), "remote": a.get(ATTR_REMOTE),
                     "model": resp_model or req_model, "inp": inp, "out": out,
+                    "cached": _int_or_none(a.get(ATTR_CACHE_READ)) if a.get(ATTR_CACHE_READ) is not None else cached_col,
+                    "cache_write": _int_or_none(a.get(ATTR_CACHE_WRITE)),
+                    "aiu": _int_or_none(a.get(ATTR_NANO_AIU)),
                 })
             return spans
         finally:
@@ -232,6 +245,9 @@ def _span_from(obj):
         "model": a.get("gen_ai.response.model") or a.get("gen_ai.request.model"),
         "inp": _int_or_none(a.get("gen_ai.usage.input_tokens")),
         "out": _int_or_none(a.get("gen_ai.usage.output_tokens")),
+        "cached": _int_or_none(a.get(ATTR_CACHE_READ)),
+        "cache_write": _int_or_none(a.get(ATTR_CACHE_WRITE)),
+        "aiu": _int_or_none(a.get(ATTR_NANO_AIU)),
     }
 
 
@@ -310,6 +326,9 @@ def spans_to_calls(spans, source):
             "model": s.get("model") or (own or {}).get("model") or "unknown",
             "inputTokens": int(s.get("inp") or 0),
             "outputTokens": int(s.get("out") or 0),
+            "cachedInputTokens": s.get("cached"),
+            "cacheWriteTokens": s.get("cache_write"),
+            "nanoAiu": s.get("aiu"),
             "timestamp_ms": s["start_ms"],
         }
 
@@ -513,10 +532,14 @@ def render_html(summary, sources):
 
     by_model = {}
     for c in calls:
-        m = by_model.setdefault(c["model"], {"calls": 0, "inputTokens": 0, "outputTokens": 0})
+        m = by_model.setdefault(c["model"], {"calls": 0, "inputTokens": 0, "outputTokens": 0, "cost": 0.0})
         m["calls"] += 1
         m["inputTokens"] += c["inputTokens"]
         m["outputTokens"] += c["outputTokens"]
+        m["cost"] += c["cost"] or 0.0
+
+    def money(x):
+        return "n/a" if x is None else f"${x:,.4f}"
 
     parts = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">',
@@ -538,45 +561,51 @@ def render_html(summary, sources):
             f" · from {e(', '.join(sources))}</p>",
             '<section class="tiles">',
         ]
-        for label, value in (("Total tokens", totals["totalTokens"]), ("Input tokens", totals["inputTokens"]),
-                             ("Output tokens", totals["outputTokens"]), ("Model calls", totals["calls"])):
-            parts.append(f'<div class="tile"><div class="label">{label}</div><div class="value">{value:,}</div></div>')
+        for label, value in (("Total tokens", f"{totals['totalTokens']:,}"), ("Input tokens", f"{totals['inputTokens']:,}"),
+                             ("Output tokens", f"{totals['outputTokens']:,}"), ("Model calls", f"{totals['calls']:,}"),
+                             ("Cost (USD)", money(totals["cost"])),
+                             ("AI credits", f"{totals['cost'] / USD_PER_CREDIT:,.2f}")):
+            parts.append(f'<div class="tile"><div class="label">{label}</div><div class="value">{value}</div></div>')
         parts += [
             "</section>",
             '<h2>By agent</h2><div class="card"><table><thead><tr><th>Agent</th><th>Share of tokens</th>'
             '<th class="num">Calls</th><th class="num">Input</th><th class="num">Output</th><th class="num">Total</th>'
-            "</tr></thead><tbody>",
+            '<th class="num">Cost (USD)</th></tr></thead><tbody>',
         ]
         for a in summary["byAgent"]:
             parts.append(
                 f'<tr><td>{e(a["agentName"])}</td>{share_cell(a["totalTokens"])}<td class="num">{a["calls"]:,}</td>'
                 f'<td class="num">{a["inputTokens"]:,}</td><td class="num">{a["outputTokens"]:,}</td>'
-                f'<td class="num">{a["totalTokens"]:,}</td></tr>'
+                f'<td class="num">{a["totalTokens"]:,}</td><td class="num">{money(a["cost"])}</td></tr>'
             )
         parts.append(
             '</tbody></table></div><h2>By model</h2><div class="card"><table><thead><tr><th>Model</th>'
             '<th>Share of tokens</th><th class="num">Calls</th><th class="num">Input</th><th class="num">Output</th>'
-            "</tr></thead><tbody>"
+            '<th class="num">Cost (USD)</th></tr></thead><tbody>'
         )
         for model, m in sorted(by_model.items(), key=lambda kv: (-(kv[1]["inputTokens"] + kv[1]["outputTokens"]), kv[0])):
             parts.append(
                 f'<tr><td>{e(model)}</td>{share_cell(m["inputTokens"] + m["outputTokens"])}'
                 f'<td class="num">{m["calls"]:,}</td><td class="num">{m["inputTokens"]:,}</td>'
-                f'<td class="num">{m["outputTokens"]:,}</td></tr>'
+                f'<td class="num">{m["outputTokens"]:,}</td><td class="num">{money(m["cost"])}</td></tr>'
             )
         parts.append(
             '</tbody></table></div><h2>Every model call</h2><div class="card"><table><thead><tr><th>Time</th>'
-            '<th>Agent</th><th>Model</th><th class="num">Input</th><th class="num">Output</th></tr></thead><tbody>'
+            '<th>Agent</th><th>Model</th><th class="num">Input</th><th class="num">Cached</th>'
+            '<th class="num">Output</th><th class="num">Cost (USD)</th></tr></thead><tbody>'
         )
         for c in calls:
             parts.append(
                 f'<tr><td>{e(readable(c["timestamp"]))}</td><td>{e(c["agentName"])}</td><td>{e(c["model"])}</td>'
-                f'<td class="num">{c["inputTokens"]:,}</td><td class="num">{c["outputTokens"]:,}</td></tr>'
+                f'<td class="num">{c["inputTokens"]:,}</td>'
+                f'<td class="num">{"n/a" if c.get("cachedInputTokens") is None else format(c["cachedInputTokens"], ",")}</td>'
+                f'<td class="num">{c["outputTokens"]:,}</td><td class="num">{money(c["cost"])}</td></tr>'
             )
         parts += [
             "</tbody></table></div>",
             "<footer>Skills make no model calls of their own: a skill's text is counted in the input "
-            "tokens of the agent that loaded it. Same data as "
+            "tokens of the agent that loaded it. Input includes the cached tokens. Cost is Copilot's own figure "
+            "for each call where it recorded one. Same data as "
             "<code>token-usage.json</code> in this folder.</footer>",
         ]
     parts.append("</main></body></html>\n")
@@ -642,32 +671,172 @@ def why_empty(root, ticket, calls, markers):
     return out
 
 
-def cmd_report(root, ticket, open_page=False):
+# ── Cost and the usage document ──────────────────────────────────────────────────────────────────
+
+
+def meta_path(root):
+    return tracker_dir(root) / META_FILE
+
+
+def load_meta(root):
+    try:
+        return json.loads(meta_path(root).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_meta(root, ticket, **fields):
+    data = load_meta(root)
+    entry = data.setdefault(ticket, {})
+    entry.update({k: v for k, v in fields.items() if v is not None})
+    tmp = meta_path(root).with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(tmp, meta_path(root))
+
+
+def git_identity(root):
+    def get(key):
+        try:
+            out = subprocess.run(["git", "-C", str(root), "config", key], capture_output=True, text=True, check=True)
+            return out.stdout.strip() or None
+        except (OSError, subprocess.CalledProcessError):
+            return None
+    return {"name": get("user.name"), "email": get("user.email")}
+
+
+def load_prices(path):
+    """The price sheet as {model: rows}, or None when there is none or it can't be read."""
+    path = path or os.environ.get("TOKEN_TRACKER_PRICES")
+    if not path:
+        return None
+    try:
+        import token_credits
+        rates, problems = token_credits.load_rates(path)
+    except Exception as e:  # noqa: BLE001 - a bad sheet must never stop the report
+        print(f"warning: price sheet {path} not used ({e})", file=sys.stderr)
+        return None
+    for note in problems:
+        print(f"warning: {note}", file=sys.stderr)
+    return rates
+
+
+def token_split(c):
+    """(fresh input, cache read, cache write) for a stored call. `inputTokens` as Copilot records it holds all
+    three; when the cache figures weren't recorded, everything counts as fresh and the other two are None."""
+    total = c["inputTokens"]
+    cached, write = c.get("cachedInputTokens"), c.get("cacheWriteTokens")
+    if cached is None and write is None:
+        return total, None, None
+    cached, write = cached or 0, write or 0
+    return max(total - cached - write, 0), cached, write
+
+
+def estimate_cost(c, rates):
+    """USD from the price sheet, or None if the model isn't in it. Only used when Copilot gave no cost. Two
+    behaviours were checked against Copilot's own figures: input beyond the cache reads is billed at the
+    Cache write rate when the sheet has one and Copilot reported no explicit cache write (the OpenAI
+    models), and at the Input rate with the cache write billed separately when it did (Anthropic)."""
+    import token_credits
+    r = token_credits.pick_rate(rates, c["model"], c["inputTokens"])
+    if r is None:
+        return None
+    fresh, cached, write = token_split(c)
+    cached = cached or 0
+    cached_rate = r["cached"] if r["cached"] is not None else r["input"]
+    if c.get("cacheWriteTokens") is not None:
+        usd = fresh * r["input"] + write * (r["write"] if r["write"] is not None else r["input"])
+    else:
+        usd = fresh * (r["write"] if r["write"] is not None else r["input"])
+    usd += cached * cached_rate + c["outputTokens"] * r["output"]
+    return usd / 1_000_000
+
+
+def call_cost(c, rates):
+    """(USD, source): Copilot's own figure when it recorded one, else the price-sheet estimate, else (None, None)."""
+    if c.get("nanoAiu") is not None:
+        return c["nanoAiu"] / 1e9 * USD_PER_CREDIT, "copilot"
+    if rates:
+        usd = estimate_cost(c, rates)
+        if usd is not None:
+            return usd, "sheet"
+    return None, None
+
+
+def build_usage_doc(root, ticket, mine, rates, stamp):
+    """The token-usage.json document: the ticket, then one step per agent, each with its calls and cost."""
+    meta = load_meta(root).get(ticket, {})
+    steps, order = {}, []
+    for c in mine:
+        name = c["agentName"]
+        if name not in steps:
+            steps[name] = []
+            order.append(name)
+        usd, _ = call_cost(c, rates)
+        fresh, cached, write = token_split(c)
+        steps[name].append({
+            "agentName": name, "model": c["model"], "timestamp": iso(c["timestamp_ms"]),
+            "inputTokens": fresh, "cachedInputTokens": cached, "cacheWriteTokens": write,
+            "outputTokens": c["outputTokens"], "totalCost": None if usd is None else round(usd, 10),
+        })
+    out_steps = []
+    for name in order:
+        costs = [x["totalCost"] for x in steps[name] if x["totalCost"] is not None]
+        out_steps.append({"stepName": name, "totalCost": round(float(sum(costs)), 10), "calls": steps[name]})
+    all_costs = [x["totalCost"] for st in out_steps for x in st["calls"] if x["totalCost"] is not None]
+    return {
+        "ticketId": ticket,
+        "executionDatetime": stamp,
+        "ticketTitle": meta.get("title"),
+        "ticketType": meta.get("type"),
+        "executor": git_identity(root),
+        "priceUnit": "USD",
+        "totalCost": round(float(sum(all_costs)), 10),
+        "startTime": iso(mine[0]["timestamp_ms"]) if mine else None,
+        "endTime": meta.get("endedAt"),
+        "steps": out_steps,
+    }
+
+
+def cmd_report(root, ticket, open_page=False, final=False, prices=None):
     calls = collect(root)
     markers = load_jsonl(tracker_dir(root) / MARKERS_FILE)
     mine = calls_for_ticket(calls, markers, ticket)
     out_dir = tracker_dir(root) / ticket
     out_dir.mkdir(parents=True, exist_ok=True)
+    rates = load_prices(prices)
+    stamp = iso(now_ms())
+    if final:
+        save_meta(root, ticket, endedAt=stamp)
 
-    total_in = sum(c["inputTokens"] for c in mine)
-    total_out = sum(c["outputTokens"] for c in mine)
-    rows = [dict(zip(FIELDS, (ticket, c["agentName"], c["model"], c["inputTokens"], c["outputTokens"], iso(c["timestamp_ms"]))))
-            for c in mine]
+    rows, unpriced = [], 0
+    for c in mine:
+        usd, _ = call_cost(c, rates)
+        unpriced += usd is None
+        rows.append({"agentName": c["agentName"], "model": c["model"], "inputTokens": c["inputTokens"],
+                     "outputTokens": c["outputTokens"], "cachedInputTokens": c.get("cachedInputTokens"),
+                     "cost": usd, "timestamp": iso(c["timestamp_ms"])})
+    total_in = sum(r["inputTokens"] for r in rows)
+    total_out = sum(r["outputTokens"] for r in rows)
+    total_cost = sum(r["cost"] for r in rows if r["cost"] is not None)
     by_agent = {}
     for r in rows:
-        a = by_agent.setdefault(r["agentName"], {"agentName": r["agentName"], "calls": 0, "inputTokens": 0, "outputTokens": 0})
+        a = by_agent.setdefault(r["agentName"], {"agentName": r["agentName"], "calls": 0, "inputTokens": 0,
+                                                 "outputTokens": 0, "cost": 0.0})
         a["calls"] += 1
         a["inputTokens"] += r["inputTokens"]
         a["outputTokens"] += r["outputTokens"]
+        a["cost"] += r["cost"] or 0.0
     for a in by_agent.values():
         a["totalTokens"] = a["inputTokens"] + a["outputTokens"]
     summary = {
         "ticketId": ticket,
-        "totals": {"calls": len(rows), "inputTokens": total_in, "outputTokens": total_out, "totalTokens": total_in + total_out},
+        "totals": {"calls": len(rows), "inputTokens": total_in, "outputTokens": total_out,
+                   "totalTokens": total_in + total_out, "cost": total_cost, "unpricedCalls": unpriced},
         "byAgent": sorted(by_agent.values(), key=lambda a: (-a["totalTokens"], a["agentName"])),
         "calls": rows,
     }
-    (out_dir / "token-usage.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    doc = build_usage_doc(root, ticket, mine, rates, stamp)
+    (out_dir / "token-usage.json").write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
 
     # Printed only, as the summary an agent passes on; the files are the .html and .json.
     lines = [f"# Token usage — {ticket}", ""]
@@ -683,32 +852,37 @@ def cmd_report(root, ticket, open_page=False):
         ] + [f"- {r}" for r in why_empty(root, ticket, calls, markers)]
     else:
         per_agent, per_model = {}, {}
-        for c in mine:
-            for table, key in ((per_agent, c["agentName"]), (per_model, c["model"])):
-                t = table.setdefault(key, [0, 0, 0])
+        for r in rows:
+            for table, key in ((per_agent, r["agentName"]), (per_model, r["model"])):
+                t = table.setdefault(key, [0, 0, 0, 0.0])
                 t[0] += 1
-                t[1] += c["inputTokens"]
-                t[2] += c["outputTokens"]
+                t[1] += r["inputTokens"]
+                t[2] += r["outputTokens"]
+                t[3] += r["cost"] or 0.0
         lines += [
             f"- **Total:** {total_in + total_out:,} tokens ({total_in:,} input, {total_out:,} output) "
             f"across {len(mine)} model calls",
+            f"- **Cost:** ${total_cost:,.4f} ({total_cost / USD_PER_CREDIT:,.2f} AI credits)"
+            + (f", not counting {unpriced} calls with no cost (Copilot gave none and no price sheet covers them)"
+               if unpriced else ""),
             f"- **Period:** {iso(mine[0]['timestamp_ms'])} to {iso(mine[-1]['timestamp_ms'])}",
             f"- **Sources:** {', '.join(sorted({c['source'] for c in mine}))}",
             "",
             "## By agent",
             "",
-            _table(["Agent", "Calls", "Input tokens", "Output tokens", "Share"],
-                   [(a, n, f"{i:,}", f"{o:,}", f"{(i + o) * 100 / max(total_in + total_out, 1):.1f}%")
-                    for a, (n, i, o) in sorted(per_agent.items(), key=lambda kv: -(kv[1][1] + kv[1][2]))]),
+            _table(["Agent", "Calls", "Input tokens", "Output tokens", "Cost (USD)", "Share"],
+                   [(a, n, f"{i:,}", f"{o:,}", f"{usd:,.4f}", f"{(i + o) * 100 / max(total_in + total_out, 1):.1f}%")
+                    for a, (n, i, o, usd) in sorted(per_agent.items(), key=lambda kv: -(kv[1][1] + kv[1][2]))]),
             "",
             "## By model",
             "",
-            _table(["Model", "Calls", "Input tokens", "Output tokens"],
-                   [(m, n, f"{i:,}", f"{o:,}") for m, (n, i, o) in sorted(per_model.items(), key=lambda kv: -(kv[1][1] + kv[1][2]))]),
+            _table(["Model", "Calls", "Input tokens", "Output tokens", "Cost (USD)"],
+                   [(m, n, f"{i:,}", f"{o:,}", f"{usd:,.4f}")
+                    for m, (n, i, o, usd) in sorted(per_model.items(), key=lambda kv: -(kv[1][1] + kv[1][2]))]),
             "",
             "Skills make no model calls of their own: a skill's text is counted in the input tokens of "
-            "the agent that loaded it. Per-call rows are in "
-            "`token-usage.html` and `token-usage.json`.",
+            "the agent that loaded it. Cost is Copilot's own figure for each call where it recorded one. "
+            "Per-call rows, with the cache split, are in `token-usage.html` and `token-usage.json`.",
         ]
     page = out_dir / "token-usage.html"
     page.write_text(render_html(summary, sorted({c["source"] for c in mine})), encoding="utf-8")
@@ -734,17 +908,25 @@ def main(argv=None):
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("mark", help="record that work on a ticket starts now").add_argument("ticket", type=ticket_arg)
     sub.add_parser("collect", help="copy new model calls from Copilot's traces into .logs/token-tracker/")
+    meta = sub.add_parser("meta", help="remember a ticket's title and Jira issue type for its report")
+    meta.add_argument("ticket", type=ticket_arg)
+    meta.add_argument("--title")
+    meta.add_argument("--type", dest="issue_type")
     report = sub.add_parser("report", help="collect, then write a ticket's usage report")
     report.add_argument("ticket", type=ticket_arg)
     report.add_argument("--open", action="store_true", help="open token-usage.html in the default browser")
+    report.add_argument("--final", action="store_true", help="stamp the ticket's end time (the work is committed)")
+    report.add_argument("--prices", help="model price sheet (.xlsx), used only for calls Copilot recorded no cost for")
     args = parser.parse_args(argv)
     root = repo_root()
     if args.command == "mark":
         cmd_mark(root, args.ticket)
     elif args.command == "collect":
         collect(root)
+    elif args.command == "meta":
+        save_meta(root, args.ticket, title=args.title, type=args.issue_type)
     else:
-        cmd_report(root, args.ticket, open_page=args.open)
+        cmd_report(root, args.ticket, open_page=args.open, final=args.final, prices=args.prices)
 
 
 if __name__ == "__main__":

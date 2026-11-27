@@ -214,6 +214,13 @@ handing off to another, never by picking it yourself.
    nothing implemented. "Go with a fix anyway" plans the best fix the finding allows, notes the finding
    at the top of `tasks.md`'s Open questions, and repeats it in the commit message. Run
    `/qatalyst-ticket-start <ticket ID>` again later to be asked again.
+   **Tickets that say "not observed on iOS".** If the ticket says so (for example "iOS Behaviour: Issue
+   is not observed in iOS"), the workflow treats it as an Android issue: the same firmware and cloud
+   work on iOS, so the log analysis and the plan look for the cause and the fix in the Android app,
+   including workarounds for Android platform quirks. It will not plan a firmware or cloud/backend
+   change as the fix, even if one is possible; those only appear in the report's related areas,
+   marked "not a fix target". Only a clear statement in the ticket counts. If the ticket doesn't say,
+   or says the issue is also on iOS, nothing changes.
 3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
    Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
 4. Runs `qatalyst-developer` through every task, then asks whether to commit now, and whether you have
@@ -244,7 +251,9 @@ Android Studio, or `ask_user` in the Copilot CLI; the only answer you ever type 
 **Models.** You don't pick a model, only a provider, once, when you install (see the [install steps](https://github.com/saraths-99/github-workflow/blob/develop/README.md#2-one-time-setup)). With Claude,
 starting a ticket switches the chat to Claude Sonnet 5.5, which also runs log analysis, planning, the
 code reviewer and `qatalyst-developer`; the security and error-handling reviewers run on Claude Sonnet 5.5
-(falling back to Sonnet 5), and every test writer, the router included, on Claude Haiku 5.5. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
+(falling back to Sonnet 5), and every test writer, the router included, on Claude Haiku 5.5. The independent fix approver is the one
+exception to "one provider": it runs on GPT-5.3-Codex (GPT-6.1 Terra as its fallback) with either install,
+so your Copilot plan needs those models too. With GPT, the same three tiers run on GPT-5.6 Sol, GPT-6.1 Sol and GPT-6 Luna. Each
 agent's `model:` line sets it (the full table is in [docs/workflow-design.md](../docs/workflow-design.md)
 §4). Every agent runs on the chosen provider only, so your Copilot plan must include its models; if a
 model isn't offered, the agent uses the next one in its list, or the chat's model. Don't switch the
@@ -266,7 +275,9 @@ the per-layer detail; `/qatalyst-new-feature` orchestrates all of them for a tas
 Once the last task is ticked, `qatalyst-developer` writes a workflow report to
 `.logs/<ticket ID>/workflow-report.md`: for a bug, how many passes the log analysis took to reach
 its fix; then what changed, who depends on it across the repos (the blast radius), the change risk,
-and the tests around it. It tells you whether Repowise's index was used for it, and which
+and the tests around it, and the areas outside the changed code that could affect the fix: lock firmware,
+the other BLE stack, the backend, the platform, third-party SDKs. Each comes with its evidence and
+what to check or who to ask; where it is only a possibility it says so. It tells you whether Repowise's index was used for it, and which
 changed files the index had out of date (run `repowise update --working-tree`, then ask for the
 report again). Without Repowise it still writes the report from direct searches and says so. It then
 asks whether to commit now.
@@ -283,6 +294,15 @@ the branch and open the PR yourself.
    for flagged diffs) against the spec. If a reviewer has comments, `qatalyst-developer` fixes them
    and the reviewers run again, for up to 3 rounds; after that it asks you what to do. The rounds
    are recorded in the workflow report's "Review rounds" section.
+   Once the reviewers pass, `qatalyst-fix-approver` gives a second opinion on a different model
+   (GPT-5.3-Codex, not the Claude model that wrote the fix): it reads the diff, `tasks.md`,
+   `log-analysis.md` and the workflow report, and answers APPROVED or NOT APPROVED with numbered
+   findings. A NOT APPROVED counts as a review round: the developer fixes the findings and the
+   reviewers and the approver run again, within the same 3 rounds. If the approver can't start (the
+   model isn't in your picker, or VS Code refuses it as costlier than the chat's model), the same check
+   runs on a cheaper GPT model (GPT-6.1 Terra, `qatalyst-fix-approver-fallback`); only if that can't
+   give an independent verdict either does it ask whether to continue without one. Committing without an approval needs your "commit anyway" and is
+   stated in the commit message.
 3. Once the review is done, shows the ticket's token usage (VS Code only; see below) and opens the
    HTML report. It counts everything up to that point; the build, tests and commit are not in it.
 4. Writes the commit title and message for each repo (the `qatalyst-commit-message` skill) and shows
@@ -348,9 +368,29 @@ summary and writes two files to `.logs/token-tracker/ABC-123/`:
 - `token-usage.html`: the report as a page: totals, a bar per agent and per model, and every model
   call. Self-contained (no scripts, nothing fetched from the internet), so it opens offline. Over
   SSH or anywhere else without a local display, `--open` prints the file's path instead.
-- `token-usage.json`: one row per model call under `calls` (`ticketId`, `agentName`, `model`,
-  `inputTokens`, `outputTokens`, `timestamp`), plus `totals` and a `byAgent` breakdown (calls,
-  input, output and total tokens per agent, largest first), for feeding into other tools.
+- `token-usage.json`: the ticket's usage and cost, for feeding into other tools:
+
+  ```json
+  {
+    "ticketId": "HALOM-14163", "executionDatetime": "...", "ticketTitle": "...", "ticketType": "Bug",
+    "executor": { "name": "...", "email": "..." }, "priceUnit": "USD", "totalCost": 0.0,
+    "startTime": "...", "endTime": null,
+    "steps": [ { "stepName": "qatalyst-developer", "totalCost": 0.0, "calls": [
+      { "agentName": "...", "model": "...", "timestamp": "...", "inputTokens": 0,
+        "cachedInputTokens": 0, "cacheWriteTokens": 0, "outputTokens": 0, "totalCost": 0.0 } ] } ]
+  }
+  ```
+
+  A step is one agent, in the order it first appears. On each call `inputTokens` is the fresh input only
+  (Copilot's recorded input holds the fresh, cache-read and cache-write tokens together, so the three
+  fields don't overlap and add up to it); `cachedInputTokens` and `cacheWriteTokens` are `null` where
+  Copilot recorded no cache figures. `totalCost` is in USD and is **Copilot's own figure for that call**
+  (it records it per call, in billionths of an AI credit, and 1 AI credit is $0.01), which matched the
+  published prices to the digit on the Claude and Codex calls we checked. A call it recorded no cost for is priced
+  from your model price sheet if you give one (`--prices SHEET.xlsx`, or the `TOKEN_TRACKER_PRICES`
+  environment variable), and is `null` otherwise, left out of the totals and counted in the console
+  summary. `endTime` is `null` until the ticket is committed. `ticketTitle` and `ticketType` come from the
+  Jira ticket, `executor` from `git config user.name` and `user.email` (the file stays on your machine).
 
 **How a chat gets counted for a ticket:** `/qatalyst-ticket-start` records the
 ticket ID when it starts, and any chat that ran on the ticket's branch counts too. A chat
@@ -363,7 +403,8 @@ long-running ticket; everything it has copied stays in `.logs/token-tracker/`.
 
 **Turning tokens into AI credits.** Given your model price sheet (an `.xlsx` with the columns Model,
 Threshold (input tokens), Input, Cached input, Cache write and Output, one row per model and tier),
-`token_credits.py` prices a ticket's report:
+`token_credits.py` prices a ticket's HTML report, or a report from before costs were recorded (the
+tracker now writes costs itself, so you only need this for those):
 
 ```bash
 python3 .github/token-tracker/scripts/token_credits.py "prices.xlsx" .logs/token-tracker/ABC-123/token-usage.html

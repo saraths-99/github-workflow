@@ -24,6 +24,8 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    no-log stub (no attachment, developer confirmed UI-only, log analysis skipped), there is no root
    cause to fold in — step 2 is where you find one instead of re-investigating logs that don't
    exist.
+   Take the ticket's **platform scope** from `qatalyst-jira-ticket-intake` (Android only · also on iOS
+   · not stated); see "Android-only tickets" below.
 2. Use `qatalyst-repowise-lookup` to ground every claim in the real code — callers, existing signatures,
    and why a pattern is the way it is before changing anything near it. For a no-log bug ticket,
    this step *is* the root-cause investigation: use the ticket's description, comments, and any
@@ -51,6 +53,20 @@ what's specific to a bug or a feature; this skill is the shared mechanics of bui
    feature gets the full set of stories, criteria, and approach detail.
 6. Show the full draft in chat, including the `specs/<bug|feature>/<ticket ID>/` path it lives in.
 
+## Android-only tickets
+
+When the platform scope is **Android only** (QA says the issue is not seen on iOS), the fix is a
+change in the Android app repos and nothing else. iOS runs against the same lock firmware and cloud
+and works, so those are not where the difference is. Don't plan a firmware or cloud/backend change
+as the fix, don't make "ask the firmware or backend team to change it" a task, and don't choose a
+firmware or cloud route even when one is possible. Look for what Android does differently: the BLE
+stack and its timing, permissions, lifecycle and background limits, threading, OEM behaviour, and the
+app's own handling of a response the other platform copes with. A workaround for an Android
+platform quirk is an Android fix and is fine. Say in What & why that the ticket is Android only and
+why the plan stays in the app. Firmware, cloud and backend areas still go in the report's related
+areas, marked "not a fix target: not observed on iOS". For "also on iOS" or "not stated", plan as
+usual and let the fix check weigh firmware and cloud.
+
 ## Fix check
 
 Before drafting, decide whether a fix is actually there to plan. Look for exactly three findings, and
@@ -62,7 +78,9 @@ only when you can point at evidence; a hunch is not a finding, and most tickets 
   is already done.
 - **Blocked.** The fix would need something the app can't do: an OS or platform restriction, a
   store policy (Google Play and the like), a permission the app can't be granted, a limit in
-  firmware, a third-party SDK or a backend outside these repos. Cite where you read it: the code, a
+  firmware, a third-party SDK or a backend outside these repos. On an Android-only ticket a
+  firmware or backend limit is not a blocker for the fix check: the app change is still the fix, so
+  look for an Android-side one first. Cite where you read it: the code, a
   ticket comment, or a linked page. Never assert a policy or platform rule from memory; if you
   can't cite it, or aren't sure it applies, that is **Ambiguous**, not Blocked.
 - **Ambiguous.** After steps 1 and 2 you still can't name the file and the change with evidence:
@@ -85,7 +103,8 @@ sub-agent and can't ask, return the finding, its evidence and those options to
   already fixed → only what the code still lacks (an uncovered caller, a missing test), saying what
   the code already does; blocked → the best workaround inside the limitation, never one that breaks
   the cited policy or permission, with the risk and the manual check named; ambiguous → the most
-  likely fix, with the readings you didn't pick listed as alternatives. If nothing is left to
+  likely fix, with the readings you didn't pick listed as alternatives. On an Android-only ticket
+  every one of these stays an app change; never a firmware or backend change. If nothing is left to
   change, say so and stop instead of inventing a task.
   Delete `no-fix.md` if it exists.
 

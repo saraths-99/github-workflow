@@ -175,7 +175,7 @@ def _instructions_check():
 @check("every model: line is one of models.json's tier lists, and every provider has every tier")
 def _models_check():
     table = json.loads((ROOT / "models.json").read_text(encoding="utf-8"))["providers"]
-    tiers = {"deep", "standard", "fast"}
+    tiers = {"deep", "standard", "fast", "judge", "judge-fallback"}
     problems = [f"{p}: tiers {sorted(t)}" for p, t in ((p, set(v)) for p, v in table.items()) if t != tiers]
     allowed = {"[" + ", ".join(f"'{n} (copilot)'" for n in names) + "]" for names in table["claude"].values()}
     files = list((ROOT / ".github/agents").glob("*.agent.md")) + list((ROOT / ".github/prompts").glob("*.prompt.md"))

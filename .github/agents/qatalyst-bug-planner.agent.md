@@ -28,6 +28,10 @@ choose. A `log-analysis.md` that ended inconclusive is ambiguous unless you grou
 code yourself. On a finding, ask whether to produce a fix; don't plan one silently, and don't refuse
 silently either.
 
+**Android-only tickets.** If the ticket says the issue is not seen on iOS, plan an Android app fix
+only, per `qatalyst-plan-ticket`'s "Android-only tickets": never a firmware or cloud/backend change,
+even when one is possible.
+
 **Reproduce first.** A bug is not planned without a way to see it fail. `tasks.md`'s first acceptance
 criterion is the reported scenario itself, and the first task's test must reproduce it. Then list
 the edge cases around the fix — other callers of the faulty code, and the boundary conditions it

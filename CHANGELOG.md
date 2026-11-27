@@ -63,6 +63,47 @@ changed since its last sync.
   outcome. The commit message is rewritten if a later fix changes the diff.
 
 ### Added
+- Token usage now carries cost and the cache split. `token-usage.json` has a new structure: ticket
+  (title, type, executor from git config, start and end time), `priceUnit` USD and `totalCost`, then
+  `steps` per agent with their `calls`: fresh `inputTokens`, `cachedInputTokens`, `cacheWriteTokens`,
+  `outputTokens` and `totalCost`. The tracker reads three more values from Copilot's trace: cache reads,
+  cache writes and Copilot's own cost per call (`copilot_usage_nano_aiu`, billionths of an AI credit, 1
+  credit = $0.01). Recorded input includes the cached tokens, so the JSON's `inputTokens` is the rest.
+  Calls Copilot recorded no cost for use a price sheet if one is given (`--prices` or
+  `TOKEN_TRACKER_PRICES`) and are `null` otherwise. New `meta` command stores the title and type (run by
+  `qatalyst-ticket-start`), `report --final` stamps `endTime` (run by `qatalyst-ticket-ship` after the
+  commit). The HTML report and console summary show cost and the cache column. (`qatalyst-ticket-start`
+  runs `meta` right after reading the ticket; `qatalyst-ticket-ship` runs `report --final` after the commit.)
+- `qatalyst-fix-approver`: an independent approval before a ticket is committed, on GPT-5.3-Codex (a
+  new `judge` tier in `models.json`, the same for both providers, so the check isn't the model family
+  that wrote the fix). After the reviewers pass, `qatalyst-ticket-ship` gives it each repo's diff and
+  the paths of `tasks.md`, `log-analysis.md` and the workflow report, and nothing from the developer's
+  chat. It returns APPROVED or NOT APPROVED with numbered findings, judging whether the change fixes
+  the cause, meets the acceptance criteria and edge cases, is proven by tests that would fail
+  without it, stays in scope (an Android-only ticket needs an app fix) and leaves nothing behind. If VS Code refuses its model
+  as costlier than the chat's, `qatalyst-fix-approver-fallback` runs the same check on GPT-6.1 Terra (a
+  `judge-fallback` tier; a model list can't do this because VS Code checks only the first name). Both
+  state their model on the first line and ship rejects an answer from a Claude model or the chat's own,
+  since an agent whose model isn't in the picker silently runs on its starter's. The procedure lives in
+  the `qatalyst-fix-approval` skill so the two agents can't drift. A
+  NOT APPROVED is a review round in the same count of 3. Committing without approval needs "commit
+  anyway, not approved" and the commit message says so; if neither approver can give an independent
+  verdict, the developer is asked whether to continue without one. The verdict goes into the workflow report's "Independent
+  approval" section and into the commit question. It is an exception to one provider throughout, and
+  whether VS Code lets it start under a Sonnet chat has to be checked on a real run.
+- Android-only tickets. When QA or the reporter says the issue is not seen on iOS ("iOS Behaviour:
+  Issue is not observed in iOS"), `qatalyst-jira-ticket-intake` reports the platform scope (Android only
+  · also on iOS · not stated; only a clear statement counts), and the log analyser and planner keep to
+  the Android app: causes are ranked in the app, SDKs and Android platform behaviour, the suggested fix
+  and the plan are app changes (workarounds for Android quirks included), and a firmware or
+  cloud/backend change is never planned as the fix, even when one is possible. Odd firmware or cloud
+  evidence goes under "Seen outside the app, not pursued", and the workflow report lists those areas
+  as "not a fix target". Fix check: a firmware or backend limit is not a blocker on these tickets.
+- The workflow report has a "Related areas that could affect the fix" section: lock firmware (BLE
+  commands, OTA, model numbers), the other BLE stack, the backend, the platform and third-party or
+  sibling modules, each with its evidence, why it matters and what to check or who to ask. It lists
+  only areas the change, ticket or log points at, marks anything unconfirmed as "unknown, needs
+  checking", and says "None found" otherwise. The chat summary gets a "Related areas:" line.
 - `isLocalBuild` is `false` in everything committed. The developer keeps `isLocalBuild=true` in
   `gradle.properties` in all five repos while working; before committing, `qatalyst-ticket-ship` records
   each such line in `.logs/<ticket ID>/isLocalBuild.json`, sets it to `false` (keeping the file's

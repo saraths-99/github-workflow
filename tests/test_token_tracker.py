@@ -9,6 +9,8 @@ import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parent.parent / ".github" / "token-tracker" / "scripts" / "token_tracker.py"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from test_token_credits import make_xlsx  # noqa: E402  (a minimal .xlsx writer for the price-sheet tests)
 
 # Same tables Copilot Chat creates (src/platform/otel/node/sqlite/otelSqliteStore.ts, schema version 1).
 SCHEMA = """
@@ -46,6 +48,8 @@ class TokenTrackerTest(unittest.TestCase):
         self.repo.mkdir()
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         subprocess.run(["git", "-C", str(self.repo), "remote", "add", "origin", "git@bitbucket.org:acme/android-app.git"], check=True)
+        subprocess.run(["git", "-C", str(self.repo), "config", "user.name", "Test Dev"], check=True)
+        subprocess.run(["git", "-C", str(self.repo), "config", "user.email", "dev@example.test"], check=True)
         self.db = Path(self.tmp.name) / "agent-traces.db"
         self.env = dict(os.environ, TOKEN_TRACKER_VSCODE_DB=str(self.db))
 
@@ -62,8 +66,11 @@ class TokenTrackerTest(unittest.TestCase):
         with open(d / "markers.jsonl", "a") as f:
             f.write(json.dumps({"ticketId": ticket, "timestamp_ms": ts}) + "\n")
 
+    def read_doc(self, ticket):
+        return json.loads((self.repo / ".logs" / "token-tracker" / ticket / "token-usage.json").read_text())
+
     def read_rows(self, ticket):
-        return json.loads((self.repo / ".logs" / "token-tracker" / ticket / "token-usage.json").read_text())["calls"]
+        return [c for step in self.read_doc(ticket)["steps"] for c in step["calls"]]
 
     def build_db(self):
         conn = sqlite3.connect(self.db)
@@ -98,25 +105,97 @@ class TokenTrackerTest(unittest.TestCase):
         self.build_db()
         self.write_marker("ABC-1", T0 + 500)
         out = self.run_tool("report", "abc-1").stdout
+        doc = self.read_doc("ABC-1")
         rows = self.read_rows("ABC-1")
-        self.assertEqual(list(rows[0].keys()), ["ticketId", "agentName", "model", "inputTokens", "outputTokens", "timestamp"])
-        self.assertEqual([(r["agentName"], r["inputTokens"]) for r in rows], [
-            ("qatalyst-ticket", 1000), ("qatalyst-bug-planner", 500), ("qatalyst-bug-planner", 700),
-            ("GitHub Copilot Chat", 300),
-        ])
-        self.assertTrue(all(r["ticketId"] == "ABC-1" for r in rows))
+        self.assertEqual(list(rows[0].keys()), ["agentName", "model", "timestamp", "inputTokens", "cachedInputTokens",
+                                                 "cacheWriteTokens", "outputTokens", "totalCost"])
+        # Steps are the agents, in the order they first appear.
+        self.assertEqual([(st["stepName"], len(st["calls"])) for st in doc["steps"]],
+                         [("qatalyst-ticket", 1), ("qatalyst-bug-planner", 2), ("GitHub Copilot Chat", 1)])
+        self.assertEqual([r["inputTokens"] for r in rows], [1000, 500, 700, 300])
         self.assertEqual(rows[0]["timestamp"], "2026-09-21T14:13:21Z")
-        self.assertIn("2,750 tokens (2,500 input, 250 output) across 4 model calls", out)
-        doc = json.loads((self.repo / ".logs" / "token-tracker" / "ABC-1" / "token-usage.json").read_text())
+        # No cache figures were recorded for these spans, and no cost: unknown, never zero.
+        self.assertTrue(all(r["cachedInputTokens"] is None and r["totalCost"] is None for r in rows))
         self.assertEqual(doc["ticketId"], "ABC-1")
-        self.assertEqual(doc["totals"], {"calls": 4, "inputTokens": 2500, "outputTokens": 250, "totalTokens": 2750})
-        self.assertEqual([(a["agentName"], a["calls"], a["totalTokens"]) for a in doc["byAgent"]], [
-            ("qatalyst-bug-planner", 2, 1320), ("qatalyst-ticket", 1, 1100), ("GitHub Copilot Chat", 1, 330),
-        ])
+        self.assertEqual(doc["priceUnit"], "USD")
+        self.assertEqual(doc["totalCost"], 0.0)
+        self.assertEqual(doc["executor"], {"name": "Test Dev", "email": "dev@example.test"})
+        self.assertEqual((doc["ticketTitle"], doc["ticketType"], doc["endTime"]), (None, None, None))
+        self.assertEqual(doc["startTime"], "2026-09-21T14:13:21Z")
+        self.assertIn("2,750 tokens (2,500 input, 250 output) across 4 model calls", out)
+        self.assertIn("not counting 4 calls with no cost", out)
         self.assertEqual(sorted(p.name for p in (self.repo / ".logs" / "token-tracker" / "ABC-1").iterdir()),
                          ["token-usage.html", "token-usage.json"])
-        stored =(self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
+        stored = (self.repo / ".logs" / "token-tracker" / "calls.jsonl").read_text()
         self.assertNotIn("9999", stored)
+
+    def build_cost_db(self):
+        conn = sqlite3.connect(self.db)
+        conn.executescript(SCHEMA)
+        here = {"copilot_chat.repo.remote_url": REMOTE}
+        add_span(conn, "a1", None, "invoke_agent qatalyst-developer", T0, "invoke_agent", "qatalyst-developer", "conv-1", attrs=here)
+        # Anthropic-style: input holds fresh + cache read + cache write; Copilot priced it at 1 credit ($0.01).
+        add_span(conn, "c1", "a1", "chat claude-sonnet-5.5", T0 + 1000, "chat", model="claude-sonnet-5.5", inp=1000, out=100,
+                 attrs={"gen_ai.usage.cache_read.input_tokens": "700", "gen_ai.usage.cache_creation.input_tokens": "200",
+                        "copilot_chat.copilot_usage_nano_aiu": "1000000000"})
+        # OpenAI-style: no cache write reported; Copilot priced it at half a credit.
+        add_span(conn, "c2", "a1", "chat gpt-6-luna", T0 + 2000, "chat", model="gpt-6-luna", inp=500, out=50,
+                 attrs={"gen_ai.usage.cache_read.input_tokens": "400", "copilot_chat.copilot_usage_nano_aiu": "500000000"})
+        # A free helper call: Copilot recorded 0.
+        add_span(conn, "c3", "a1", "chat gpt-4o-mini", T0 + 3000, "chat", model="gpt-4o-mini-2024-07-18", inp=100, out=10,
+                 attrs={"gen_ai.usage.cache_read.input_tokens": "0", "copilot_chat.copilot_usage_nano_aiu": "0"})
+        # No cost recorded for this one (a price sheet may cover it).
+        add_span(conn, "c4", "a1", "chat claude-opus-5.5", T0 + 4000, "chat", model="claude-opus-5.5", inp=1_000_000, out=10_000,
+                 attrs={"gen_ai.usage.cache_read.input_tokens": "600000", "gen_ai.usage.cache_creation.input_tokens": "100000"})
+        add_span(conn, "c5", "a1", "chat gpt-6-luna", T0 + 5000, "chat", model="gpt-6-luna", inp=2000, out=100,
+                 attrs={"gen_ai.usage.cache_read.input_tokens": "1500"})
+        conn.commit()
+        conn.close()
+
+    def test_cache_split_and_copilots_own_cost(self):
+        self.build_cost_db()
+        self.write_marker("ABC-2", T0 + 500)
+        self.run_tool("report", "ABC-2")
+        rows = self.read_rows("ABC-2")
+        # inputTokens is the fresh part: total minus cache read minus cache write.
+        self.assertEqual([(r["inputTokens"], r["cachedInputTokens"], r["cacheWriteTokens"], r["outputTokens"]) for r in rows[:3]],
+                         [(100, 700, 200, 100), (100, 400, 0, 50), (100, 0, 0, 10)])
+        self.assertEqual([r["totalCost"] for r in rows[:3]], [0.01, 0.005, 0.0])
+        self.assertIsNone(rows[3]["totalCost"])
+        doc = self.read_doc("ABC-2")
+        self.assertEqual(doc["steps"][0]["totalCost"], 0.015)
+        self.assertEqual(doc["totalCost"], 0.015)
+
+    def test_price_sheet_prices_only_calls_without_copilots_figure(self):
+        self.build_cost_db()
+        self.write_marker("ABC-2", T0 + 500)
+        sheet = Path(self.tmp.name) / "prices.xlsx"
+        header = ["Model", "Release status", "Category", "Tier", "Threshold (input tokens)", "Input", "Cached input", "Cache write", "Output"]
+        make_xlsx(sheet, header=header, rows=[
+            ["Claude Opus 5.5", "GA", "Powerful", "Default", "Not applicable", 4.0, 0.2, 5.0, 20.0],
+            ["GPT-6 Luna", "GA", "Lightweight", "Default", "≤ 272K", 0.1, 0.01, 0.125, 0.5],
+            ["Claude Sonnet 5.5", "GA", "Versatile", "Default", "Not applicable", 2.0, 0.1, 2.5, 10.0]])
+        self.run_tool("report", "ABC-2", "--prices", str(sheet))
+        rows = self.read_rows("ABC-2")
+        # Copilot's own figures are kept as they are, not recomputed from the sheet.
+        self.assertEqual([r["totalCost"] for r in rows[:3]], [0.01, 0.005, 0.0])
+        # Opus: 300k fresh x $4 + 100k write x $5 + 600k read x $0.2 + 10k out x $20, per million.
+        self.assertAlmostEqual(rows[3]["totalCost"], 1.2 + 0.5 + 0.12 + 0.2, places=9)
+        # Luna with no explicit cache write: 500 fresh at the write rate, 1500 read, 100 out.
+        self.assertAlmostEqual(rows[4]["totalCost"], (500 * 0.125 + 1500 * 0.01 + 100 * 0.5) / 1e6, places=12)
+
+    def test_meta_and_final_stamp(self):
+        self.build_cost_db()
+        self.write_marker("ABC-2", T0 + 500)
+        self.run_tool("meta", "abc-2", "--title", "Lock won't connect", "--type", "Bug")
+        self.run_tool("report", "ABC-2")
+        doc = self.read_doc("ABC-2")
+        self.assertEqual((doc["ticketTitle"], doc["ticketType"], doc["endTime"]), ("Lock won't connect", "Bug", None))
+        self.run_tool("report", "ABC-2", "--final")
+        ended = self.read_doc("ABC-2")["endTime"]
+        self.assertRegex(ended, r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$")
+        self.run_tool("report", "ABC-2")          # a later plain report keeps the end time
+        self.assertEqual(self.read_doc("ABC-2")["endTime"], ended)
 
     def test_rows_survive_copilot_cleanup(self):
         self.build_db()
@@ -185,8 +264,8 @@ class TokenTrackerTest(unittest.TestCase):
         self.env["TOKEN_TRACKER_VSCODE_DB"] = str(Path(self.tmp.name) / "missing.db")
         self.run_tool("report", "NONE-1")
         doc = json.loads((self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.json").read_text())
-        self.assertEqual(doc, {"ticketId": "NONE-1", "totals": {"calls": 0, "inputTokens": 0, "outputTokens": 0, "totalTokens": 0},
-                               "byAgent": [], "calls": []})
+        self.assertEqual({k: doc[k] for k in ("ticketId", "priceUnit", "totalCost", "startTime", "endTime", "steps")},
+                         {"ticketId": "NONE-1", "priceUnit": "USD", "totalCost": 0.0, "startTime": None, "endTime": None, "steps": []})
         page = (self.repo / ".logs" / "token-tracker" / "NONE-1" / "token-usage.html").read_text()
         self.assertIn("No model calls found for this ticket.", page)
 

@@ -112,7 +112,11 @@ Step 1 below then reads the real project key from Jira: if it differs from the k
 replace the added entry's key with Jira's, and say so.
 
 1. Read the ticket's Jira `issuetype` field **and its project key** via `qatalyst-jira-ticket-intake` —
-   never parsed from the ticket ID string.
+   never parsed from the ticket ID string. If you marked the ticket for token tracking ("Token
+   tracking: on"), also run
+   `python3 .github/token-tracker/scripts/token_tracker.py meta <ticket ID> --title "<Jira summary>" --type "<issue type>"`
+   (quote both for the shell), so the usage report carries the ticket's title and type. It only writes
+   `.logs/token-tracker/tickets.json`; if it fails, carry on.
 2. Match that project key against `jira_projects`. If none matches, or the matched entry's
    `bug_issue_types` is empty, there's no bug type to compare against, so **the ticket is treated as
    a bug** — this workflow is mainly run on bugs, so that's the default. Don't ask the developer,
