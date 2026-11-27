@@ -107,6 +107,10 @@ Repowise's index was used for it. Write it to
    with what was looked at, if nothing applies. Anything only possible is marked "unknown, needs
    checking".
 
+   ## Note for the firmware or backend team
+   Copied from `.logs/<ticket ID>/outside-app-note.md` when that file exists (the planner writes it when
+   the cause sits outside the app); leave the section out when it doesn't.
+
    ## Repowise
    - Used for this report: yes · partly · no (direct search), and why
    - At ticket start: ready (N repos indexed) · the developer continued without it
@@ -141,7 +145,8 @@ Repowise's index was used for it. Write it to
    For "Workflow checks", copy what you were told at the start of the run and the outcome of the
    token report step; write "not recorded" for anything you weren't told. Never infer a check passed.
 8. **Tell the developer**, in chat, in a few lines: for a bug, how many passes the analysis took; the
-   counts from the Summary and the highest-risk file; a line starting "Related areas:" naming each
+   counts from the Summary and the highest-risk file; a line starting "Team note:" with the path of `outside-app-note.md` when there is one; a line
+   starting "Related areas:" naming each
    area that could affect the fix, or "none found"; a line starting "Repowise:" saying whether its
    index was used (every lookup · some, naming the ones that fell back · none, and why); any token tracking line that is not "report written" or "off"; any stale
    files with the command to run; and the report's path.

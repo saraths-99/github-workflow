@@ -50,7 +50,9 @@ there was no log.
 
 - You may write **only** `specs/bug/<ticket ID>/tasks.md` — the same deterministic path
   `qatalyst-log-analyser` already used for `log-analysis.md` — and `.logs/<ticket ID>/no-fix.md`
-  when the developer picks "Do not produce a fix" at `qatalyst-plan-ticket`'s fix check. There is no folder to pick or reuse;
+  when the developer picks "Do not produce a fix" at `qatalyst-plan-ticket`'s fix check — and
+  `.logs/<ticket ID>/outside-app-note.md`, the note for a team outside the app (firmware, backend or an
+  SDK vendor) per `qatalyst-plan-ticket`. There is no folder to pick or reuse;
   if something about the ticket's type classification looks wrong, say so to the developer rather
   than silently writing somewhere else.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the

@@ -13,6 +13,25 @@ changed since its last sync.
 ## [0.7.0] - 2026-11-27
 
 ### Added
+- A Context step in the log analysis, for what the trimmed log leaves out. The trim keeps only the app's
+  process, a window around the issue time and non-noise tags, and the digest only warnings and errors, so
+  the Bluetooth stack's own connection state and disconnect reasons (another process, a dropped noise
+  tag), the lead-up, process death or restart, whether an error was already firing earlier, versions and
+  gaps in the log were never seen. New script `logcat_context.py` reads the extracted log again, redacts
+  it the same way and returns a capped report: log boundaries and gaps, environment lines (app, phone,
+  Android, firmware, Bluetooth state), process lifecycle, a lead-up window of every level from every
+  process for the given `--tag` and `--grep`, and per-minute counts over the whole log. The analyser runs
+  it between Map and Rank (and again in Refine, without adding passes), reads only its output, uses it
+  first when the digest is empty, and records a "Context checked" section in `log-analysis.md`. Its
+  environment and lifecycle matching is by fixed patterns, so finding nothing there is not proof. Tests added.
+- A note for the team outside the app. When the cause or a candidate cause is in the lock's firmware, the
+  backend or an SDK and the ticket isn't Android only, `qatalyst-log-analyser` records an "Outside the
+  app" section in `log-analysis.md` and `qatalyst-plan-ticket` writes `.logs/<ticket ID>/outside-app-note.md`:
+  what was seen (a few redacted log lines, the time, lock model and versions), what the app sent, expected
+  against actual, one or two specific questions, what the app does meanwhile, and what is still unknown.
+  Facts only, no secrets or device identifiers, and "not stated" where the ticket gives nothing. It is
+  written whichever way the fix check goes, appended to `no-fix.md` when no fix is produced, and copied into
+  the workflow report (with a "Team note:" line in the chat summary). The workflow never sends it.
 - Token usage now carries cost and the cache split. `token-usage.json` has a new structure: ticket
   (title, type, executor from git config, start and end time), `priceUnit` USD and `totalCost`, then
   `steps` per agent with their `calls`: fresh `inputTokens`, `cachedInputTokens`, `cacheWriteTokens`,

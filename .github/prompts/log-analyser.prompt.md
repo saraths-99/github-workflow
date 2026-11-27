@@ -19,11 +19,14 @@ Run the `qatalyst-log-analyser` agent on the ticket ID given as an argument:
 2. If the attachment isn't in `.logs/<ticket ID>/raw/` yet, fetch it with
    `downloadJiraIssueAttachment` (through the Atlassian `executeRead` tool) and run the `curl` it
    returns, unchanged. If that can't be done, say which step failed and ask the developer to save it
-   there. Then run `logcat_extract.py`, `logcat_trim.py` and `logcat_digest.py` — no other shell
-   command. If the digest has no warnings or errors, ask the developer (widen the window, use the
+   there. Then run `logcat_extract.py`, `logcat_trim.py`, `logcat_digest.py` and `logcat_context.py` — no
+   other shell command. If the digest has no warnings or errors, ask the developer (widen the window, use the
    whole log, report it as inconclusive, or stop) rather than ranking a cause from nothing.
-3. Link, Map and Rank root-cause hypotheses — Map uses `qatalyst-repowise-lookup` to locate the real class
-   and module each error tag belongs to, grounding the fix in actual code. Re-run from Link as
+3. Link and Map (Map uses `qatalyst-repowise-lookup` to locate the real class and module each error
+   tag belongs to, grounding the fix in actual code), then Context: run `logcat_context.py` for what the
+   trimmed log left out (the lead-up across every process, noisy Bluetooth tags, process death or
+   restart, whether the error is new or chronic, versions, and where the log starts, ends and goes
+   silent), then Rank root-cause hypotheses. Re-run from Link as
    needed, up to 5 passes.
 4. Write `specs/bug/<ticket ID>/log-analysis.md` — deterministic from the ticket ID, nothing to ask
    about — including a suggested fix (or, if the top two hypotheses are still close after the refine

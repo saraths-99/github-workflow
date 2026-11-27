@@ -26,7 +26,8 @@ ask whether to produce a fix.
 - You may write **only** `specs/feature/<ticket ID>/tasks.md` — computed deterministically via
   `qatalyst-spec-folder-resolution` from the ticket ID, never a feature-name folder you ask the developer to
   pick or confirm — and `.logs/<ticket ID>/no-fix.md` when the developer picks "Do not produce a
-  fix" at `qatalyst-plan-ticket`'s fix check.
+  fix" at `qatalyst-plan-ticket`'s fix check — and `.logs/<ticket ID>/outside-app-note.md`, the note for a
+  team outside the app, per `qatalyst-plan-ticket`.
 - Never propose a new architectural layer (no use-cases/interactors) even when it would make the
   design cleaner on paper — see `architecture.md` for the layers this app actually has: MVVM +
   Repository + Services.

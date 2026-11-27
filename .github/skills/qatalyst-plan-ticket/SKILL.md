@@ -95,7 +95,7 @@ sub-agent and can't ask, return the finding, its evidence and those options to
 
 - **Do not produce a fix.** Write `.logs/<ticket ID>/no-fix.md` (git-ignored): the finding, the
   evidence, and what would have to change for a fix to be possible (a clearer repro, a decision, a
-  permission, a fix elsewhere). Write no `tasks.md`; the flow ends there with no branch, no
+  permission, a fix elsewhere), followed by the team note below when there is one. Write no `tasks.md`; the flow ends there with no branch, no
   Jira transition and no developer run. Say the file's full path.
 - **Go with a fix anyway.** Write `tasks.md` as usual, with the finding as the first item under
   Open questions: `**Fix check (<finding>):**` its evidence, and "the developer chose to go ahead".
@@ -106,7 +106,45 @@ sub-agent and can't ask, return the finding, its evidence and those options to
   likely fix, with the readings you didn't pick listed as alternatives. On an Android-only ticket
   every one of these stays an app change; never a firmware or backend change. If nothing is left to
   change, say so and stop instead of inventing a task.
-  Delete `no-fix.md` if it exists.
+  Delete `no-fix.md` if it exists. The team note below is written either way.
+
+## Note for the team outside the app
+
+When the cause, or a candidate cause, sits outside the app (the lock's firmware, the cloud or
+backend, or a third-party SDK) and the ticket's platform scope is not Android only, write
+`.logs/<ticket ID>/outside-app-note.md` (git-ignored): a note the developer can paste to that team.
+Write it whichever way the fix check goes, and when `log-analysis.md` ranks such a cause even if the
+fix check found nothing. Skip it when nothing points outside the app, and on an Android-only
+ticket, where firmware and the cloud aren't suspects. Use these headings, and write "not stated" for
+anything the ticket, the log or the code doesn't give you:
+
+```
+# Note for the <firmware | backend | SDK vendor> team — <ticket ID>
+Ticket: <ID and title> · Lock model: · Firmware version: · App version: · Phone and Android version:
+
+## What was seen
+The behaviour, when (the issue time and window), and the evidence in a few short redacted log lines.
+
+## What the app did
+The sequence of commands or requests the app sent, in order, from the code, with file names.
+
+## Expected and actual
+What should have happened, and what did.
+
+## What we need from you
+One or two specific questions or checks for that team, such as the behaviour on a given firmware
+version or the response the backend returns for a given request.
+
+## What the app does meanwhile
+The workaround in `tasks.md` and its risk, or "none planned".
+
+## Still unknown
+What nobody has confirmed.
+```
+
+Rules: use only facts from the ticket, `log-analysis.md` and the code, never what you assume firmware
+or the backend does. No token, key, JWT, email, serial number, device address or raw BLE payload in
+it. It is a note for the developer to send; never post it anywhere yourself. Say its full path.
 
 ## Gate
 

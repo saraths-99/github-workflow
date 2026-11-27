@@ -31,13 +31,15 @@ straight into `tasks.md`.
 - You may run **only** these commands: the download command that `downloadJiraIssueAttachment`
   returns (Extract step, once, exactly as returned), then, in this order and exactly as documented in
   their own `--help`, `.github/log-analyser/scripts/logcat_extract.py`,
-  `.github/log-analyser/scripts/logcat_trim.py`, and `.github/log-analyser/scripts/logcat_digest.py`.
+  `.github/log-analyser/scripts/logcat_trim.py`, and `.github/log-analyser/scripts/logcat_digest.py`,
+  and then, as often as the Context step below asks, `.github/log-analyser/scripts/logcat_context.py`.
   Never run any other shell command, even one that looks harmless — in particular, never `unzip`,
   `cat`, or `grep` the raw attachment yourself; that's what `logcat_extract.py` is for.
-- You may read `.logs/<ticket ID>/trimmed.log` and `.logs/<ticket ID>/digest.md`. **Never read
+- You may read `.logs/<ticket ID>/trimmed.log`, `.logs/<ticket ID>/digest.md` and
+  `.logs/<ticket ID>/context-<n>.md` (what `logcat_context.py` wrote). **Never read
   `.logs/<ticket ID>/raw/` or `.logs/<ticket ID>/raw/extracted/`** — nothing enforces this but you,
   so don't attempt it. The extracted file is still the full raw log,
-  just normalized to plain text; only `logcat_trim.py` may read it.
+  just normalized to plain text; only `logcat_trim.py` and `logcat_context.py` may read it.
 - **Before writing anything, locate the real code this bug touches** — use `qatalyst-repowise-lookup`
   against the digest's suspect tags/classes (the Map step below). That's what grounds the fix, not a
   folder choice: `qatalyst-spec-folder-resolution` computes the path deterministically, so there's nothing to
@@ -54,6 +56,15 @@ for an Android platform quirk. Never suggest a firmware or cloud/backend change 
 when one is possible; if the logs do show something odd on the firmware or cloud side, note it in
 the report under "Seen outside the app, not pursued" with the evidence, and keep it out of the root
 cause and the suggested fix. For "also on iOS" or "not stated", rank every layer as usual.
+
+## When the cause is outside the app
+
+If the cause you rank (or a close candidate) is in the lock's firmware, the cloud or backend, or a
+third-party SDK, and the ticket isn't Android only, add an **Outside the app** section to
+`log-analysis.md`: the few redacted log lines that point there, the time, the lock model and the
+firmware, app and phone versions where the ticket or log gives them, and the command or request
+sequence around it. `qatalyst-plan-ticket` builds the note for that team from it. State only what the
+log shows, never what you assume the other side does.
 
 ## The loop
 
@@ -114,7 +125,10 @@ cause went from medium to high"). `log-analysis.md` records the count.
    attachment, stop — rather than reporting a root cause built on an empty digest.
 4. **Digest** — run `logcat_digest.py` against the trimmed log. If its table has no rows (the window
    has lines, but no warnings or errors), an empty digest is not a root cause, and not "all clear":
-   don't Link, Map or Rank on nothing. Ask the developer, with options (see `qatalyst-ask-developer`):
+   don't Link, Map or Rank on nothing. First run `logcat_context.py` once with no `--tag`: its
+   warnings and errors from every process in the window, its lifecycle lines and its per-minute error
+   counts can show that the trouble sits in another process, or at another time, or that the log
+   doesn't cover the issue; say what it showed. Then ask the developer, with options (see `qatalyst-ask-developer`):
    widen the time window (then re-run Trim, which counts as a pass) · use the whole log (re-run Trim
    without `--at`) · the log shows nothing for this issue, report it as inconclusive · wrong
    attachment, stop. On "report it as inconclusive", go to **Report (no errors in the log)** below.
@@ -123,17 +137,42 @@ cause went from medium to high"). `log-analysis.md` records the count.
 6. **Map** — use `qatalyst-repowise-lookup` to find the real class and module behind each tag/message, and
    any recent change to those files. This, not a folder, is what grounds the root cause in the
    actual codebase — the write path itself needed no lookup or decision (step 1).
-7. **Rank** — list root-cause hypotheses, each with its evidence lines and the check that would
+7. **Context** — the trimmed log and the digest show the app's own errors in a window; they leave out
+   the lead-up, the other processes, the noisy Bluetooth tags, the app's start-up lines, and anything
+   earlier in the log. Before ranking, look at what they left out. Run
+   `logcat_context.py` against the extracted log (see its `--help`) with the pinned issue time and the
+   package, and pass the suspect tags from Map as `--tag` and a telling message fragment, such as a
+   status code, as `--grep`. Write it to `.logs/<ticket ID>/context-<n>.md` and read only that. Ask
+   of it:
+   - **What led up to it?** The lead-up section holds every level from every process, noise tags
+     included, so the Bluetooth stack's own connection state and disconnect reason show up here, and
+     the app's commands just before the failure.
+   - **Did the process die, restart or get killed?** The lifecycle section covers start, death, kill,
+     crash and ANR lines. A new PID after the failure changes the story.
+   - **Is it new, or chronic?** The per-minute counts say whether the error began at the issue time or
+     had been firing for an hour. A chronic one is probably not the cause.
+   - **What is it running on?** The environment section gives app, phone, Android and firmware versions,
+     and Bluetooth or permission state, where the log has them. Use them for the report and for the
+     firmware and platform areas; never assume one that isn't there.
+   - **Can the log answer at all?** The boundaries section shows where the log starts and ends and
+     where it went silent. A log that begins after the failure, or has a gap across it, can't explain
+     it, so say that instead of ranking on what's left.
+   When the context contradicts the digest (a cause the errors don't show, or an error that was always
+   there), that is a finding: it goes into Rank, and the Context step records what it changed. Run it
+   again in Refine with different tags, a wider `--lead`, or another pattern; those runs belong to the
+   pass they are in and don't add passes.
+8. **Rank** — list root-cause hypotheses, each with its evidence lines and the check that would
    disprove it. Note the confidence gap between the top two: a clear leader is one cause, a close
    call is two candidates neither evidence nor a disproof check currently separates.
-8. **Refine** (if no single cause explains every error) — re-run Trim with a wider or shifted
-   window, or with a dropped noise tag put back; read the suspect code path; or ask the tester for a
+9. **Refine** (if no single cause explains every error) — re-run Trim with a wider or shifted
+   window, or with a dropped noise tag put back; re-run Context with other tags or patterns; read the suspect code path; or ask the tester for a
    targeted repro. Then repeat from Link. Stop after 5 passes regardless of outcome. If, after 5
    passes, the evidence still doesn't support a single ranked cause, say so plainly in the report
    instead of forcing a best guess — an honest "inconclusive, here's what's missing" is better input
    to Planning than a root cause the logs don't actually support.
-9. **Report** — write `specs/bug/<ticket ID>/log-analysis.md`: start with a "Platform scope" line (as
-   `qatalyst-log-ticket-intake` reported it, with the ticket's words when it is Android only), then the chain from cause to effects,
+10. **Report** — write `specs/bug/<ticket ID>/log-analysis.md`: start with a "Platform scope" line (as
+   `qatalyst-log-ticket-intake` reported it, with the ticket's words when it is Android only), then a "Context checked" section (what Context pulled from outside the trimmed window, what it showed,
+   what it didn't find, the log's boundaries and gaps, and anything it changed in the ranking), then the chain from cause to effects,
    noise excluded, suspect classes, and anything still unexplained. End it with an **Analysis passes**
    section: how many of the 5 allowed passes it took, one line per pass as noted above, and how it
    ended: one clear cause · two close candidates · inconclusive at the cap. Say why each extra pass

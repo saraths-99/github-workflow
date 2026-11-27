@@ -197,7 +197,11 @@ this workflow is `user-invocable: false` — hidden from the picker, only ever r
 handing off to another, never by picking it yourself.
 
 1. Reads the ticket's Jira issue type against `copilot-instructions.md`'s configured
-   `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step.
+   `bug_issue_types`; routes to the log-analysis loop automatically for a bug, no separate step. The
+   loop doesn't stop at the trimmed log: a Context step goes back to the full log for what the trim and
+   digest leave out (the Bluetooth stack's own lines, the lead-up, the app dying or restarting,
+   whether the error was already firing earlier, versions, gaps) before it ranks a cause, and
+   `log-analysis.md` records what it checked.
 2. Hands off to `qatalyst-bug-planner` (for a bug) or `qatalyst-feature-planner` (otherwise), which
    reads the ticket and its Confluence pages, writes to the deterministic
    `specs/<bug|feature>/<ticket ID>/tasks.md` path, and produces one `tasks.md` — a single approval,
@@ -221,6 +225,12 @@ handing off to another, never by picking it yourself.
    change as the fix, even if one is possible; those only appear in the report's related areas,
    marked "not a fix target". Only a clear statement in the ticket counts. If the ticket doesn't say,
    or says the issue is also on iOS, nothing changes.
+   **When the cause is outside the app.** If the evidence points at the lock's firmware, the backend or
+   an SDK (and the ticket isn't "not observed on iOS"), the planner also writes a note for that team to
+   `.logs/<ticket ID>/outside-app-note.md`: what was seen with a few redacted log lines, what the app
+   sent, expected against actual, the specific question for them, what the app does meanwhile and what
+   is still unknown. It is copied into `no-fix.md` when you choose not to produce a fix, and into the
+   workflow report. The workflow never sends it; you paste it to the right team.
 3. Creates the ticket branch (`bug/<ticket ID>-<slug>` for a bug, `feature/<ticket ID>-<slug>` for a feature) from the branch you pick (it asks), then asks before moving the ticket to In
    Progress. A bug never reuses an old `feature/` branch; it gets its own `bug/` branch.
 4. Runs `qatalyst-developer` through every task, then asks whether to commit now, and whether you have

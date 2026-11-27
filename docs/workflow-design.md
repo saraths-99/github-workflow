@@ -41,6 +41,12 @@ flowchart TD
     H --> I([Commit locally —<br/>you push and open the PR])
 ```
 
+When the evidence points outside the app (firmware, backend or an SDK) on a ticket that isn't Android only, `qatalyst-log-analyser`
+records an "Outside the app" section and `qatalyst-plan-ticket` turns it into `.logs/<ticket ID>/outside-app-note.md`: a note for
+that team with the evidence, the app's command sequence, expected against actual, a specific ask, the app's workaround and the
+unknowns, using only facts from the ticket, log and code and no secrets or device identifiers. It is copied into `no-fix.md` and the
+workflow report and is never sent by the workflow.
+
 A ticket whose QA note says the issue is not observed on iOS is treated as Android only:
 `qatalyst-jira-ticket-intake` reports the platform scope, `qatalyst-log-analyser` ranks causes in the
 app and platform and suggests only an app fix, and `qatalyst-plan-ticket` plans no firmware or
@@ -162,10 +168,11 @@ flowchart TD
     CW -- no --> CWX([Ask developer: widen window,<br/>whole log, report inconclusive, or stop])
     CW -- yes --> D[Link: group related entries]
     D --> E[Map: Repowise class/module lookup]
-    E --> F[Rank: root-cause hypotheses]
+    E --> CX[Context: logcat_context.py —<br/>what the trimmed log left out]
+    CX --> F[Rank: root-cause hypotheses]
     F --> G{One cause explains<br/>every error?}
     G -- yes --> H([Report: log-analysis.md<br/>+ suggested fix])
-    G -- no, pass < 5 --> I[Refine: widen window /<br/>restore noise tag / read code]
+    G -- no, pass < 5 --> I[Refine: widen window / restore noise tag /<br/>other Context tags / read code]
     I --> B
     G -- no, pass = 5 --> H
 ```
@@ -178,10 +185,25 @@ through the Atlassian server's `downloadJiraIssueAttachment` operation, into `.l
 If the download can't run, the developer is told which step failed and
 which file name to save the log as.
 
-Three scripts in this loop are plain Python, no AI, no network: `logcat_extract.py` normalizes the
+Four scripts in this loop are plain Python, no AI, no network: `logcat_extract.py` normalizes the
 raw attachment (a plain `.txt`/`.log` passes through unchanged; a `.zip` is extracted and, if it
 holds more than one text log, merged in chronological order) into the single file `logcat_trim.py`
-expects, and `logcat_digest.py` groups that trimmed log's warnings and errors by signature.
+expects, `logcat_digest.py` groups that trimmed log's warnings and errors by signature, and
+`logcat_context.py` goes back to the full log for what those two leave out.
+
+**Why Context exists.** `logcat_trim.py` keeps only the app's own process, a window of 120 s before and
+30 s after the issue time, and drops `BluetoothLeScanner`, `bt_btm` and the `BtGatt.*` tags unless a line is an
+error; the digest then keeps only warnings and errors. That finds the app's errors and hides the things that
+explain them: the Bluetooth stack's own connection state and disconnect reason (another process, a noise
+tag), the app's commands before the failure, the process dying or being restarted, whether the same error had
+been firing for an hour, the app, phone, Android and firmware versions, and whether the log even covers the
+failure. `logcat_context.py` reads the extracted log again with the same redaction and returns those as one
+capped report (150 lines per section, the nearest the issue time kept): log boundaries and gaps, environment
+lines, process lifecycle, a lead-up window of every level from every process for the given tags and patterns,
+and per-minute counts over the whole log. It runs between Map and Rank, and again in Refine with other tags;
+`log-analysis.md` gets a "Context checked" section. Its environment and lifecycle matching uses fixed
+patterns, so finding nothing there is not proof that nothing is in the log. It is the one place besides
+`logcat_trim.py` that reads the raw log, and the analyser still never does.
 
 ## 4. Agents
 
@@ -461,7 +483,8 @@ versus a convention this workflow invented for itself.
     ├── log-analyser/
     │   ├── scripts/logcat_extract.py
     │   ├── scripts/logcat_trim.py
-    │   └── scripts/logcat_digest.py
+    │   ├── scripts/logcat_digest.py
+    │   └── scripts/logcat_context.py   what the trim and digest leave out: lead-up, other processes, lifecycle, history, versions
     ├── skills/
     │   ├── qatalyst-new-feature/SKILL.md
     │   ├── qatalyst-new-screen/SKILL.md
