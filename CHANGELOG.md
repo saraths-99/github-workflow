@@ -10,57 +10,7 @@ reads `VERSION` and the synced commit SHA and writes both into a sync-record fil
 the app repo, so this is the only place to check what an app repo is actually running and what
 changed since its last sync.
 
-## [0.6.0] - 2026-11-26
-
-### Added
-- `qatalyst-commit-message` skill: writes each repo's commit title and message from the diff,
-  `tasks.md` and, for a bug, `log-analysis.md`. The title is `<ticket ID> - <imperative summary>`
-  (72 characters or fewer, always starting with the ticket ID); the body gives the
-  reason, the changes grouped by task and a line on tests, with no log lines, secrets or AI
-  sign-off trailer. It is shown with options to rework: use it · make it shorter · add more detail ·
-  change it (typed). It repeats until the developer picks "Use this message", and saves the result
-  to `.logs/<ticket ID>/commit-message.md`.
-- `qatalyst-ticket-ship` runs it before the commit confirmation and commits with the approved message
-  only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll commit later",
-  so they still get a title and message to rework and use; a later `/qatalyst-ticket-ship` reuses an
-  approved message while the repo's changed files are the same.
-- A fix check before planning. `qatalyst-plan-ticket` now looks for three findings, each only with
-  evidence it can cite: the fix is already in the code, the fix is blocked (an OS or platform
-  restriction, a store policy such as Google Play's, a permission the app can't get, a limit in
-  firmware, an SDK or a backend), or the evidence is too ambiguous to choose a fix (including an
-  inconclusive `log-analysis.md` the code doesn't settle). A policy or platform rule it can't cite is
-  treated as ambiguous, never as blocked. On a finding it asks: Do not produce a fix · Go with a fix
-  anyway. It applies to bugs and features.
-- "Do not produce a fix" writes `.logs/<ticket ID>/no-fix.md` (git-ignored) and ends the flow: no
-  `tasks.md`, no branch, no Jira move. Running `/qatalyst-ticket-start` again shows the finding and
-  asks again. "Go with a fix anyway" plans the best fix the finding allows (only what the code still
-  lacks, a workaround inside the limit, or the likeliest reading with the alternatives listed), puts
-  the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in the commit
-  message.
-
-- `token_credits.py` in `.github/token-tracker/scripts/`: converts a ticket's `token-usage.html` (or
-  `.json`) into AI credits with a model price sheet (`.xlsx`), as tokens / 1,000,000 x the model's
-  USD rate, input and output priced separately, divided by $0.01 per credit, using the long-context row when a call's input is over
-  the threshold. It writes `token-credits.html` and `.json` and prints a table by model and agent.
-  A call whose model isn't in the sheet is listed as not priced, never guessed. The usage file has
-  no cached-token split, so input is priced at the full rate. Standard library only, with tests.
-
-### Changed
-- Model tiers. Every test-related agent is now on the Fast tier (the router `qatalyst-test-writer`,
-  `qatalyst-ble-protocol-test-writer` and `qatalyst-security-test-writer` moved down from Standard,
-  and the `/qatalyst-write-tests` prompt with them). `qatalyst-developer` moved up to the Deep tier.
-  Claude Opus 5.5 is gone from the Claude lists: Deep is now Claude Sonnet 5.5 alone, so the ticket
-  chat, log analysis, planning, implementation and the code reviewer all run on it. Standard is left
-  with the security and error-handling reviewers and the `/qatalyst-new-*` prompts. The code
-  reviewer and the developer now share a model; the reviewer's independence comes from its fresh
-  context. GPT lists are unchanged.
-- Ship now runs in this order: review, token report, commit message, build and tests, one commit
-  confirmation. `qatalyst-ticket-ship` shows the token report (`report --open`) once the review rounds
-  are done, so it includes the review fixes and the reviewers' own calls, and then settles the
-  commit message. The build, tests and commit are not in it; run `report` afterwards to add them.
-  `qatalyst-ticket-start` no longer shows the report before the ship question, and
-  `qatalyst-developer` still writes one quietly at the end so the workflow report can record the
-  outcome. The commit message is rewritten if a later fix changes the diff.
+## [0.7.0] - 2026-11-27
 
 ### Added
 - Token usage now carries cost and the cache split. `token-usage.json` has a new structure: ticket
@@ -104,12 +54,63 @@ changed since its last sync.
   sibling modules, each with its evidence, why it matters and what to check or who to ask. It lists
   only areas the change, ticket or log points at, marks anything unconfirmed as "unknown, needs
   checking", and says "None found" otherwise. The chat summary gets a "Related areas:" line.
+
+## [0.6.0] - 2026-11-26
+
+### Added
+- `qatalyst-commit-message` skill: writes each repo's commit title and message from the diff,
+  `tasks.md` and, for a bug, `log-analysis.md`. The title is `<ticket ID> - <imperative summary>`
+  (72 characters or fewer, always starting with the ticket ID); the body gives the
+  reason, the changes grouped by task and a line on tests, with no log lines, secrets or AI
+  sign-off trailer. It is shown with options to rework: use it · make it shorter · add more detail ·
+  change it (typed). It repeats until the developer picks "Use this message", and saves the result
+  to `.logs/<ticket ID>/commit-message.md`.
+- `qatalyst-ticket-ship` runs it before the commit confirmation and commits with the approved message
+  only. `qatalyst-ticket-start` runs it too when the developer picks "Stop here, I'll commit later",
+  so they still get a title and message to rework and use; a later `/qatalyst-ticket-ship` reuses an
+  approved message while the repo's changed files are the same.
+- A fix check before planning. `qatalyst-plan-ticket` now looks for three findings, each only with
+  evidence it can cite: the fix is already in the code, the fix is blocked (an OS or platform
+  restriction, a store policy such as Google Play's, a permission the app can't get, a limit in
+  firmware, an SDK or a backend), or the evidence is too ambiguous to choose a fix (including an
+  inconclusive `log-analysis.md` the code doesn't settle). A policy or platform rule it can't cite is
+  treated as ambiguous, never as blocked. On a finding it asks: Do not produce a fix · Go with a fix
+  anyway. It applies to bugs and features.
+- "Do not produce a fix" writes `.logs/<ticket ID>/no-fix.md` (git-ignored) and ends the flow: no
+  `tasks.md`, no branch, no Jira move. Running `/qatalyst-ticket-start` again shows the finding and
+  asks again. "Go with a fix anyway" plans the best fix the finding allows (only what the code still
+  lacks, a workaround inside the limit, or the likeliest reading with the alternatives listed), puts
+  the finding first under Open questions, and `qatalyst-ticket-ship` repeats it in the commit
+  message.
+- `token_credits.py` in `.github/token-tracker/scripts/`: converts a ticket's `token-usage.html` (or
+  `.json`) into AI credits with a model price sheet (`.xlsx`), as tokens / 1,000,000 x the model's
+  USD rate, input and output priced separately, divided by $0.01 per credit, using the long-context row when a call's input is over
+  the threshold. It writes `token-credits.html` and `.json` and prints a table by model and agent.
+  A call whose model isn't in the sheet is listed as not priced, never guessed. The usage file has
+  no cached-token split, so input is priced at the full rate. Standard library only, with tests.
 - `isLocalBuild` is `false` in everything committed. The developer keeps `isLocalBuild=true` in
   `gradle.properties` in all five repos while working; before committing, `qatalyst-ticket-ship` records
   each such line in `.logs/<ticket ID>/isLocalBuild.json`, sets it to `false` (keeping the file's
   spacing), commits, then puts every line back and deletes the record. A `gradle.properties` whose only
   change is that line isn't part of the diff or the commit message, the reviewers are told to ignore
   it, and the commit stops if `git diff --cached` still shows `isLocalBuild=true`.
+
+### Changed
+- Model tiers. Every test-related agent is now on the Fast tier (the router `qatalyst-test-writer`,
+  `qatalyst-ble-protocol-test-writer` and `qatalyst-security-test-writer` moved down from Standard,
+  and the `/qatalyst-write-tests` prompt with them). `qatalyst-developer` moved up to the Deep tier.
+  Claude Opus 5.5 is gone from the Claude lists: Deep is now Claude Sonnet 5.5 alone, so the ticket
+  chat, log analysis, planning, implementation and the code reviewer all run on it. Standard is left
+  with the security and error-handling reviewers and the `/qatalyst-new-*` prompts. The code
+  reviewer and the developer now share a model; the reviewer's independence comes from its fresh
+  context. GPT lists are unchanged.
+- Ship now runs in this order: review, token report, commit message, build and tests, one commit
+  confirmation. `qatalyst-ticket-ship` shows the token report (`report --open`) once the review rounds
+  are done, so it includes the review fixes and the reviewers' own calls, and then settles the
+  commit message. The build, tests and commit are not in it; run `report` afterwards to add them.
+  `qatalyst-ticket-start` no longer shows the report before the ship question, and
+  `qatalyst-developer` still writes one quietly at the end so the workflow report can record the
+  outcome. The commit message is rewritten if a later fix changes the diff.
 
 ### Removed
 - The ship step no longer pushes, opens pull requests, reads Pipelines runs or moves the ticket to In
